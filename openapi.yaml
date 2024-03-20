@@ -34,6 +34,20 @@ paths:
             $ref: '#/definitions/Books'
         '500':
           description: Some server error
+  /book/subscribers:
+    get:
+      summary: Get the subscriber by ID
+      tags: 
+        - Books
+      parameters:
+        - name: name
+          in: path
+          description: ID of the books to return
+          required: true
+          type: string
+      responses:
+        '200':
+          description: The book response by ID
   /book/{name}:
     get:
       summary: Get the book by ID
