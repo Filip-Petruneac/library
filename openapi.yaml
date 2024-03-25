@@ -7,17 +7,19 @@ tags:
   - name: Books
     description: The books managing API
 paths:
-  /book:
+  /books:
     get:
       summary: Lists all the books
       tags: 
         - Books
       responses:
         '200':
-          description: Get the main page
+          description: Successful operation
+        '400':
+          description: Bad Request
             
     post:
-      summary:  Add a new book
+      summary: Add a new book
       tags: 
         - Books
       parameters:
@@ -28,43 +30,15 @@ paths:
           schema:
             $ref: '#/definitions/Books'
       responses:
-        '200':
-          description: The added book
+        '201':
+          description: The book was created
           schema:
             $ref: '#/definitions/Books'
         '500':
-          description: Some server error
-  /book/subscribers:
-    get:
-      summary: Get the subscriber by ID
-      tags: 
-        - Books
-      parameters:
-        - name: name
-          in: path
-          description: ID of the books to return
-          required: true
-          type: string
-      responses:
-        '200':
-          description: The book response by ID
-  /book/{name}:
+          description: Server error
+  /books/{id}:
     get:
       summary: Get the book by ID
-      tags: 
-        - Books
-      parameters:
-        - name: name
-          in: path
-          description: ID of the book to return
-          required: true
-          type: string
-      responses:
-        '200':
-          description: The book response by ID
-  /book/{id}/info:      
-    get:
-      summary: Get the info of the book by ID
       tags: 
         - Books
       parameters:
@@ -75,10 +49,11 @@ paths:
           type: string
       responses:
         '200':
-          description: The book response by ID
+          description: Successful operation
           schema:
             $ref: '#/definitions/Books'
-        # '404':k was not found  
+        '400':
+          description: Bad Request
     put:
       summary: Update the info of the book
       tags: 
@@ -97,13 +72,13 @@ paths:
             $ref: '#/definitions/Books'
       responses:
         '200':
-          description: The book was updated
+          description: Book updated successfully
           schema:
             $ref: '#/definitions/Books'
-        '404':
-          description: The book was not found
-        '500':
-          description: Some error happened
+        '204':
+          description: Success, no content
+        '400':
+          description: Bad Request
     delete:
       summary: Remove the book by ID
       tags: 
@@ -115,17 +90,18 @@ paths:
           required: true
           type: string
       responses:
+        '204':
+          description: Book deleted successfully
         '200':
-          description: The book was deleted
-        '404':
-          description: The book was not found
+          description: OK
+        '400':
+          description: Bad Request
 definitions:
   Books:
     type: object
     required:
       - title
       - description
-      - finished
     properties:
       id:
         type: string
@@ -142,7 +118,7 @@ definitions:
       status:
         type: string
         description: Available or borrowed
-      createdBook:
+      newAddedBook:
         type: string
         format: date
         description: The date the book was added
