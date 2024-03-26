@@ -10,8 +10,7 @@ import (
     _ "github.com/go-sql-driver/mysql"
 )
 
-// Port we listen on.
-const portNum string = ":8080"
+
 
 // Sample data structure to store dummy data
 type Item struct {
@@ -23,32 +22,58 @@ type Item struct {
 
 }
 
-var db *sql.DB
 
-func initDB() {
+
+func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
     var err error
-    // Database connection parameters
-    username := "root"
-    password := "password"
-    hostname := "localhost"
-    port := "4450" // Change this to the port where your MySQL is running
-    dbname := "library"
 
     // Constructing the DSN (Data Source Name)
     dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname)
 
     // Open a connection to the database
+    var db *sql.DB
     db, err = sql.Open("mysql", dsn)
     if err != nil {
-        log.Fatal("Failed to connect to database:", err)
+        return nil, fmt.Errorf("Failed to connect to database:", err)
     }
 
     // Check if the connection is successful
     err = db.Ping()
     if err != nil {
-        log.Fatal("Failed to ping database:", err)
+        return nil, fmt.Errorf("Failed to ping database:", err)
     }
     log.Println("Connected to the MySQL database!")
+    return db, nil
+}
+
+func main() {
+    port := flag.Int("port", 8080, "Server Port")
+    dbUsername := flag.String("db-user", "root", "Database Username")
+    dbPassword := flag.String("db-password", "password", "Database Password")
+    dbHostname := flag.String("db-hostname", "localhost", "Database hostname")
+    dbPort := flag.Int("db-port", 4450, "Database port")
+    dbName := flag.String("db-name", "library", "Database name")
+	
+    db := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName string) *sql.DB
+    defer db.Close()
+
+    log.Println("Starting our server.")
+
+    http.HandleFunc("/", Home)
+    http.HandleFunc("/info", Info)
+    http.HandleFunc("/books", GetBooks)
+    http.HandleFunc("/books/add", AddItem)
+    http.HandleFunc("/books/update", UpdateItem)
+    http.HandleFunc("/books/delete", DeleteItem)
+
+    log.Println("Started on port", *port)
+    fmt.Println("To close connection CTRL+C :-)")
+
+    // Spinning up the server.
+    err := http.ListenAndServe(*port, nil)
+    if err != nil {
+        log.Fatal(err)
+    }
 }
 
 // Handler functions...
@@ -141,25 +166,4 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Item deleted successfully")
 }
 
-func main() {
-    initDB()
-    defer db.Close()
 
-    log.Println("Starting our server.")
-
-    http.HandleFunc("/", Home)
-    http.HandleFunc("/info", Info)
-    http.HandleFunc("/books", GetBooks)
-    http.HandleFunc("/books/add", AddItem)
-    http.HandleFunc("/books/update", UpdateItem)
-    http.HandleFunc("/books/delete", DeleteItem)
-
-    log.Println("Started on port", portNum)
-    fmt.Println("To close connection CTRL+C :-)")
-
-    // Spinning up the server.
-    err := http.ListenAndServe(portNum, nil)
-    if err != nil {
-        log.Fatal(err)
-    }
-}
