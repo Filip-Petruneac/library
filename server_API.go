@@ -19,16 +19,16 @@ type Author struct {
 	Books     int    `json:"books"`
 }
 
-type Book struct {
-    ID            int    `json:"id"`
-    Photo         string `json:"photo"`
-    Title         string `json:"title"`
-    Author        int    `json:"author"`
-    Description   string `json:"description"`
-    Subscriber    int    `json:"subscriber"`
-    BorrowedBooks int    `json:"borrowedbooks"`
-    IsBorrowed    bool   `json:"isborrowed"`
-}
+// type Book struct {
+//     ID            int    `json:"id"`
+//     Photo         string `json:"photo"`
+//     Title         string `json:"title"`
+//     Author        int    `json:"author"`
+//     Description   string `json:"description"`
+//     Subscriber    int    `json:"subscriber"`
+//     BorrowedBooks int    `json:"borrowedbooks"`
+//     IsBorrowed    bool   `json:"isborrowed"`
+// }
 
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
@@ -68,7 +68,7 @@ func main() {
 
 	http.HandleFunc("/", Home)
 	http.HandleFunc("/info", Info)
-	http.HandleFunc("/books", GetBooks(db))
+	http.HandleFunc("/authors", GetAuthors(db))
 	// http.HandleFunc("/books/add", AddItem)
 	// http.HandleFunc("/books/update", UpdateItem)
 	// http.HandleFunc("/books/delete", DeleteItem)
@@ -96,21 +96,21 @@ func Info(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetBooks handles requests to retrieve all items from the database
-func GetBooks(db *sql.DB) http.HandlerFunc {
+func GetAuthors(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT * FROM books")
+		rows, err := db.Query("SELECT * FROM authors")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		defer rows.Close()
 
-		var books []Book
+		var books []Author
 		for rows.Next() {
-			var book Book
-			if err := rows.Scan(&book.ID, &book.Photo, &book.Author, &book.Description, &book.Subscriber, &book.BorrowedBooks, &book.IsBorrowed); err != nil {
+			var author Author
+			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Books); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			books = append(books, book)
+			books = append(books, author)
 		}
 		if err := rows.Err(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
