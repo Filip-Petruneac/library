@@ -1,7 +1,3 @@
-CREATE DATABASE library;
-
-USE library;
-
 CREATE TABLE `authors` (
   `id` INTEGER AUTO_INCREMENT,
   `Lastname` VARCHAR(255),
@@ -20,13 +16,13 @@ CREATE TABLE `subscribers` (
 CREATE TABLE `books` (
   `id` INTEGER AUTO_INCREMENT,
   `photo` VARCHAR(255),
-  `title` VARCHAR(255),
-  `author` INTEGER,
+  `title` VARCHAR(255) NOT NULL,
+  `author` INTEGER NOT NULL,
   `description` TEXT COMMENT 'Content of the post',
   `subscriber` INTEGER,
-  `borrowed_books` INTEGER,
-  `is_borrowed` BOOLEAN,
-  PRIMARY KEY (`id`, `author`, `subscriber`, `borrowed_books`)
+  `borrowed_books` INTEGER DEFAULT 0,
+  `is_borrowed` BOOLEAN DEFAULT FALSE,
+
 );
 
 CREATE TABLE `borrowed_books` (

@@ -12,12 +12,24 @@ import (
 )
 
 // Sample data structure to store dummy data
-type Item struct {
+type Author struct {
 	ID        int    `json:"id"`
 	Lastname  string `json:"lastname"`
 	Firstname string `json:"firstname"`
 	Books     int    `json:"books"`
 }
+
+type Book struct {
+    ID            int    `json:"id"`
+    Photo         string `json:"photo"`
+    Title         string `json:"title"`
+    Author        int    `json:"author"`
+    Description   string `json:"description"`
+    Subscriber    int    `json:"subscriber"`
+    BorrowedBooks int    `json:"borrowedbooks"`
+    IsBorrowed    bool   `json:"isborrowed"`
+}
+
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
 	var err error
@@ -29,13 +41,13 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 	var db *sql.DB
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to database:", err)
+		return nil, fmt.Errorf("Failed to connect to database: %w", err)
 	}
-
+	
 	// Check if the connection is successful
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ping database:", err)
+		return nil, fmt.Errorf("Failed to ping database: %w", err)
 	}
 	log.Println("Connected to the MySQL database!")
 	return db, nil
@@ -57,9 +69,9 @@ func main() {
 	http.HandleFunc("/", Home)
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/books", GetBooks(db))
-	http.HandleFunc("/books/add", AddItem)
-	http.HandleFunc("/books/update", UpdateItem)
-	http.HandleFunc("/books/delete", DeleteItem)
+	// http.HandleFunc("/books/add", AddItem)
+	// http.HandleFunc("/books/update", UpdateItem)
+	// http.HandleFunc("/books/delete", DeleteItem)
 
 	log.Println("Started on port", *port)
 	fmt.Println("To close connection CTRL+C :-)")
@@ -85,77 +97,77 @@ func Info(w http.ResponseWriter, r *http.Request) {
 
 // GetBooks handles requests to retrieve all items from the database
 func GetBooks(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        rows, err := db.Query("SELECT * authors")
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-        defer rows.Close()
+	return func(w http.ResponseWriter, r *http.Request) {
+		rows, err := db.Query("SELECT * FROM books")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		defer rows.Close()
 
-        var books []Item
-        for rows.Next() {
-            var book Item
-            if err := rows.Scan(&book.ID, &book.Lastname, &book.Firstname, &book.Books); err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-            }
-            books = append(books, book)
-        }
-        if err := rows.Err(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
+		var books []Book
+		for rows.Next() {
+			var book Book
+			if err := rows.Scan(&book.ID, &book.Photo, &book.Author, &book.Description, &book.Subscriber, &book.BorrowedBooks, &book.IsBorrowed); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			books = append(books, book)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
-        json.NewEncoder(w).Encode(books)
-    }
+		json.NewEncoder(w).Encode(books)
+	}
 }
 
 // AddItem handles requests to add a new item to the database
-func AddItem(w http.ResponseWriter, r *http.Request) {
-	var newItem Item
-	err := json.NewDecoder(r.Body).Decode(&newItem)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	_, err = db.Exec("INSERT INTO authors (Firstname, Lastname) VALUES (Vasile, Grigore)", newItem.Firstname, newItem.Lastname)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(newItem)
-}
+// func AddItem(db http.ResponseWriter, r *http.Request) {
+// 	var newItem Book
+// 	err := json.NewDecoder(r.Body).Decode(&newItem)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
+// _, err = db.Exec("INSERT INTO authors (Firstname, Lastname) VALUES (Vasile, Grigore)", newItem.Firstname, newItem.Lastname)
+// if err != nil {
+// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	return
+// }
+// json.NewEncoder(w).Encode(newItem)
+// }
 
 // UpdateItem handles requests to update an existing item in the database
-func UpdateItem(w http.ResponseWriter, r *http.Request) {
-	var updatedItem Item
-	err := json.NewDecoder(r.Body).Decode(&updatedItem)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// func UpdateItem(w http.ResponseWriter, r *http.Request) {
+// 	var updatedItem Item
+// 	err := json.NewDecoder(r.Body).Decode(&updatedItem)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	_, err = db.Exec("UPDATE items SET name = ? WHERE id = ?", updatedItem.Lastname, updatedItem.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// _, err = db.Exec("UPDATE items SET name = ? WHERE id = ?", updatedItem.Lastname, updatedItem.ID)
+// if err != nil {
+// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	return
+// }
 
-	json.NewEncoder(w).Encode(updatedItem)
-}
+// json.NewEncoder(w).Encode(updatedItem)
+// }
 
 // DeleteItem handles requests to delete an existing item from the database
-func DeleteItem(w http.ResponseWriter, r *http.Request) {
-	var deleteItem Item
-	err := json.NewDecoder(r.Body).Decode(&deleteItem)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// func DeleteItem(w http.ResponseWriter, r *http.Request) {
+// 	var deleteItem Item
+// 	err := json.NewDecoder(r.Body).Decode(&deleteItem)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	_, err = db.Exec("DELETE FROM items WHERE id = 1", deleteItem.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// _, err = db.Exec("DELETE FROM items WHERE id = 1", deleteItem.ID)
+// if err != nil {
+// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	return
+// }
 
-	fmt.Fprintf(w, "Item deleted successfully")
-}
+// 	fmt.Fprintf(w, "Item deleted successfully")
+// }
