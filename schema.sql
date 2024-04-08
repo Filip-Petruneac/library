@@ -37,6 +37,6 @@ CREATE TABLE `borrowed_books` (
 );
 
 ALTER TABLE `books` ADD FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`);
-ALTER TABLE `books` ADD FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`);
+-- ALTER TABLE `books` ADD FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`);
 ALTER TABLE `borrowed_books` ADD FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`);
 ALTER TABLE `borrowed_books` ADD FOREIGN KEY (`book_id`) REFERENCES `books` (`id`);
