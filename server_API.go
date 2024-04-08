@@ -25,7 +25,7 @@ type Authors_books struct {
 }
 
 type Books struct {
-	ID		  		int			`json:"id"`
+	ID		  	int		`json:"id"`
 	Photo 	  		string		`json:"photo"`
 	Title	  		string		`json:"title"`
 	Author_id 		int	    	`json:"author_id"`
