@@ -25,7 +25,7 @@ type Authors_books struct {
 }
 
 type Books struct {
-	ID		  		int			`json:"id"`
+	Book_id		  	int			`json:"book_id"`
 	Photo 	  		string		`json:"photo"`
 	Title	  		string		`json:"title"`
 	Author_id 		int	    	`json:"author_id"`
@@ -72,6 +72,8 @@ func main() {
 	http.HandleFunc("/", Home)
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/authors", GetAuthors(db))
+	http.HandleFunc("/books", GetBooksById(db))
+
 	// http.HandleFunc("/books/add", AddItem)
 	// http.HandleFunc("/books/update", UpdateItem)
 	// http.HandleFunc("/books/delete", DeleteItem)
@@ -98,7 +100,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Info page")
 }
 
-// GetBooks handles requests to retrieve all items from the database
+// GetAuthors handles requests to retrieve all items from the database
 func GetAuthors(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT * FROM authors")
@@ -120,5 +122,47 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		}
 
 		json.NewEncoder(w).Encode(authors)
+	}
+}
+
+
+// GetBooks handles requests to retrieve all items from the database
+func GetBooksById(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		bookID := r.URL.Query().Get("book_id")
+
+		query := fmt.Sprintf("SELECT b.*, a.Lastname, a.Firstname FROM authors b JOIN authors a ON b.author_id = a.id WHERE b.id = %s", bookID)
+
+		rows, err := db.Query(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer rows.Close()
+
+		var books []Books
+		for rows.Next() {
+			var book Books
+			if err := rows.Scan(&book.Book_id, &book.Photo, &book.Title, &book.Author_id, &book.Description, &book.Is_borrowed); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			books = append(books, book)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if len(books) == 0 {
+			http.Error(w, "Book not found", http.StatusNotFound)
+			return
+		}
+
+		json.NewEncoder(w).Encode(books[0])
 	}
 }
