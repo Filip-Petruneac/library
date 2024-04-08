@@ -12,23 +12,26 @@ import (
 )
 
 // Sample data structure to store dummy data
-type Author struct {
+type Authors struct {
 	ID        int    `json:"id"`
 	Lastname  string `json:"lastname"`
 	Firstname string `json:"firstname"`
-	Books     int    `json:"books"`
 }
 
-// type Book struct {
-//     ID            int    `json:"id"`
-//     Photo         string `json:"photo"`
-//     Title         string `json:"title"`
-//     Author        int    `json:"author"`
-//     Description   string `json:"description"`
-//     Subscriber    int    `json:"subscriber"`
-//     BorrowedBooks int    `json:"borrowedbooks"`
-//     IsBorrowed    bool   `json:"isborrowed"`
-// }
+type Authors_books struct {
+	ID		  int	`json:"id"`
+	Author_id int 	`json:"author_id"`
+	Book_id	  int	`json:"book_id"`
+}
+
+type Books struct {
+	ID		  		int			`json:"id"`
+	Photo 	  		string		`json:"photo"`
+	Title	  		string		`json:"title"`
+	Author_id 		int	    	`json:"author_id"`
+	Description		string		`json:"description"`
+	Is_borrowed		bool		`json:"is_borrowed"`	
+}
 
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
@@ -104,70 +107,18 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var books []Author
+		var authors []Authors
 		for rows.Next() {
-			var author Author
-			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Books); err != nil {
+			var author Authors
+			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			books = append(books, author)
+			authors = append(authors, author)
 		}
 		if err := rows.Err(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		json.NewEncoder(w).Encode(books)
+		json.NewEncoder(w).Encode(authors)
 	}
 }
-
-// AddItem handles requests to add a new item to the database
-// func AddItem(db http.ResponseWriter, r *http.Request) {
-// 	var newItem Book
-// 	err := json.NewDecoder(r.Body).Decode(&newItem)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-// _, err = db.Exec("INSERT INTO authors (Firstname, Lastname) VALUES (Vasile, Grigore)", newItem.Firstname, newItem.Lastname)
-// if err != nil {
-// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	return
-// }
-// json.NewEncoder(w).Encode(newItem)
-// }
-
-// UpdateItem handles requests to update an existing item in the database
-// func UpdateItem(w http.ResponseWriter, r *http.Request) {
-// 	var updatedItem Item
-// 	err := json.NewDecoder(r.Body).Decode(&updatedItem)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// _, err = db.Exec("UPDATE items SET name = ? WHERE id = ?", updatedItem.Lastname, updatedItem.ID)
-// if err != nil {
-// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	return
-// }
-
-// json.NewEncoder(w).Encode(updatedItem)
-// }
-
-// DeleteItem handles requests to delete an existing item from the database
-// func DeleteItem(w http.ResponseWriter, r *http.Request) {
-// 	var deleteItem Item
-// 	err := json.NewDecoder(r.Body).Decode(&deleteItem)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// _, err = db.Exec("DELETE FROM items WHERE id = 1", deleteItem.ID)
-// if err != nil {
-// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	return
-// }
-
-// 	fmt.Fprintf(w, "Item deleted successfully")
-// }
