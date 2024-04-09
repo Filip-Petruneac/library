@@ -14,8 +14,9 @@ import (
 // Sample data structure to store dummy data
 type Authors struct {
 	ID        int    `json:"id"`
-	Lastname  string `json:"lastname"`
 	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	
 }
 
 type Authors_books struct {
@@ -112,7 +113,7 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		var authors []Authors
 		for rows.Next() {
 			var author Authors
-			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname); err != nil {
+			if err := rows.Scan(&author.ID,  &author.Firstname, &author.Lastname); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 			authors = append(authors, author)
@@ -132,7 +133,7 @@ func GetBooksById(db *sql.DB) http.HandlerFunc {
 
 		bookID := r.URL.Query().Get("book_id")
 
-		query := fmt.Sprintf("SELECT b.*, a.Lastname, a.Firstname FROM authors b JOIN authors a ON b.author_id = a.id WHERE b.id = %s", bookID)
+		query := fmt.Sprintf("SELECT b.*, a.Firstname, a.Lastname FROM authors b JOIN authors a ON b.author_id = a.id WHERE b.id = %s", bookID)
 
 		rows, err := db.Query(query)
 		if err != nil {

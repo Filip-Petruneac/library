@@ -1,7 +1,8 @@
 CREATE TABLE `authors` (
   `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
-  `Lastname` VARCHAR(255),
-  `Firstname` VARCHAR(255)
+  `Firstname` VARCHAR(255),
+  `Lastname` VARCHAR(255)
+  
 );
 
 CREATE TABLE `authors_books` (
@@ -23,8 +24,8 @@ CREATE TABLE `books` (
 
 CREATE TABLE `subscribers` (
   `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
-  `Lastname` VARCHAR(255),
   `Firstname` VARCHAR(255),
+  `Lastname` VARCHAR(255),
   `Email` VARCHAR(255)
 );
 
