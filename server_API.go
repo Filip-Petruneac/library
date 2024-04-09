@@ -133,10 +133,7 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-
-
-
-
+// Obtinem toti autorii cu cartile lor
 func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := `
@@ -145,7 +142,6 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 			JOIN authors a ON ab.author_id = a.id
 			JOIN books b ON ab.book_id = b.id
 		`
-
 		rows, err := db.Query(query)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -174,6 +170,7 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// We get only one author and all his books
 func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authorID := r.URL.Path[len("/authors/"):]
