@@ -17,9 +17,8 @@ import (
 // Sample data structure to store dummy data
 type Authors struct {
 	ID        int    `json:"id"`
-	Firstname string `json:"firstname"`
 	Lastname  string `json:"lastname"`
-	
+	Firstname string `json:"firstname"`
 }
 
 
@@ -29,13 +28,15 @@ type AuthorBook struct {
 	BookTitle       string `json:"book_title"`
 }
 
-type Books struct {
-	Book_id		  	int			`json:"book_id"`
-	Photo 	  		string		`json:"photo"`
-	Title	  		string		`json:"title"`
-	Author_id 		int	    	`json:"author_id"`
-	Description		string		`json:"description"`
-	Is_borrowed		bool		`json:"is_borrowed"`	
+type BookAuthorInfo struct {
+    BookTitle       string `json:"book_title"`
+    AuthorID        int    `json:"author_id"`
+    BookPhoto       string `json:"book_photo"`
+    IsBorrowed      bool   `json:"is_borrowed"`
+    BookID          int    `json:"book_id"`
+    BookDetails     string `json:"book_details"`
+    AuthorLastname  string `json:"author_lastname"`
+    AuthorFirstname string `json:"author_firstname"`
 }
 
 
@@ -119,7 +120,7 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		var authors []Authors
 		for rows.Next() {
 			var author Authors
-			if err := rows.Scan(&author.ID,  &author.Firstname, &author.Lastname); err != nil {
+			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 			authors = append(authors, author)
@@ -234,20 +235,32 @@ func GetBooksById(db *sql.DB) http.HandlerFunc {
 
 		bookID := r.URL.Query().Get("book_id")
 
-		query := fmt.Sprintf("SELECT b.*, a.Firstname, a.Lastname FROM authors b JOIN authors a ON b.author_id = a.id WHERE b.id = %s", bookID)
+		query :=`
+			SELECT 
+				books.title AS book_title, 
+				books.author_id AS author_id, 
+				books.photo AS book_photo, 
+				books.is_borrowed AS is_borrowed, 
+				books.id AS book_id,
+				books.details AS book_details,
+				authors.Lastname AS author_lastname, 
+				authors.Firstname AS author_firstname
+			FROM books
+			JOIN authors ON books.author_id = authors.id
+			WHERE books.id = ?
+		`
 
-		rows, err := db.Query(query)
+		rows, err := db.Query(query, bookID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		defer rows.Close()
 
-		var books []Books
+		var books []BookAuthorInfo
 		for rows.Next() {
-			var book Books
-			if err := rows.Scan(&book.Book_id, &book.Photo, &book.Title, &book.Author_id, &book.Description, &book.Is_borrowed); err != nil {
+			var book BookAuthorInfo
+			if err := rows.Scan(&book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookID, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
