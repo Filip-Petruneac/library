@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	
+	
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -19,10 +22,11 @@ type Authors struct {
 	
 }
 
-type Authors_books struct {
-	ID		  int	`json:"id"`
-	Author_id int 	`json:"author_id"`
-	Book_id	  int	`json:"book_id"`
+
+type AuthorBook struct {
+	AuthorFirstname string `json:"author_firstname"`
+	AuthorLastname  string `json:"author_lastname"`
+	BookTitle       string `json:"book_title"`
 }
 
 type Books struct {
@@ -73,6 +77,8 @@ func main() {
 	http.HandleFunc("/", Home)
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/authors", GetAuthors(db))
+	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
+	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
 	http.HandleFunc("/books", GetBooksById(db))
 
 	// http.HandleFunc("/books/add", AddItem)
@@ -123,6 +129,101 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		}
 
 		json.NewEncoder(w).Encode(authors)
+	}
+}
+
+
+
+
+
+func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := `
+			SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title
+			FROM authors_books ab
+			JOIN authors a ON ab.author_id = a.id
+			JOIN books b ON ab.book_id = b.id
+		`
+
+		rows, err := db.Query(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer rows.Close()
+
+		var authorsAndBooks []AuthorBook
+		for rows.Next() {
+			var authorBook AuthorBook
+			if err := rows.Scan(&authorBook.AuthorFirstname, &authorBook.AuthorLastname, &authorBook.BookTitle); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			authorsAndBooks = append(authorsAndBooks, authorBook)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(authorsAndBooks)
+	}
+}
+
+func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authorID := r.URL.Path[len("/authors/"):]
+		id, err := strconv.Atoi(authorID)
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
+
+		query := `
+			SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title
+			FROM authors_books ab
+			JOIN authors a ON ab.author_id = a.id
+			JOIN books b ON ab.book_id = b.id
+			WHERE a.id = ?
+		`
+
+		rows, err := db.Query(query, id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var authorFirstname, authorLastname, bookTitle string
+		var books []string
+
+		for rows.Next() {
+			if err := rows.Scan(&authorFirstname, &authorLastname, &bookTitle); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			books = append(books, bookTitle)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		authorAndBooks := struct {
+			AuthorFirstname string   `json:"author_firstname"`
+			AuthorLastname  string   `json:"author_lastname"`
+			Books           []string `json:"books"`
+		}{
+			AuthorFirstname: authorFirstname,
+			AuthorLastname:  authorLastname,
+			Books:           books,
+		}
+
+		json.NewEncoder(w).Encode(authorAndBooks)
 	}
 }
 
