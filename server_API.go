@@ -15,17 +15,20 @@ import (
 )
 
 // Sample data structure to store dummy data
-type Authors struct {
-	ID        int    `json:"id"`
-	Lastname  string `json:"lastname"`
-	Firstname string `json:"firstname"`
+type Author struct {
+	ID           int    `json:"id"`
+	Lastname     string `json:"lastname"`
+	Firstname    string `json:"firstname"`
+	Photo        string `json:"photo"`
 }
 
 
 type AuthorBook struct {
 	AuthorFirstname string `json:"author_firstname"`
-	AuthorLastname  string `json:"author_lastname"`
-	BookTitle       string `json:"book_title"`
+    AuthorLastname  string `json:"author_lastname"`
+    BookTitle string `json:"book_title"`
+    BookPhoto string `json:"book_photo"`
+
 }
 
 type BookAuthorInfo struct {
@@ -110,36 +113,40 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Info page")
 }
 
-// GetAuthors handles requests to retrieve all items from the database
 func GetAuthors(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query("SELECT * FROM authors")
+		rows, err := db.Query("SELECT id, lastname, firstname, photo FROM authors")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		defer rows.Close()
 
-		var authors []Authors
+		var authors []Author
 		for rows.Next() {
-			var author Authors
-			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname); err != nil {
+			var author Author
+			if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 			authors = append(authors, author)
 		}
 		if err := rows.Err(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		json.NewEncoder(w).Encode(authors)
 	}
 }
 
+
+
 // Obtinem toti autorii cu cartile lor
 func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := `
-			SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title
+			SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo
 			FROM authors_books ab
 			JOIN authors a ON ab.author_id = a.id
 			JOIN books b ON ab.book_id = b.id
@@ -154,10 +161,17 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 
 		var authorsAndBooks []AuthorBook
 		for rows.Next() {
-			var authorBook AuthorBook
-			if err := rows.Scan(&authorBook.AuthorFirstname, &authorBook.AuthorLastname, &authorBook.BookTitle); err != nil {
+			var authorFirstname, authorLastname, bookTitle, bookPhoto string
+			if err := rows.Scan(&authorFirstname, &authorLastname, &bookTitle, &bookPhoto); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
+			}
+
+			authorBook := AuthorBook{
+				AuthorFirstname: authorFirstname,
+				AuthorLastname:  authorLastname,
+				BookTitle:       bookTitle,
+				BookPhoto:       bookPhoto,
 			}
 
 			authorsAndBooks = append(authorsAndBooks, authorBook)
@@ -172,59 +186,64 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// We get only one author and all his books
+// GetAuthorsAndBooksByID returnează numele și prenumele autorului, poza autorului, titlul și poza cărții pentru cărțile deținute de un anumit autor.
 func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		authorID := r.URL.Path[len("/authors/"):]
-		id, err := strconv.Atoi(authorID)
-		if err != nil {
-			http.Error(w, "Invalid author ID", http.StatusBadRequest)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        authorID := r.URL.Path[len("/authors/"):]
+        id, err := strconv.Atoi(authorID)
+        if err != nil {
+            http.Error(w, "Invalid author ID", http.StatusBadRequest)
+            return
+        }
 
-		query := `
-			SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title
-			FROM authors_books ab
-			JOIN authors a ON ab.author_id = a.id
-			JOIN books b ON ab.book_id = b.id
-			WHERE a.id = ?
-		`
+        query := `
+            SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, a.Photo AS author_photo, b.title AS book_title, b.photo AS book_photo
+            FROM authors_books ab
+            JOIN authors a ON ab.author_id = a.id
+            JOIN books b ON ab.book_id = b.id
+            WHERE a.id = ?
+        `
 
-		rows, err := db.Query(query, id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
+        rows, err := db.Query(query, id)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
 
-		var authorFirstname, authorLastname, bookTitle string
-		var books []string
+        var authorFirstname, authorLastname, authorPhoto, bookTitle, bookPhoto string
+        var books []AuthorBook
 
 		for rows.Next() {
-			if err := rows.Scan(&authorFirstname, &authorLastname, &bookTitle); err != nil {
+			if err := rows.Scan(&authorFirstname, &authorLastname, &authorPhoto, &bookTitle, &bookPhoto); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			books = append(books, bookTitle)
+			books = append(books, AuthorBook{
+				BookTitle: bookTitle,
+				BookPhoto: bookPhoto,
+			})
 		}
+		
+        if err := rows.Err(); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
 
-		if err := rows.Err(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+        authorAndBooks := struct {
+            AuthorFirstname string        `json:"author_firstname"`
+            AuthorLastname  string        `json:"author_lastname"`
+            AuthorPhoto     string        `json:"author_photo"`
+            Books           []AuthorBook `json:"books"`
+        }{
+            AuthorFirstname: authorFirstname,
+            AuthorLastname:  authorLastname,
+            AuthorPhoto:     authorPhoto,
+            Books:           books,
+        }
 
-		authorAndBooks := struct {
-			AuthorFirstname string   `json:"author_firstname"`
-			AuthorLastname  string   `json:"author_lastname"`
-			Books           []string `json:"books"`
-		}{
-			AuthorFirstname: authorFirstname,
-			AuthorLastname:  authorLastname,
-			Books:           books,
-		}
-
-		json.NewEncoder(w).Encode(authorAndBooks)
-	}
+        json.NewEncoder(w).Encode(authorAndBooks)
+    }
 }
 
 

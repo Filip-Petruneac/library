@@ -1,7 +1,8 @@
 CREATE TABLE `authors` (
   `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
   `Lastname` VARCHAR(255),
-  `Firstname` VARCHAR(255)
+  `Firstname` VARCHAR(255),
+  `photo` VARCHAR(255)
 );
 
 CREATE TABLE `authors_books` (
@@ -9,6 +10,7 @@ CREATE TABLE `authors_books` (
   `author_id` INTEGER,
   `book_id` INTEGER
 );
+
 
 CREATE TABLE `books` (
   `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
