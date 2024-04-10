@@ -15,8 +15,7 @@ CREATE TABLE `books` (
   `photo` VARCHAR(255),
   `title` VARCHAR(255) NOT NULL,
   `author_id` INTEGER NOT NULL,
-  `details` TEXT COMMENT 'Content of the post',
-  `subscriber_id` INTEGER,
+  `details` BIT TEXT COMMENT 'Content of the post',
   `is_borrowed` BOOLEAN DEFAULT FALSE
 );
 

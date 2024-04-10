@@ -50,13 +50,13 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 	var db *sql.DB
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	
 	// Check if the connection is successful
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ping database: %w", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	log.Println("Connected to the MySQL database!")
 	return db, nil
@@ -81,6 +81,8 @@ func main() {
 	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
 	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
 	http.HandleFunc("/books", GetBooksById(db))
+	http.HandleFunc("/borrow", BorrowBook(db))
+
 
 	// http.HandleFunc("/books/add", AddItem)
 	// http.HandleFunc("/books/update", UpdateItem)
@@ -276,5 +278,53 @@ func GetBooksById(db *sql.DB) http.HandlerFunc {
 		}
 
 		json.NewEncoder(w).Encode(books[0])
+	}
+}
+
+func BorrowBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var requestBody struct {
+			SubscriberID int `json:"subscriber_id"`
+			BookID       int `json:"book_id"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&requestBody)
+		if err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Check if the book is already borrowed
+		var isBorrowed bool
+		err = db.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if isBorrowed {
+			http.Error(w, "Book is already borrowed", http.StatusConflict)
+			return
+		}
+
+		// Insert a new record in the borrowed_books table
+		_, err = db.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Update the is_borrowed status of the book
+		_, err = db.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintf(w, "Book borrowed successfully")
 	}
 }
