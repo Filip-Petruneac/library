@@ -97,7 +97,7 @@ func main() {
 	fmt.Println("To close connection CTRL+C :-)")
 
 	// Spinning up the server.
-	err := http.ListenAndServe(":"+*port, nil)
+	err = http.ListenAndServe(":"+*port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
