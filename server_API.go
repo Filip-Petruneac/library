@@ -8,9 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	
-	
-
+	// "mymodule/library/crop"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -24,7 +22,7 @@ type Author struct {
 
 
 type AuthorBook struct {
-    AuthorFirstname string `json:"author_firstname"`
+	AuthorFirstname string `json:"author_firstname"`
     AuthorLastname  string `json:"author_lastname"`
     BookTitle string `json:"book_title"`
     BookPhoto string `json:"book_photo"`
@@ -73,10 +71,8 @@ func main() {
 	dbPort := flag.String("db-port", "4450", "Database port")
 	dbName := flag.String("db-name", "library", "Database name")
 
-	db, err := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
-	if err != nil {
-             log.Fatalf("Database error: %v", err)}
-        defer db.Close()
+	db, _ := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
+	defer db.Close()
 
 	log.Println("Starting our server.")
 
@@ -84,10 +80,10 @@ func main() {
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/authors", GetAuthors(db))
 	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
-	// http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
-	// http.HandleFunc("/books", GetBooksById(db))
-	// http.HandleFunc("/borrow", BorrowBook(db))
-
+	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
+	http.HandleFunc("/books", GetBooksById(db))
+	http.HandleFunc("/borrow", BorrowBook(db))
+	//CropAndResize()
 
 	// http.HandleFunc("/books/add", AddItem)
 	// http.HandleFunc("/books/update", UpdateItem)
@@ -97,7 +93,7 @@ func main() {
 	fmt.Println("To close connection CTRL+C :-)")
 
 	// Spinning up the server.
-	err = http.ListenAndServe(":"+*port, nil)
+	err := http.ListenAndServe(":"+*port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
