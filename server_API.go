@@ -24,7 +24,7 @@ type Author struct {
 
 
 type AuthorBook struct {
-	AuthorFirstname string `json:"author_firstname"`
+    AuthorFirstname string `json:"author_firstname"`
     AuthorLastname  string `json:"author_lastname"`
     BookTitle string `json:"book_title"`
     BookPhoto string `json:"book_photo"`
@@ -73,8 +73,10 @@ func main() {
 	dbPort := flag.String("db-port", "4450", "Database port")
 	dbName := flag.String("db-name", "library", "Database name")
 
-	db, _ := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
-	defer db.Close()
+	db, err := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
+	if err != nil {
+             log.Fatalf("Database error: %v", err)}
+        defer db.Close()
 
 	log.Println("Starting our server.")
 
