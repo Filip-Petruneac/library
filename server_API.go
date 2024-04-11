@@ -84,9 +84,9 @@ func main() {
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/authors", GetAuthors(db))
 	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
-	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
-	http.HandleFunc("/books", GetBooksById(db))
-	http.HandleFunc("/borrow", BorrowBook(db))
+	// http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
+	// http.HandleFunc("/books", GetBooksById(db))
+	// http.HandleFunc("/borrow", BorrowBook(db))
 
 
 	// http.HandleFunc("/books/add", AddItem)
