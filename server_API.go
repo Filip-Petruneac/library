@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	// "mymodule/library/crop"
+	
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -83,7 +83,7 @@ func main() {
 	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
 	http.HandleFunc("/books", GetBooksById(db))
 	http.HandleFunc("/borrow", BorrowBook(db))
-	//CropAndResize()
+	CropAndResize()
 
 	// http.HandleFunc("/books/add", AddItem)
 	// http.HandleFunc("/books/update", UpdateItem)
