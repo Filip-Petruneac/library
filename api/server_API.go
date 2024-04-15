@@ -381,10 +381,10 @@ func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var subscribers []Subscribers
+		var subscribers []Subscriber
 
 		for rows.Next() {
-			var subscriber Subscribers
+			var subscriber Subscriber
 			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
