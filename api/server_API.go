@@ -88,8 +88,9 @@ func main() {
 	http.HandleFunc("/authors", GetAuthors(db))
 	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
 	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
-	http.HandleFunc("/books", GetBooksById(db))
+	http.HandleFunc("/books", GetBookById(db))
 	http.HandleFunc("/borrow", BorrowBook(db))
+	http.HandleFunc("/return", ReturnBorrowedBook(db))
 	http.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db))
 	CropAndResize()
 
@@ -253,8 +254,8 @@ func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
 }
 
 
-// GetBooks handles requests to retrieve all items from the database
-func GetBooksById(db *sql.DB) http.HandlerFunc {
+// GetBookById retrieves information about a specific book based on its ID
+func GetBookById(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		bookID := r.URL.Query().Get("book_id")
@@ -306,6 +307,7 @@ func GetBooksById(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// BorrowBook handles borrowing a book by a subscriber
 func BorrowBook(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -354,6 +356,53 @@ func BorrowBook(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// ReturnBorrowedBook handles returning a borrowed book by a subscriber
+func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Parse the request body to get subscriber ID and book ID
+		var requestBody struct {
+			SubscriberID int `json:"subscriber_id"`
+			BookID       int `json:"book_id"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&requestBody)
+		if err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Check if the book is actually borrowed by the subscriber
+		var isBorrowed bool
+		err = db.QueryRow("SELECT is_borrowed FROM books WHERE id = ? AND is_borrowed = TRUE", requestBody.BookID).Scan(&isBorrowed)
+		if err != nil {
+			http.Error(w, "Book is not borrowed", http.StatusNotFound)
+			return
+		}
+
+		// Update borrowed_books table to mark book as returned
+		_, err = db.Exec("UPDATE borrowed_books SET return_date = NOW() WHERE subscriber_id = ? AND book_id = ?", requestBody.SubscriberID, requestBody.BookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Update books table to mark book as not borrowed
+		_, err = db.Exec("UPDATE books SET is_borrowed = FALSE WHERE id = ?", requestBody.BookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Book returned successfully")
+	}
+}
+
+// GetSubscribersByBookId retrieves subscribers who have borrowed a specific book
 func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
