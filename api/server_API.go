@@ -92,11 +92,8 @@ func main() {
 	http.HandleFunc("/borrow", BorrowBook(db))
 	http.HandleFunc("/return", ReturnBorrowedBook(db))
 	http.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db))
-	CropAndResize()
-
-	// http.HandleFunc("/books/add", AddItem)
-	// http.HandleFunc("/books/update", UpdateItem)
-	// http.HandleFunc("/books/delete", DeleteItem)
+	http.HandleFunc("/authors/add", AddAuthor(db))
+	http.HandleFunc("/books/add", AddBook(db)) 
 
 	log.Println("Started on port", *port)
 	fmt.Println("To close connection CTRL+C :-)")
@@ -107,6 +104,7 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
 
 // Handler functions...
 
@@ -306,6 +304,113 @@ func GetBookById(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(books[0])
 	}
 }
+
+
+// AddAuthor add a new author to the database
+func AddAuthor(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Verificăm metoda HTTP
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// We parse the JSON data received from the request
+		var author Author
+		err := json.NewDecoder(r.Body).Decode(&author)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// We check if all required fields are filled
+		if author.Firstname == "" || author.Lastname == "" {
+			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Query to add author
+		query := `
+			INSERT INTO authors (lastname, firstname, photo) 
+			VALUES (?, ?, ?)
+		`
+
+		// We run the query
+		result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// We get the inserted author ID
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+			return
+		}
+
+		// We return the response with the author ID inserted
+		response := map[string]int{"id": int(id)}
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+// AddBook adds a new book to the database
+func AddBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Parse the JSON data received from the request
+		var book struct {
+			Title       string `json:"title"`
+			AuthorID    int    `json:"author_id"`
+			Photo       string `json:"photo"`
+			Details     string `json:"details"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&book)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Check if all required fields are filled
+		if book.Title == "" || book.AuthorID == 0 {
+			http.Error(w, "Title and AuthorID are required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Query to add the book
+		query := `
+			INSERT INTO books (title, author_id, photo, details) 
+			VALUES (?, ?, ?, ?)
+		`
+
+		// Execute the query
+		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Get the ID of the inserted book
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+			return
+		}
+
+		// Return the response with the ID of the inserted book
+		response := map[string]int{"id": int(id)}
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
 
 // BorrowBook handles borrowing a book by a subscriber
 func BorrowBook(db *sql.DB) http.HandlerFunc {
