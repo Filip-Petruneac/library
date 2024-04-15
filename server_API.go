@@ -40,6 +40,13 @@ type BookAuthorInfo struct {
     AuthorFirstname string `json:"author_firstname"`
 }
 
+type Subscribers struct {
+	ID        int    `json:"id"`
+	Lastname  string `json:"lastname"`
+	Firstname string `json:"firstname"`
+	Email     string `json:"email"`
+}
+
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
 	var err error
@@ -83,6 +90,7 @@ func main() {
 	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
 	http.HandleFunc("/books", GetBooksById(db))
 	http.HandleFunc("/borrow", BorrowBook(db))
+	http.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db))
 	CropAndResize()
 
 	// http.HandleFunc("/books/add", AddItem)
@@ -343,5 +351,52 @@ func BorrowBook(db *sql.DB) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprintf(w, "Book borrowed successfully")
+	}
+}
+
+func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		bookID := r.URL.Query().Get("book_id")
+		if bookID == "" {
+			http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
+			return
+		}
+
+		query := `
+			SELECT s.id, s.Lastname, s.Firstname, s.Email
+			FROM subscribers s
+			JOIN borrowed_books bb ON s.id = bb.subscriber_id
+			WHERE bb.book_id = ?
+		`
+
+		rows, err := db.Query(query, bookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var subscribers []Subscriber
+
+		for rows.Next() {
+			var subscriber Subscriber
+			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			subscribers = append(subscribers, subscriber)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(subscribers)
 	}
 }
