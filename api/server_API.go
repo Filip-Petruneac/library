@@ -40,7 +40,7 @@ type BookAuthorInfo struct {
     AuthorFirstname string `json:"author_firstname"`
 }
 
-type Subscribers struct {
+type Subscriber struct {
 	ID        int    `json:"id"`
 	Lastname  string `json:"lastname"`
 	Firstname string `json:"firstname"`
