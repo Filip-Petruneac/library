@@ -10,6 +10,8 @@ import (
 	"strconv"
 	
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
+
 )
 
 // Sample data structure to store dummy data
@@ -86,17 +88,22 @@ func main() {
 
 	log.Println("Starting our server.")
 
-	http.HandleFunc("/", Home)
-	http.HandleFunc("/info", Info)
-	http.HandleFunc("/authors", GetAuthors(db))
-	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
-	http.HandleFunc("/authors/", GetAuthorBooksByID(db))
-	http.HandleFunc("/books", GetBookByID(db))
-	http.HandleFunc("/book/borrow", BorrowBook(db))
-	http.HandleFunc("/book/return", ReturnBorrowedBook(db))
-	http.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db))
-	http.HandleFunc("/authors/new", AddAuthor(db))
-	http.HandleFunc("/books/new", AddBook(db)) 
+	router := mux.NewRouter()
+
+	router.HandleFunc("/", Home)
+	router.HandleFunc("/info", Info)
+	router.HandleFunc("/authors", GetAuthors(db)).Methods("GET")
+	router.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
+	router.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
+	router.HandleFunc("/books", GetBookByID(db)).Methods("GET")
+	router.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
+	router.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
+	router.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
+	router.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
+	router.HandleFunc("/books/new", AddBook(db)).Methods("POST")
+
+	http.Handle("/", router)
+
 
 	log.Println("Started on port", *port)
 	fmt.Println("To close connection CTRL+C :-)")
@@ -197,7 +204,8 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 // GetAuthorBooksByID returns a handler function that retrieves information about an author and their books by the author's ID.
 func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        authorID := r.URL.Path[len("/authors/"):]
+		vars := mux.Vars(r)
+        authorID := vars["id"]
         id, err := strconv.Atoi(authorID)
         if err != nil {
             http.Error(w, "Invalid author ID", http.StatusBadRequest)
@@ -258,9 +266,12 @@ func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
 // GetBookById retrieves information about a specific book based on its ID
 func GetBookByID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		bookID := r.URL.Query().Get("book_id")
-
+		intBookID, err := strconv.Atoi(bookID)
+        if err != nil {
+            http.Error(w, "Invalid book ID", http.StatusBadRequest)
+            return
+        }
 		query :=`
 			SELECT 
 				books.title AS book_title, 
@@ -276,7 +287,7 @@ func GetBookByID(db *sql.DB) http.HandlerFunc {
 			WHERE books.id = ?
 		`
 
-		rows, err := db.Query(query, bookID)
+		rows, err := db.Query(query, intBookID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -311,11 +322,7 @@ func GetBookByID(db *sql.DB) http.HandlerFunc {
 // GetSubscribersByBookId retrieves subscribers who have borrowed a specific book
 func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
+	
 		bookID := r.URL.Query().Get("book_id")
 		if bookID == "" {
 			http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
