@@ -536,7 +536,8 @@ func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
 		defer rows.Close()
 
 		var subscribers []Subscriber
-
+		
+		// Iterate over the query result set and populate the subscribers slice
 		for rows.Next() {
 			var subscriber Subscriber
 			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
