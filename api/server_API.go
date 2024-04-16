@@ -78,7 +78,10 @@ func main() {
 	dbPort := flag.String("db-port", "4450", "Database port")
 	dbName := flag.String("db-name", "library", "Database name")
 
-	db, _ := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
+	db, err := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
+	if err != nil {
+		log.Fatalf("Error initializing database: %v", err)
+	}
 	defer db.Close()
 
 	log.Println("Starting our server.")
@@ -87,19 +90,19 @@ func main() {
 	http.HandleFunc("/info", Info)
 	http.HandleFunc("/authors", GetAuthors(db))
 	http.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db))
-	http.HandleFunc("/authors/", GetAuthorsAndBooksByID(db))
-	http.HandleFunc("/books", GetBookById(db))
-	http.HandleFunc("/borrow", BorrowBook(db))
-	http.HandleFunc("/return", ReturnBorrowedBook(db))
+	http.HandleFunc("/authors/", GetAuthorBooksByID(db))
+	http.HandleFunc("/books", GetBookByID(db))
+	http.HandleFunc("/book/borrow", BorrowBook(db))
+	http.HandleFunc("/book/return", ReturnBorrowedBook(db))
 	http.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db))
-	http.HandleFunc("/authors/add", AddAuthor(db))
-	http.HandleFunc("/books/add", AddBook(db)) 
+	http.HandleFunc("/authors/new", AddAuthor(db))
+	http.HandleFunc("/books/new", AddBook(db)) 
 
 	log.Println("Started on port", *port)
 	fmt.Println("To close connection CTRL+C :-)")
 
 	// Spinning up the server.
-	err := http.ListenAndServe(":"+*port, nil)
+	err = http.ListenAndServe(":"+*port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +150,7 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 
 
 
-// Obtinem toti autorii cu cartile lor
+// GetAuthorsAndBooks returns a handler function that retrieves information about authors and their books.
 func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := `
@@ -191,8 +194,8 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// GetAuthorsAndBooksByID returnează numele și prenumele autorului, poza autorului, titlul și poza cărții pentru cărțile deținute de un anumit autor.
-func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
+// GetAuthorBooksByID returns a handler function that retrieves information about an author and their books by the author's ID.
+func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         authorID := r.URL.Path[len("/authors/"):]
         id, err := strconv.Atoi(authorID)
@@ -253,7 +256,7 @@ func GetAuthorsAndBooksByID(db *sql.DB) http.HandlerFunc {
 
 
 // GetBookById retrieves information about a specific book based on its ID
-func GetBookById(db *sql.DB) http.HandlerFunc {
+func GetBookByID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		bookID := r.URL.Query().Get("book_id")
@@ -305,6 +308,54 @@ func GetBookById(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// GetSubscribersByBookId retrieves subscribers who have borrowed a specific book
+func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		bookID := r.URL.Query().Get("book_id")
+		if bookID == "" {
+			http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
+			return
+		}
+
+		query := `
+			SELECT s.id, s.Lastname, s.Firstname, s.Email
+			FROM subscribers s
+			JOIN borrowed_books bb ON s.id = bb.subscriber_id
+			WHERE bb.book_id = ?
+		`
+
+		rows, err := db.Query(query, bookID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var subscribers []Subscriber
+		
+		// Iterate over the query result set and populate the subscribers slice
+		for rows.Next() {
+			var subscriber Subscriber
+			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			subscribers = append(subscribers, subscriber)
+		}
+
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(subscribers)
+	}
+}
 
 // AddAuthor add a new author to the database
 func AddAuthor(db *sql.DB) http.HandlerFunc {
@@ -507,51 +558,3 @@ func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// GetSubscribersByBookId retrieves subscribers who have borrowed a specific book
-func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		bookID := r.URL.Query().Get("book_id")
-		if bookID == "" {
-			http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
-			return
-		}
-
-		query := `
-			SELECT s.id, s.Lastname, s.Firstname, s.Email
-			FROM subscribers s
-			JOIN borrowed_books bb ON s.id = bb.subscriber_id
-			WHERE bb.book_id = ?
-		`
-
-		rows, err := db.Query(query, bookID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
-
-		var subscribers []Subscriber
-		
-		// Iterate over the query result set and populate the subscribers slice
-		for rows.Next() {
-			var subscriber Subscriber
-			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			subscribers = append(subscribers, subscriber)
-		}
-
-		if err := rows.Err(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		json.NewEncoder(w).Encode(subscribers)
-	}
-}

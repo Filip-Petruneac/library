@@ -1,124 +1,182 @@
-swagger: '2.0'
+openapi: 3.0.0
 info:
-  title: Books Managing API
-  description: API for managing books
+  title: Library Management API
+  description: API for managing a library's authors, books, subscribers, and borrowing system.
   version: 1.0.0
-tags:
-  - name: Books
-    description: The books managing API
+servers:
+  - url: http://localhost:8080
 paths:
-  /books:
+  /authors:
     get:
-      summary: Lists all the books
-      tags: 
-        - Books
+      summary: Get all authors
       responses:
         '200':
-          description: Successful operation
-        '400':
-          description: Bad Request
-            
+          description: A list of authors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+  /authorsbooks:
+    get:
+      summary: Get all authors and their books
+      responses:
+        '200':
+          description: A list of authors with their books.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthorBook'
+  /authors/{author_id}:
+    get:
+      summary: Get an author and their books by ID
+      parameters:
+        - in: path
+          name: author_id
+          required: true
+          description: ID of the author to retrieve.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Details of the author and their books.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorAndBooks'
+  /books:
     post:
       summary: Add a new book
-      tags: 
-        - Books
-      parameters:
-        - name: body
-          in: body
-          description: The book object
-          required: true
-          schema:
-            $ref: '#/definitions/Books'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewBook'
+      responses:
+        '200':
+          description: Book added successfully.
+  /borrow:
+    post:
+      summary: Borrow a book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowRequest'
       responses:
         '201':
-          description: The book was created
-          schema:
-            $ref: '#/definitions/Books'
-        '500':
-          description: Server error
-  /books/{id}:
+          description: Book borrowed successfully.
+  /return:
+    post:
+      summary: Return a borrowed book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnRequest'
+      responses:
+        '200':
+          description: Book returned successfully.
+  /subscribers_by_book:
     get:
-      summary: Get the book by ID
-      tags: 
-        - Books
+      summary: Get subscribers who have borrowed a specific book
       parameters:
-        - name: id
-          in: path
-          description: ID of the book to return
+        - in: query
+          name: book_id
           required: true
-          type: string
+          description: ID of the book.
+          schema:
+            type: integer
       responses:
         '200':
-          description: Successful operation
-          schema:
-            $ref: '#/definitions/Books'
-        '400':
-          description: Bad Request
-    put:
-      summary: Update the info of the book
-      tags: 
-        - Books
-      parameters:
-        - name: id
-          in: path
-          description: ID of the book to update
-          required: true
+          description: Subscribers who have borrowed the book.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscriber'
+components:
+  schemas:
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+        lastname:
           type: string
-        - name: body
-          in: body
-          description: The book object
-          required: true
-          schema:
-            $ref: '#/definitions/Books'
-      responses:
-        '200':
-          description: Book updated successfully
-          schema:
-            $ref: '#/definitions/Books'
-        '204':
-          description: Success, no content
-        '400':
-          description: Bad Request
-    delete:
-      summary: Remove the book by ID
-      tags: 
-        - Books
-      parameters:
-        - name: id
-          in: path
-          description: ID of the book to delete
-          required: true
+        firstname:
           type: string
-      responses:
-        '204':
-          description: Book deleted successfully
-        '200':
-          description: OK
-        '400':
-          description: Bad Request
-definitions:
-  Books:
-    type: object
-    required:
-      - title
-      - description
-    properties:
-      id:
-        type: string
-        description: The auto-generated ID of the book
-      title:
-        type: string
-        description: The title of the book
-      author:
-        type: string
-        description: The author's name
-      description:
-        type: string
-        description: The book explanation
-      status:
-        type: string
-        description: Available or borrowed
-      newAddedBook:
-        type: string
-        format: date
-        description: The date the book was added
+        photo:
+          type: string
+    AuthorBook:
+      type: object
+      properties:
+        author_firstname:
+          type: string
+        author_lastname:
+          type: string
+        book_title:
+          type: string
+        book_photo:
+          type: string
+    AuthorAndBooks:
+      type: object
+      properties:
+        author_firstname:
+          type: string
+        author_lastname:
+          type: string
+        author_photo:
+          type: string
+        books:
+          type: array
+          items:
+            type: object
+            properties:
+              book_title:
+                type: string
+              book_photo:
+                type: string
+    NewBook:
+      type: object
+      properties:
+        title:
+          type: string
+        author_id:
+          type: integer
+        photo:
+          type: string
+        details:
+          type: string
+    BorrowRequest:
+      type: object
+      properties:
+        subscriber_id:
+          type: integer
+        book_id:
+          type: integer
+    ReturnRequest:
+      type: object
+      properties:
+        subscriber_id:
+          type: integer
+        book_id:
+          type: integer
+    Subscriber:
+      type: object
+      properties:
+        id:
+          type: integer
+        lastname:
+          type: string
+        firstname:
+          type: string
+        email:
+          type: string
