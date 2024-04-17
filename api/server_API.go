@@ -101,6 +101,8 @@ func main() {
 	router.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
 	router.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
 	router.HandleFunc("/books/new", AddBook(db)).Methods("POST")
+	router.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
+	router.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
 
 	http.Handle("/", router)
 
@@ -565,3 +567,133 @@ func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+
+// UpdateAuthor updates an existing author in the database
+func UpdateAuthor(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPut && r.Method != http.MethodPost {
+			http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Extract the author ID from the URL path
+		vars := mux.Vars(r)
+		authorID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
+
+		// Parse the JSON data received from the request
+		var author Author
+		err = json.NewDecoder(r.Body).Decode(&author)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Log the author ID and received data for update
+		log.Printf("Updating author with ID: %d", authorID)
+		log.Printf("Received data: %+v", author)
+
+		// Check if all required fields are filled
+		if author.Firstname == "" || author.Lastname == "" {
+			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Query to update the author
+		query := `
+			UPDATE authors 
+			SET lastname = ?, firstname = ?, photo = ? 
+			WHERE id = ?
+		`
+
+		// Execute the query
+		result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo, authorID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update author: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Check if any row was actually updated
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Author not found", http.StatusNotFound)
+			return
+		}
+
+		// Return the success response
+		fmt.Fprintf(w, "Author updated successfully")
+	}
+}
+
+
+// UpdateBook updates an existing book in the database
+func UpdateBook(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPut && r.Method != http.MethodPost {
+			http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Extract the book ID from the URL path
+		vars := mux.Vars(r)
+		bookID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid book ID", http.StatusBadRequest)
+			return
+		}
+
+		// Parse the JSON data received from the request
+		var book struct {
+			Title    string `json:"title"`
+			AuthorID int    `json:"author_id"`
+			Photo    string `json:"photo"`
+			Details  string `json:"details"`
+		}
+		err = json.NewDecoder(r.Body).Decode(&book)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Log the book ID and received data for update
+		log.Printf("Updating book with ID: %d", bookID)
+		log.Printf("Received data: %+v", book)
+
+		// Check if all required fields are filled
+		if book.Title == "" || book.AuthorID == 0 {
+			http.Error(w, "Title and AuthorID are required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Query to update the book
+		query := `
+			UPDATE books 
+			SET title = ?, author_id = ?, photo = ?, details = ? 
+			WHERE id = ?
+		`
+
+		// Execute the query
+		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details, bookID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Check if any row was actually updated
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Book not found", http.StatusNotFound)
+			return
+		}
+
+		// Return the success response
+		fmt.Fprintf(w, "Book updated successfully")
+	}
+}
