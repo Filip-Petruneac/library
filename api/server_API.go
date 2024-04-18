@@ -88,23 +88,25 @@ func main() {
 
 	log.Println("Starting our server.")
 
-	router := mux.NewRouter()
+	r := mux.NewRouter()
 
-	router.HandleFunc("/", Home)
-	router.HandleFunc("/info", Info)
-	router.HandleFunc("/authors", GetAuthors(db)).Methods("GET")
-	router.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
-	router.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
-	router.HandleFunc("/books", GetBookByID(db)).Methods("GET")
-	router.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
-	router.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
-	router.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
-	router.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
-	router.HandleFunc("/books/new", AddBook(db)).Methods("POST")
-	router.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
-	router.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
+	r.HandleFunc("/", Home)
+	r.HandleFunc("/info", Info)
+	r.HandleFunc("/authors", GetAuthors(db)).Methods("GET")
+	r.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
+	r.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
+	r.HandleFunc("/books", GetBookByID(db)).Methods("GET")
+	r.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
+	r.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
+	r.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
+	r.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
+	r.HandleFunc("/books/new", AddBook(db)).Methods("POST")
+	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
+	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
+	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
 
-	http.Handle("/", router)
+
+	http.Handle("/", r)
 
 
 	log.Println("Started on port", *port)
@@ -697,3 +699,67 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 		fmt.Fprintf(w, "Book updated successfully")
 	}
 }
+
+// DeleteAuthor deletes an existing author from the database
+func DeleteAuthor(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check the HTTP method
+        if r.Method != http.MethodDelete {
+            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // Extract the author ID from the URL path
+        vars := mux.Vars(r)
+        authorID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid author ID", http.StatusBadRequest)
+            return
+        }
+
+        // Query to check if the author has books
+        booksQuery := `
+            SELECT COUNT(*)
+            FROM books
+            WHERE author_id = ?
+        `
+
+        // Execute the query
+        var numBooks int
+        err = db.QueryRow(booksQuery, authorID).Scan(&numBooks)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to check for books: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // If author has books, respond with a bad request
+        if numBooks > 0 {
+            http.Error(w, "Author has associated books, delete books first", http.StatusBadRequest)
+            return
+        }
+
+        // Query to delete the author
+        deleteQuery := `
+            DELETE FROM authors
+            WHERE id = ?
+        `
+
+        // Execute the query to delete the author
+        result, err := db.Exec(deleteQuery, authorID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Check if any row was actually deleted
+        rowsAffected, _ := result.RowsAffected()
+        if rowsAffected == 0 {
+            http.Error(w, "Author not found", http.StatusNotFound)
+            return
+        }
+
+        // Return the success response
+        fmt.Fprintf(w, "Author deleted successfully")
+    }
+}
+
