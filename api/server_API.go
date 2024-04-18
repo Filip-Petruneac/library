@@ -104,6 +104,8 @@ func main() {
 	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
 	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
+	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
+
 
 
 	http.Handle("/", r)
@@ -763,3 +765,88 @@ func DeleteAuthor(db *sql.DB) http.HandlerFunc {
     }
 }
 
+// DeleteBook deletes an existing book from the database
+func DeleteBook(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check the HTTP method
+        if r.Method != http.MethodDelete {
+            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // Extract the book ID from the URL path
+        vars := mux.Vars(r)
+        bookID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid book ID", http.StatusBadRequest)
+            return
+        }
+
+        // Query to get the author ID of the book
+        authorIDQuery := `
+            SELECT author_id
+            FROM books
+            WHERE id = ?
+        `
+
+        // Execute the query
+        var authorID int
+        err = db.QueryRow(authorIDQuery, bookID).Scan(&authorID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to retrieve author ID: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Query to check if the author has any other books
+        otherBooksQuery := `
+            SELECT COUNT(*)
+            FROM books
+            WHERE author_id = ? AND id != ?
+        `
+
+        // Execute the query
+        var numOtherBooks int
+        err = db.QueryRow(otherBooksQuery, authorID, bookID).Scan(&numOtherBooks)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to check for other books: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Query to delete the book
+        deleteBookQuery := `
+            DELETE FROM books
+            WHERE id = ?
+        `
+
+        // Execute the query to delete the book
+        result, err := db.Exec(deleteBookQuery, bookID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to delete book: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Check if any row was actually deleted
+        rowsAffected, _ := result.RowsAffected()
+        if rowsAffected == 0 {
+            http.Error(w, "Book not found", http.StatusNotFound)
+            return
+        }
+
+        // If the author has no other books, delete the author as well
+        if numOtherBooks == 0 {
+            deleteAuthorQuery := `
+                DELETE FROM authors
+                WHERE id = ?
+            `
+
+            // Execute the query to delete the author
+            _, err = db.Exec(deleteAuthorQuery, authorID)
+            if err != nil {
+                http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+                return
+            }
+        }
+        
+        fmt.Fprintf(w, "Book deleted successfully")
+    }
+}
