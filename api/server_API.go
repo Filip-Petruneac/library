@@ -49,6 +49,13 @@ type Subscriber struct {
 	Email     string `json:"email"`
 }
 
+type NewBook struct {
+    Title       string `json:"title"`
+    AuthorID    int    `json:"author_id"`
+    Photo       string `json:"photo"`
+    IsBorrowed  bool   `json:"is_borrowed"`
+    Details     string `json:"details"`
+}
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
 	var err error
@@ -426,57 +433,52 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 
 // AddBook adds a new book to the database
 func AddBook(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Check the HTTP method
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check the HTTP method
+        if r.Method != http.MethodPost {
+            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+            return
+        }
 
-		// Parse the JSON data received from the request
-		var book struct {
-			Title       string `json:"title"`
-			AuthorID    int    `json:"author_id"`
-			Photo       string `json:"photo"`
-			Details     string `json:"details"`
-		}
-		err := json.NewDecoder(r.Body).Decode(&book)
-		if err != nil {
-			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
+        // Parse the JSON data received from the request
+        var book NewBook
+        err := json.NewDecoder(r.Body).Decode(&book)
+        if err != nil {
+            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+            return
+        }
+        defer r.Body.Close()
 
-		// Check if all required fields are filled
-		if book.Title == "" || book.AuthorID == 0 {
-			http.Error(w, "Title and AuthorID are required fields", http.StatusBadRequest)
-			return
-		}
+        // Check if all required fields are filled
+        if book.Title == "" || book.AuthorID == 0 {
+            http.Error(w, "Book title and author ID are required fields", http.StatusBadRequest)
+            return
+        }
 
-		// Query to add the book
-		query := `
-			INSERT INTO books (title, author_id, photo, details) 
-			VALUES (?, ?, ?, ?)
-		`
+        // Query to add book
+        query := `
+            INSERT INTO books (title, author_id, photo, is_borrowed, details) 
+            VALUES (?, ?, ?, ?, ?)
+        `
 
-		// Execute the query
-		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
-			return
-		}
+        // Execute the query
+        result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		// Get the ID of the inserted book
-		id, err := result.LastInsertId()
-		if err != nil {
-			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
-			return
-		}
+        // Get the inserted book ID
+        id, err := result.LastInsertId()
+        if err != nil {
+            http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+            return
+        }
 
-		// Return the response with the ID of the inserted book
-		response := map[string]int{"id": int(id)}
-		json.NewEncoder(w).Encode(response)
-	}
+        // Return the response with the book ID inserted
+        response := map[string]int{"id": int(id)}
+        json.NewEncoder(w).Encode(response)
+    }
 }
 
 // AddSubscriber adds a new subscriber to the database
