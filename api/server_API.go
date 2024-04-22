@@ -101,6 +101,7 @@ func main() {
 	r.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
 	r.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
 	r.HandleFunc("/books/new", AddBook(db)).Methods("POST")
+	r.HandleFunc("/subscribers/new", AddSubscriber(db)).Methods("POST")
 	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
 	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
@@ -472,6 +473,56 @@ func AddBook(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Return the response with the ID of the inserted book
+		response := map[string]int{"id": int(id)}
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+// AddSubscriber adds a new subscriber to the database
+func AddSubscriber(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Parse the JSON data received from the request
+		var subscriber Subscriber
+		err := json.NewDecoder(r.Body).Decode(&subscriber)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Check if all required fields are filled
+		if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
+			http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Query to add subscriber
+		query := `
+			INSERT INTO subscribers (lastname, firstname, email) 
+			VALUES (?, ?, ?)
+		`
+
+		// Execute the query
+		result, err := db.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert subscriber: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Get the ID of the inserted subscriber
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+			return
+		}
+
+		// Return the response with the subscriber ID inserted
 		response := map[string]int{"id": int(id)}
 		json.NewEncoder(w).Encode(response)
 	}
