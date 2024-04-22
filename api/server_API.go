@@ -104,6 +104,7 @@ func main() {
 	r.HandleFunc("/subscribers/new", AddSubscriber(db)).Methods("POST")
 	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
 	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
+	r.HandleFunc("/subscribers/{id}", UpdateSubscriber(db)).Methods("PUT", "POST")
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
 	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
 	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
@@ -753,6 +754,68 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 		// Return the success response
 		fmt.Fprintf(w, "Book updated successfully")
 	}
+}
+
+// UpdateSubscriber updates an existing subscriber in the database
+func UpdateSubscriber(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check the HTTP method
+        if r.Method != http.MethodPut && r.Method != http.MethodPost {
+            http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // Extract the subscriber ID from the URL path
+        vars := mux.Vars(r)
+        subscriberID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
+            return
+        }
+
+        // Parse the JSON data received from the request
+        var subscriber Subscriber
+        err = json.NewDecoder(r.Body).Decode(&subscriber)
+        if err != nil {
+            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+            return
+        }
+        defer r.Body.Close()
+
+        // Log the subscriber ID and received data for update
+        log.Printf("Updating subscriber with ID: %d", subscriberID)
+        log.Printf("Received data: %+v", subscriber)
+
+        // Check if all required fields are filled
+        if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
+            http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
+            return
+        }
+
+        // Query to update the subscriber
+        query := `
+            UPDATE subscribers 
+            SET lastname = ?, firstname = ?, email = ? 
+            WHERE id = ?
+        `
+
+        // Execute the query
+        result, err := db.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email, subscriberID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to update subscriber: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Check if any row was actually updated
+        rowsAffected, _ := result.RowsAffected()
+        if rowsAffected == 0 {
+            http.Error(w, "Subscriber not found", http.StatusNotFound)
+            return
+        }
+
+        // Return the success response
+        fmt.Fprintf(w, "Subscriber updated successfully")
+    }
 }
 
 // DeleteAuthor deletes an existing author from the database
