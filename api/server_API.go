@@ -105,6 +105,8 @@ func main() {
 	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
 	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
+	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
+
 
 
 
@@ -848,5 +850,48 @@ func DeleteBook(db *sql.DB) http.HandlerFunc {
         }
         
         fmt.Fprintf(w, "Book deleted successfully")
+    }
+}
+
+
+// DeleteSubscriber deletes an existing subscriber from the database
+func DeleteSubscriber(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        // Check the HTTP method
+        if r.Method != http.MethodDelete {
+            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // Extract the subscriber ID from the URL path
+        vars := mux.Vars(r)
+        subscriberID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
+            return
+        }
+
+        // Query to delete the subscriber
+        deleteQuery := `
+            DELETE FROM subscribers
+            WHERE id = ?
+        `
+
+        // Execute the query to delete the subscriber
+        result, err := db.Exec(deleteQuery, subscriberID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to delete subscriber: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        // Check if any row was actually deleted
+        rowsAffected, _ := result.RowsAffected()
+        if rowsAffected == 0 {
+            http.Error(w, "Subscriber not found", http.StatusNotFound)
+            return
+        }
+
+        // Return the success response
+        fmt.Fprintf(w, "Subscriber deleted successfully")
     }
 }
