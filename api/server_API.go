@@ -105,7 +105,7 @@ func main() {
 	r.HandleFunc("/books/{id}", GetBookByID(db)).Methods("GET")
 	r.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
 	r.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
-	r.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
+	r.HandleFunc("/subscribers/{id}", GetSubscribersByBookID(db)).Methods("GET")
 	r.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
 	r.HandleFunc("/books/new", AddBook(db)).Methods("POST")
 	r.HandleFunc("/subscribers/new", AddSubscriber(db)).Methods("POST")
@@ -336,11 +336,10 @@ func GetBookByID(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// GetSubscribersByBookId retrieves subscribers who have borrowed a specific book
-func GetSubscribersByBookId(db *sql.DB) http.HandlerFunc {
+func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-	
-		bookID := r.URL.Query().Get("book_id")
+		// Extract the book ID from the URL path using Gorilla Mux
+		bookID := mux.Vars(r)["id"]
 		if bookID == "" {
 			http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
 			return
