@@ -102,7 +102,7 @@ func main() {
 	r.HandleFunc("/authors", GetAuthors(db)).Methods("GET")
 	r.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
 	r.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
-	r.HandleFunc("/books", GetBookByID(db)).Methods("GET")
+	r.HandleFunc("/books/{id}", GetBookByID(db)).Methods("GET")
 	r.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
 	r.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
 	r.HandleFunc("/subscribers_by_book", GetSubscribersByBookId(db)).Methods("GET")
@@ -283,7 +283,7 @@ func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
 // GetBookById retrieves information about a specific book based on its ID
 func GetBookByID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		bookID := r.URL.Query().Get("book_id")
+		bookID := mux.Vars(r)["id"]
 		intBookID, err := strconv.Atoi(bookID)
         if err != nil {
             http.Error(w, "Invalid book ID", http.StatusBadRequest)
