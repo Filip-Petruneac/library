@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authors</title>
+    <script>
+        function confirmDelete(authorId) {
+            const isConfirmed = confirm("Are you sure you want to delete this author?");
+            if (isConfirmed) {
+                deleteAuthor(authorId);
+            }
+        }
+
+        function deleteAuthor(authorId) {
+            fetch(`/delete-author/${authorId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert("Author deleted successfully");
+                    window.location.reload();
+                } else {
+                    throw new Error('Author deletion failed');
+                }
+            })
+            .catch(error => {
+                alert("Error deleting author");
+                console.error('There was a problem with the fetch operation:', error.message);
+            });
+        }
+    </script>
+</head>
+<body>
+
+<h1>Authors</h1>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Firstname</th>
+            <th>Lastname</th>
+            <th>Photo</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for author in authors %}
+        <tr>
+            <td>{{ author.id }}</td>
+            <td>{{ author.firstname }}</td>
+            <td>{{ author.lastname }}</td>
+            <td>{{ author.photo }}</td>
+            <td>
+                <button onclick="confirmDelete({{ author.id }})">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>
