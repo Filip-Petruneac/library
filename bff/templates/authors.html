@@ -4,113 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Authors</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            text-align: center;
-            margin-top: 20px;
-            color: #333;
-        }
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tbody tr:hover {
-            background-color: #f9f9f9;
-        }
-        button {
-            padding: 5px 10px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ css }}">
 </head>
 <body>
 
-<h1>Authors</h1>
+<div class="table-container">
+    <input type="text" id="searchInput" placeholder="Search for authors..">
+    <table border="1" id="authorTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">ID</th>
+                <th onclick="sortTable(1)">Firstname</th>
+                <th onclick="sortTable(2)">Lastname</th>
+                <th>Photo</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td>{{ author.id }}</td>
+                <td>{{ author.firstname }}</td>
+                <td>{{ author.lastname }}</td>
+                <td>{{ author.photo }}</td>
+                <td>
+                    <button onclick="confirmDelete('{{ author.id }}')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-<table border="1">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Firstname</th>
-            <th>Lastname</th>
-            <th>Photo</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for author in authors %}
-        <tr>
-            <td>{{ author.id }}</td>
-            <td>{{ author.firstname }}</td>
-            <td>{{ author.lastname }}</td>
-            <td>{{ author.photo }}</td>
-            <td>
-                <button onclick="confirmDelete('{{ author.id }}')">Delete</button>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<script>
-    function confirmDelete(authorId) {
-        const isConfirmed = confirm("Are you sure you want to delete this author?");
-        if (isConfirmed) {
-            deleteAuthor(authorId);
-        }
-    }
-
-    function deleteAuthor(authorId) {
-        fetch(`/authors/${authorId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert("Author deleted successfully");
-                window.location.reload();
-            } else {
-                throw new Error('Author deletion failed');
-            }
-        })
-        .catch(error => {
-            alert("Error deleting author");
-            console.error('There was a problem with the fetch operation:', error.message);
-        });
-    }
-</script>
+<script src="{{ js }}"></script>
 
 </body>
 </html>

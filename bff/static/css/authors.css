@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url('/static/adriana-velasquez-J9yPpjKY8zc-unsplash.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 20px;
+    color: #333;
+}
+
+table {
+    width: 80%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.3s ease-in-out; /* Smooth transition for background color */
+}
+
+th {
+    background-color: #f2f2f2;
+    cursor: pointer; /* Add cursor pointer for sorting */
+}
+
+tbody tr:hover {
+    background-color: #f9f9f9; /* Change background color on hover */
+}
+
+button {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.table-container {
+    width: 90%;
+    margin: 20px auto;
+}
+
+.title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}

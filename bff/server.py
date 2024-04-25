@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, url_for
 import requests
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ def get_authors():
             return "Error fetching authors from API", 400
         
         authors = response.json()
-        return render_template('authors.html', authors=authors)
+        return render_template('authors.html', authors=authors, css=url_for('static', filename='css/authors.css'), js=url_for('static', filename='js/authors.js'))
     
     except Exception as err:
         return str(err), 500
