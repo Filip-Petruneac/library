@@ -13,7 +13,7 @@
         }
 
         function deleteAuthor(authorId) {
-            fetch(`/delete-author/${authorId}`, {
+            fetch(`/authors/${authorId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
@@ -62,7 +62,7 @@
             <td>{{ author.lastname }}</td>
             <td>{{ author.photo }}</td>
             <td>
-                <button onclick="confirmDelete({{ author.id }})">Delete</button>
+                <button onclick="confirmDelete('{{ author.id }}')">Delete</button>
             </td>
         </tr>
         {% endfor %}
