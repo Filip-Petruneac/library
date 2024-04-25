@@ -14,7 +14,7 @@
 
         function deleteAuthor(authorId) {
             fetch(`/delete-author/${authorId}`, {
-                method: 'POST',
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 }
