@@ -21,7 +21,7 @@ def get_authors():
 @app.route('/delete-author/<int:author_id>', methods=['DELETE'])
 def delete_author(author_id):
     try:
-        response = requests.delete(f"{API_URL}/delete-author", json={"id": author_id})
+        response = requests.delete(f"{API_URL}//authors/" + author_id)
         if response.status_code != 200:
             return jsonify(success=False), 500
         
