@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-API_URL = "http://localhost:8080"  # Adresa la care rulează serverul API
+API_URL = "http://localhost:8080"  
 
 @app.route('/authors', methods=['GET'])
 def get_authors():
@@ -21,7 +21,7 @@ def get_authors():
 @app.route('/delete-author/<int:author_id>', methods=['DELETE'])
 def delete_author(author_id):
     try:
-        response = requests.delete(f"{API_URL}/authors/" + author_id)
+        response = requests.delete(f"{API_URL}/authors/{author_id}")
         if response.status_code != 200:
             return jsonify(success=False), 400
         
