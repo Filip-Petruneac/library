@@ -32,15 +32,17 @@ type AuthorBook struct {
 }
 
 type BookAuthorInfo struct {
+    BookID          int    `json:"book_id"`
     BookTitle       string `json:"book_title"`
     AuthorID        int    `json:"author_id"`
     BookPhoto       string `json:"book_photo"`
     IsBorrowed      bool   `json:"is_borrowed"`
-    BookID          int    `json:"book_id"`
     BookDetails     string `json:"book_details"`
     AuthorLastname  string `json:"author_lastname"`
     AuthorFirstname string `json:"author_firstname"`
 }
+
+
 
 type Subscriber struct {
 	ID        int    `json:"id"`
@@ -99,6 +101,7 @@ func main() {
 
 	r.HandleFunc("/", Home)
 	r.HandleFunc("/info", Info)
+	r.HandleFunc("/books", GetAllBooks(db)).Methods("GET")
 	r.HandleFunc("/authors", GetAuthors(db)).Methods("GET")
 	r.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
 	r.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
@@ -144,6 +147,48 @@ func Home(w http.ResponseWriter, r *http.Request) {
 func Info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Info page")
 }
+
+// GetAllBooks returns a handler that gets all the books in the database along with the author's first and last name.
+func GetAllBooks(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        query := `
+            SELECT 
+                books.id AS book_id,
+                books.title AS book_title, 
+                books.author_id AS author_id, 
+                books.photo AS book_photo, 
+                books.is_borrowed AS is_borrowed, 
+                books.details AS book_details,
+                authors.Lastname AS author_lastname, 
+                authors.Firstname AS author_firstname
+            FROM books
+            JOIN authors ON books.author_id = authors.id
+        `
+        rows, err := db.Query(query)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
+        var books []BookAuthorInfo
+        for rows.Next() {
+            var book BookAuthorInfo
+            if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            books = append(books, book)
+        }
+        if err := rows.Err(); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        json.NewEncoder(w).Encode(books)
+    }
+}
+
+
 
 func GetAuthors(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
