@@ -18,7 +18,7 @@ def get_authors():
     except Exception as err:
         return str(err), 500
 
-@app.route('/delete-author/<int:author_id>', methods=['DELETE'])
+@app.route('/author/<int:author_id>', methods=['DELETE'])
 def delete_author(author_id):
     try:
         response = requests.delete(f"{API_URL}/authors/{author_id}")
