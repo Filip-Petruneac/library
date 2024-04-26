@@ -62,7 +62,7 @@ function confirmDelete(authorId) {
 }
 
 function deleteAuthor(authorId) {
-    fetch(`/authors/${authorId}`, {
+    fetch(`/author/${authorId}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
@@ -70,6 +70,7 @@ function deleteAuthor(authorId) {
     })
     .then(response => {
         if (!response.ok) {
+            console.log("In first then: ", response)
             throw new Error('Network response was not ok');
         }
         return response.json();
