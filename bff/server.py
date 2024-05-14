@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, url_for
+from flask import Flask, render_template, jsonify, request, url_for, send_from_directory
 import requests
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ def get_authors():
             return "Error fetching authors from API", 400
         
         authors = response.json()
-        return render_template('authors.html', authors=authors, css=url_for('static', filename='css/authors.css'), js=url_for('static', filename='js/authors.js'))
+        return render_template('authors.html', authors=authors)
     
     except Exception as err:
         return str(err), 500
@@ -29,6 +29,15 @@ def delete_author(author_id):
     
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
+
+
+@app.route('/css/<path:filename>')
+def serve_css(filename):
+    return send_from_directory('static/css', filename)
+
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    return send_from_directory('static/js', filename)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
