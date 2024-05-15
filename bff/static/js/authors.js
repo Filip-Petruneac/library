@@ -88,3 +88,82 @@ function deleteAuthor(authorId) {
         console.error('There was a problem with the fetch operation:', error.message);
     });
 }
+
+
+function showUpdateForm(authorId, firstname, lastname) {
+    const updateForm = document.createElement('form');
+    updateForm.id = 'updateAuthorForm';
+    
+    const authorIdInput = document.createElement('input');
+    authorIdInput.type = 'hidden';
+    authorIdInput.name = 'authorId';
+    authorIdInput.value = authorId;
+    updateForm.appendChild(authorIdInput);
+    
+    const firstnameLabel = document.createElement('label');
+    firstnameLabel.for = 'firstname';
+    firstnameLabel.textContent = 'First Name:';
+    updateForm.appendChild(firstnameLabel);
+    
+    const firstnameInput = document.createElement('input');
+    firstnameInput.type = 'text';
+    firstnameInput.id = 'firstname';
+    firstnameInput.name = 'firstname';
+    firstnameInput.value = firstname;
+    updateForm.appendChild(firstnameInput);
+    
+    const lastnameLabel = document.createElement('label');
+    lastnameLabel.for = 'lastname';
+    lastnameLabel.textContent = 'Last Name:';
+    updateForm.appendChild(lastnameLabel);
+    
+    const lastnameInput = document.createElement('input');
+    lastnameInput.type = 'text';
+    lastnameInput.id = 'lastname';
+    lastnameInput.name = 'lastname';
+    lastnameInput.value = lastname;
+    updateForm.appendChild(lastnameInput);
+    
+    const updateButton = document.createElement('input');
+    updateButton.type = 'submit';
+    updateButton.value = 'Update';
+    updateForm.appendChild(updateButton);
+
+    updateForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(updateForm);
+        updateAuthor(formData);
+    });
+    
+    const existingForm = document.getElementById('updateAuthorForm');
+    if (existingForm) {
+        existingForm.parentNode.replaceChild(updateForm, existingForm);
+    } else {
+        document.body.appendChild(updateForm);
+    }
+}
+
+function updateAuthor(formData) {
+    fetch(`/author/${formData.get('authorId')}`, {
+        method: 'PUT',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Author updated successfully");
+            window.location.reload();
+        } else {
+            throw new Error('Author update failed');
+        }
+    })
+    .catch(error => {
+        alert("Error updating author");
+        console.error('There was a problem with the fetch operation:', error.message);
+    });
+}

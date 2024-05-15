@@ -29,6 +29,7 @@
                 <td>{{ author.photo }}</td>
                 <td>
                     <button onclick="confirmDelete('{{ author.id }}')">DELETE</button>
+                    <button onclick="showUpdateForm('{{ author.id }}', '{{ author.firstname }}', '{{ author.lastname }}')">UPDATE</button>
                 </td>
             </tr>
             {% endfor %}
