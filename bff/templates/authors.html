@@ -28,6 +28,7 @@
                 <td>{{ author.lastname }}</td>
                 <td>{{ author.photo }}</td>
                 <td>
+                    <input type="hidden" class="authorId" value="{{ author.id }}">
                     <button onclick="confirmDelete('{{ author.id }}')">DELETE</button>
                     <button onclick="showUpdateForm('{{ author.id }}', '{{ author.firstname }}', '{{ author.lastname }}')">UPDATE</button>
                 </td>

@@ -33,19 +33,22 @@ def delete_author(author_id):
 @app.route('/author/<int:author_id>', methods=['PUT'])
 def update_author(author_id):
     try:
-        # ia/extrage t
+        print("am intrat")
+        # ia datele din request
         data = request.get_json()
-
+        print("am intrat cu bine")
         # apeleaza api-ul sa faca update la autor
         response = requests.put(f"{API_URL}/authors/{author_id}", json=data)
+        print("am ajuns")
 
-        # verifica raspunsul din ai
+        # verifica raspunsul din api
         if response.status_code != 200:
             return jsonify(success=False, error="Error updating author"), 400
 
         return jsonify(success=True)
 
     except Exception as err:
+        print("vai si amar")
         return jsonify(success=False, error=str(err)), 500
 
 @app.route('/css/<path:filename>')

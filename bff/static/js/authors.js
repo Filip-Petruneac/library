@@ -142,11 +142,22 @@ function showUpdateForm(authorId, firstname, lastname) {
         document.body.appendChild(updateForm);
     }
 }
-
 function updateAuthor(formData) {
-    fetch(`/author/${formData.get('authorId')}`, {
+    const authorId = formData.get('authorId'); // Obținem authorId din formData
+
+    // Construim un obiect JSON cu datele din formData
+    const jsonData = {
+        authorId: authorId,
+        firstname: formData.get('firstname'),
+        lastname: formData.get('lastname')
+    };
+
+    fetch(`/author/${authorId}`, {
         method: 'PUT',
-        body: formData
+        body: JSON.stringify(jsonData), // Convertim obiectul JSON în șir JSON
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => {
         if (!response.ok) {
@@ -157,7 +168,7 @@ function updateAuthor(formData) {
     .then(data => {
         if (data.success) {
             alert("Author updated successfully");
-            window.location.reload();
+            window.location.href = '/authors'; 
         } else {
             throw new Error('Author update failed');
         }
@@ -167,3 +178,7 @@ function updateAuthor(formData) {
         console.error('There was a problem with the fetch operation:', error.message);
     });
 }
+
+
+
+
