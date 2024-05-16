@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, url_for, send_from_directory
+from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect
 import requests
 
 app = Flask(__name__)
@@ -48,26 +48,39 @@ def update_author(author_id):
 
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
-
-
-@app.route('/author', methods=['POST'])
-def add_author():
-    try:
-        data = request.get_json()
-        
-        response = requests.post(f"{API_URL}/authors", json=data)
-        
-        if response.status_code == 201:
-            return jsonify(success=True), 201
-        elif response.status_code == 400:
-            return jsonify(success=False, error="Invalid data provided"), 400
-        elif response.status_code == 409:
-            return jsonify(success=False, error="Author already exists"), 409
-        else:
-            return jsonify(success=False, error="Failed to add author"), 500
     
-    except Exception as err:
-        return jsonify(success=False, error=str(err)), 500
+
+@app.route('/add_author', methods=['GET', 'POST'])
+def add_author():
+    if request.method == 'POST':
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        photo = request.form.get('photo')
+
+        data = {
+            'firstname': firstname,
+            'lastname': lastname,
+            'photo': photo
+        }
+
+        try:
+            response = requests.post(f"{API_URL}/authors/new", json=data)
+            if response.status_code == 201:
+                return redirect(url_for('/authors'))
+            else:
+                if response.content:
+                    error_message = response.json().get('error', 'Failed to add author')
+                else:
+                    error_message = 'Empty response from the API'
+                app.logger.error(f"Failed to add author: {error_message}")
+                return jsonify(success=False, error=error_message), 500
+            
+        except Exception as err:
+            app.logger.error(f"Failed to add author: {err}")
+            return jsonify(success=False, error=str(err)), 500
+        
+    return render_template('add_form.html')
+
 
 
 @app.route('/css/<path:filename>')
