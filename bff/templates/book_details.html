@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details</title>
+    <link rel="stylesheet" href="/css/book_details.css">
+</head>
+<body>
+
+<div class="details-container">
+    <h2 id="title">{{ book.book_title }}</h2>
+    
+
+    <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
+   
+   
+    <p>Is Borrowed: {{ book.is_borrowed }}</p>
+    <p>Details: {{ book.book_details }}</p>
+    
+</div>
+
+
+
+</body>
+</html>

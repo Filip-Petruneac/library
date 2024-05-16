@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books</title>
+    <link rel="stylesheet" href="/css/books.css">
+</head>
+<body>
+<nav class="navbar">
+    <a href="/authors">Authors</a>
+</nav>
+<div class="container">
+    {% for book in books %}
+    <div class="book-square">
+        <h3>{{ book.book_title }}</h3>
+        <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
+        <img src="{{ book.book_photo }}">
+        <button onclick="showDetails('{{ book.book_id }}')">More Details</button>
+    </div>
+    {% endfor %}
+</div>
+
+<script src="/js/books.js"></script>
+
+</body>
+</html>

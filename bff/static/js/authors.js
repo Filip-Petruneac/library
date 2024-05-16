@@ -143,9 +143,7 @@ function showUpdateForm(authorId, firstname, lastname) {
     }
 }
 function updateAuthor(formData) {
-    const authorId = formData.get('authorId'); // Obținem authorId din formData
-
-    // Construim un obiect JSON cu datele din formData
+    const authorId = formData.get('authorId'); 
     const jsonData = {
         authorId: authorId,
         firstname: formData.get('firstname'),
@@ -154,7 +152,7 @@ function updateAuthor(formData) {
 
     fetch(`/author/${authorId}`, {
         method: 'PUT',
-        body: JSON.stringify(jsonData), // Convertim obiectul JSON în șir JSON
+        body: JSON.stringify(jsonData), 
         headers: {
             'Content-Type': 'application/json'
         }
