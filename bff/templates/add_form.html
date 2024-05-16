@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Author</title>
+    <link rel="stylesheet" href="/css/add_form.css">
+</head>
+<body>
+
+<form method="POST" action="/add_author">
+    <h3>Add New Author</h3>
+    <label for="firstname">First Name:</label>
+    <input type="text" id="firstname" name="firstname" required><br><br>
+    <label for="lastname">Last Name:</label>
+    <input type="text" id="lastname" name="lastname" required><br><br>
+    <label for="photo">Photo URL:</label>
+    <input type="text" id="photo" name="photo"><br><br>
+    <button type="submit">Add Author</button>
+    <a href="/authors"><button type="button">Cancel</button></a> 
+</form>
+
+</body>
+</html>

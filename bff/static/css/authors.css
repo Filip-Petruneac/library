@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-image: url('/static/adriana-velasquez-J9yPpjKY8zc-unsplash.jpg');
+    background-image: url('/static/matthew-feeney-Nwkh-n6l25w-unsplash.jpg');
     background-size: cover;
     background-position: center;
 }
@@ -25,16 +25,16 @@ th, td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
-    transition: background-color 0.3s ease-in-out; /* Smooth transition for background color */
+    transition: background-color 0.3s ease-in-out;
 }
 
 th {
     background-color: #f2f2f2;
-    cursor: pointer; /* Add cursor pointer for sorting */
+    cursor: pointer;
 }
 
 tbody tr:hover {
-    background-color: #f9f9f9; /* Change background color on hover */
+    background-color: #f9f9f9;
 }
 
 button {
@@ -59,4 +59,44 @@ button:hover {
     text-align: center;
     font-size: 24px;
     font-weight: bold;
+}
+
+#addForm, #updateAuthorForm {
+    width: 50%;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#addForm h3, #updateAuthorForm h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+#addForm label, #updateAuthorForm label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#addForm input[type="text"], #updateAuthorForm input[type="text"], 
+#addForm input[type="file"], #updateAuthorForm input[type="file"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+#addForm button, #updateAuthorForm button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+#addForm button:hover, #updateAuthorForm button:hover {
+    background-color: #0056b3;
 }
