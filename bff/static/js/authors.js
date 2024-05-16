@@ -1,33 +1,28 @@
 function sortTable(n) {
-    var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-    table = document.getElementById("authorTable");
-    switching = true;
-    dir = "asc";
+    const table = document.getElementById("authorTable");
+    const rows = Array.from(table.rows).slice(1); 
+    let switching = true;
+    let dir = "asc";
     while (switching) {
         switching = false;
-        rows = table.rows;
-        for (i = 1; i < (rows.length - 1); i++) {
-            shouldSwitch = false;
-            x = rows[i].getElementsByTagName("TD")[n];
-            y = rows[i + 1].getElementsByTagName("TD")[n];
-            if (dir == "asc") {
-                if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                    shouldSwitch = true;
-                    break;
-                }
-            } else if (dir == "desc") {
-                if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-                    shouldSwitch = true;
-                    break;
-                }
+        for (let i = 0; i < rows.length - 1; i++) {
+            let shouldSwitch = false;
+            const x = rows[i].getElementsByTagName("td")[n].innerText.toLowerCase();
+            const y = rows[i + 1].getElementsByTagName("td")[n].innerText.toLowerCase();
+            if ((dir === "asc" && x > y) || (dir === "desc" && x < y)) {
+                shouldSwitch = true;
+                break;
+            }
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                break; 
             }
         }
-        if (shouldSwitch) {
-            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-            switching = true;
+        if (switching) {
             switchcount++;
         } else {
-            if (switchcount == 0 && dir == "asc") {
+            if (switchcount === 0 && dir === "asc") {
                 dir = "desc";
                 switching = true;
             }
@@ -36,20 +31,14 @@ function sortTable(n) {
 }
 
 function searchTable() {
-    var input, filter, table, tr, td, i, txtValue;
-    input = document.getElementById("searchInput");
-    filter = input.value.toUpperCase();
-    table = document.getElementById("authorTable");
-    tr = table.getElementsByTagName("tr");
-    for (i = 0; i < tr.length; i++) {
-        td = tr[i].getElementsByTagName("td")[1];
+    const input = document.getElementById("searchInput").value.toUpperCase();
+    const table = document.getElementById("authorTable");
+    const rows = table.getElementsByTagName("tr");
+    for (let i = 0; i < rows.length; i++) {
+        const td = rows[i].getElementsByTagName("td")[1];
         if (td) {
-            txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
+            const txtValue = td.textContent || td.innerText;
+            rows[i].style.display = txtValue.toUpperCase().includes(input) ? "" : "none";
         }
     }
 }
@@ -70,7 +59,6 @@ function deleteAuthor(authorId) {
     })
     .then(response => {
         if (!response.ok) {
-            console.log("In first then: ", response)
             throw new Error('Network response was not ok');
         }
         return response.json();
@@ -89,8 +77,7 @@ function deleteAuthor(authorId) {
     });
 }
 
-
-function showUpdateForm(authorId, firstname, lastname) {
+function showUpdateForm(authorId, firstname, lastname, photo) {
     const updateForm = document.createElement('form');
     updateForm.id = 'updateAuthorForm';
     
@@ -124,10 +111,28 @@ function showUpdateForm(authorId, firstname, lastname) {
     lastnameInput.value = lastname;
     updateForm.appendChild(lastnameInput);
     
-    const updateButton = document.createElement('input');
+    const photoLabel = document.createElement('label');
+    photoLabel.for = 'photo';
+    photoLabel.textContent = 'Photo URL:';
+    updateForm.appendChild(photoLabel);
+    
+    const photoInput = document.createElement('input');
+    photoInput.type = 'text';
+    photoInput.id = 'photo';
+    photoInput.name = 'photo';
+    photoInput.value = photo;
+    updateForm.appendChild(photoInput);
+    
+    const updateButton = document.createElement('button');
     updateButton.type = 'submit';
-    updateButton.value = 'Update';
+    updateButton.textContent = 'Update';
     updateForm.appendChild(updateButton);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.onclick = () => updateForm.remove();
+    updateForm.appendChild(cancelButton);
 
     updateForm.addEventListener('submit', function(event) {
         event.preventDefault();
@@ -142,19 +147,19 @@ function showUpdateForm(authorId, firstname, lastname) {
         document.body.appendChild(updateForm);
     }
 }
-function updateAuthor(formData) {
-    const authorId = formData.get('authorId'); // Obținem authorId din formData
 
-    // Construim un obiect JSON cu datele din formData
+function updateAuthor(formData) {
+    const authorId = formData.get('authorId');
     const jsonData = {
         authorId: authorId,
         firstname: formData.get('firstname'),
-        lastname: formData.get('lastname')
+        lastname: formData.get('lastname'),
+        photo: formData.get('photo')
     };
 
     fetch(`/author/${authorId}`, {
         method: 'PUT',
-        body: JSON.stringify(jsonData), // Convertim obiectul JSON în șir JSON
+        body: JSON.stringify(jsonData),
         headers: {
             'Content-Type': 'application/json'
         }
@@ -179,6 +184,102 @@ function updateAuthor(formData) {
     });
 }
 
+function showAddForm() {
+    const addForm = document.createElement('form');
+    addForm.id = 'addForm';
+    
+    const formTitle = document.createElement('h3');
+    formTitle.textContent = 'Add New Author';
+    addForm.appendChild(formTitle);
+    
+    const firstnameLabel = document.createElement('label');
+    firstnameLabel.for = 'firstname';
+    firstnameLabel.textContent = 'First Name:';
+    addForm.appendChild(firstnameLabel);
+    
+    const firstnameInput = document.createElement('input');
+    firstnameInput.type = 'text';
+    firstnameInput.id = 'firstname';
+    firstnameInput.name = 'firstname';
+    addForm.appendChild(firstnameInput);
+    
+    const lastnameLabel = document.createElement('label');
+    lastnameLabel.for = 'lastname';
+    lastnameLabel.textContent = 'Last Name:';
+    addForm.appendChild(lastnameLabel);
+    
+    const lastnameInput = document.createElement('input');
+    lastnameInput.type = 'text';
+    lastnameInput.id = 'lastname';
+    lastnameInput.name = 'lastname';
+    addForm.appendChild(lastnameInput);
+    
+    const photoLabel = document.createElement('label');
+    photoLabel.for = 'photo';
+    photoLabel.textContent = 'Photo URL:';
+    addForm.appendChild(photoLabel);
+    
+    const photoInput = document.createElement('input');
+    photoInput.type = 'text';
+    photoInput.id = 'photo';
+    photoInput.name = 'photo';
+    addForm.appendChild(photoInput);
+    
+    const addButton = document.createElement('button');
+    addButton.type = 'submit';
+    addButton.textContent = 'Add';
+    addForm.appendChild(addButton);
 
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.onclick = () => addForm.remove();
+    addForm.appendChild(cancelButton);
 
+    addForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(addForm);
+        addAuthor(formData);
+    });
+    
+    const existingForm = document.getElementById('addForm');
+    if (existingForm) {
+        existingForm.parentNode.replaceChild(addForm, existingForm);
+    } else {
+        document.body.appendChild(addForm);
+    }
+}
 
+function addAuthor(formData) {
+    const jsonData = {
+        firstname: formData.get('firstname'),
+        lastname: formData.get('lastname'),
+        photo: formData.get('photo')
+    };
+
+    fetch('/author', {
+        method: 'POST',
+        body: JSON.stringify(jsonData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Author added successfully");
+            window.location.href = '/authors'; 
+        } else {
+            throw new Error('Author addition failed');
+        }
+    })
+    .catch(error => {
+        alert("Error adding author");
+        console.error('There was a problem with the fetch operation:', error.message);
+    });
+}
