@@ -1,5 +1,7 @@
 from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect
 import requests
+from flask import jsonify
+
 
 app = Flask(__name__)
 
@@ -32,7 +34,6 @@ def get_authors():
     except Exception as err:
         return str(err), 500
 
-from flask import jsonify
 
 @app.route('/books', methods=['GET'])
 def get_books():
@@ -114,10 +115,11 @@ def add_author():
 
         try:
             response = requests.post(f"{API_URL}/authors/new", json=data)
-            if response.status_code == 201:
-                return redirect(url_for('/authors'))
+            if response.status_code == 200:
+                return redirect(request.referrer or url_for('authors'))
             else:
                 if response.content:
+                    print(response)
                     error_message = response.json().get('error', 'Failed to add author')
                 else:
                     error_message = 'Empty response from the API'
