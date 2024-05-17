@@ -1,0 +1,58 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Authors</title>
+    </head>
+    <body>
+        <h3>UPDATE New Author</h3>
+        <form id="updateForm" action="/author/{{id}}" method="put">
+            <label>First Name:</label>
+            <input type="text" id="firstname" name="firstname" value="{{firstname}}">
+            <label>Last Name:</label>
+            <input type="text" id="lastname" name="lastname" value="{{lastname}}">
+            <button type="submit">Add</button>
+            <button type="button">Cancel</button>
+        </form>
+    
+    <script>
+        updateForm = document.getElementById("updateForm")
+        updateForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const formData = new FormData(updateForm);
+            const authorId = formData.get('authorId');
+            const jsonData = {
+                authorId: authorId,
+                firstname: formData.get('firstname'),
+                lastname: formData.get('lastname'),
+            };
+        
+            fetch(`/author/${authorId}`, {
+                method: 'PUT',
+                body: JSON.stringify(jsonData),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert("Author updated successfully");
+                    window.location.href = '/authors'; 
+                } else {
+                    throw new Error('Author update failed');
+                }
+            })
+            .catch(error => {
+                alert("Error updating author");
+                console.error('There was a problem with the fetch operation:', error.message);
+            });
+        })
+    </script>
+    </body>
+</html>

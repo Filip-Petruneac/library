@@ -115,8 +115,8 @@ def add_author():
 
         try:
             response = requests.post(f"{API_URL}/authors/new", json=data)
-            if response.status_code == 200:
-                return redirect(request.referrer or url_for('authors'))
+            if response.status_code == 201:
+                return redirect(url_for('authors'))
             else:
                 if response.content:
                     print(response)

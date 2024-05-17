@@ -469,6 +469,8 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
 		// We return the response with the author ID inserted
 		response := map[string]int{"id": int(id)}
 		json.NewEncoder(w).Encode(response)
