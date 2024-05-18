@@ -3,6 +3,7 @@ function sortTable(n) {
     const rows = Array.from(table.rows).slice(1); 
     let switching = true;
     let dir = "asc";
+    let switchcount = 0;
     while (switching) {
         switching = false;
         for (let i = 0; i < rows.length - 1; i++) {
@@ -13,13 +14,10 @@ function sortTable(n) {
                 shouldSwitch = true;
                 break;
             }
-            if (shouldSwitch) {
-                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                switching = true;
-                break; 
-            }
         }
-        if (switching) {
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
             switchcount++;
         } else {
             if (switchcount === 0 && dir === "asc") {
@@ -77,109 +75,11 @@ function deleteAuthor(authorId) {
     });
 }
 
-function showUpdateForm(authorId, firstname, lastname, photo) {
-    const updateForm = document.createElement('form');
-    updateForm.id = 'updateAuthorForm';
-    
-    const authorIdInput = document.createElement('input');
-    authorIdInput.type = 'hidden';
-    authorIdInput.name = 'authorId';
-    authorIdInput.value = authorId;
-    updateForm.appendChild(authorIdInput);
-    
-    const firstnameLabel = document.createElement('label');
-    firstnameLabel.for = 'firstname';
-    firstnameLabel.textContent = 'First Name:';
-    updateForm.appendChild(firstnameLabel);
-    
-    const firstnameInput = document.createElement('input');
-    firstnameInput.type = 'text';
-    firstnameInput.id = 'firstname';
-    firstnameInput.name = 'firstname';
-    firstnameInput.value = firstname;
-    updateForm.appendChild(firstnameInput);
-    
-    const lastnameLabel = document.createElement('label');
-    lastnameLabel.for = 'lastname';
-    lastnameLabel.textContent = 'Last Name:';
-    updateForm.appendChild(lastnameLabel);
-    
-    const lastnameInput = document.createElement('input');
-    lastnameInput.type = 'text';
-    lastnameInput.id = 'lastname';
-    lastnameInput.name = 'lastname';
-    lastnameInput.value = lastname;
-    updateForm.appendChild(lastnameInput);
-    
-    const photoLabel = document.createElement('label');
-    photoLabel.for = 'photo';
-    photoLabel.textContent = 'Photo URL:';
-    updateForm.appendChild(photoLabel);
-    
-    const photoInput = document.createElement('input');
-    photoInput.type = 'text';
-    photoInput.id = 'photo';
-    photoInput.name = 'photo';
-    photoInput.value = photo;
-    updateForm.appendChild(photoInput);
-    
-    const updateButton = document.createElement('button');
-    updateButton.type = 'submit';
-    updateButton.textContent = 'Update';
-    updateForm.appendChild(updateButton);
-
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.onclick = () => updateForm.remove();
-    updateForm.appendChild(cancelButton);
-
-    updateForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(updateForm);
-        updateAuthor(formData);
-    });
-    
-    const existingForm = document.getElementById('updateAuthorForm');
-    if (existingForm) {
-        existingForm.parentNode.replaceChild(updateForm, existingForm);
-    } else {
-        document.body.appendChild(updateForm);
-    }
+function redirectToUpdateForm(authorId, firstname, lastname, photo) {
+    const url = new URL('/update_author_form.html', window.location.origin);
+    url.searchParams.set('id', authorId);
+    url.searchParams.set('firstname', firstname);
+    url.searchParams.set('lastname', lastname);
+    url.searchParams.set('photo', photo);
+    window.location.href = url;
 }
-function updateAuthor(formData) {
-    const authorId = formData.get('authorId'); 
-    const jsonData = {
-        authorId: authorId,
-        firstname: formData.get('firstname'),
-        lastname: formData.get('lastname'),
-        photo: formData.get('photo')
-    };
-
-    fetch(`/author/${authorId}`, {
-        method: 'PUT',
-        body: JSON.stringify(jsonData), 
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            alert("Author updated successfully");
-            window.location.href = '/authors'; 
-        } else {
-            throw new Error('Author update failed');
-        }
-    })
-    .catch(error => {
-        alert("Error updating author");
-        console.error('There was a problem with the fetch operation:', error.message);
-    });
-}
-

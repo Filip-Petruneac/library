@@ -100,3 +100,14 @@ button:hover {
 #addForm button:hover, #updateAuthorForm button:hover {
     background-color: #0056b3;
 }
+.add-button-container {
+    position: fixed;
+    bottom: 100px;
+    right: 200px;
+}
+
+.add-button {
+    font-size: 18px; 
+    padding: 10px 20px; 
+    background-color: white;
+}

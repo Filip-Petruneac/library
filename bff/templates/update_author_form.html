@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Author</title>
+</head>
+<body>
+    <h3>Update Author</h3>
+    <form id="updateForm" method="post">
+        <input type="hidden" id="authorId" name="authorId">
+        <label for="firstname">First Name:</label>
+        <input type="text" id="firstname" name="firstname"><br><br>
+        <label for="lastname">Last Name:</label>
+        <input type="text" id="lastname" name="lastname"><br><br>
+        <label for="photo">Photo URL:</label>
+        <input type="text" id="photo" name="photo"><br><br>
+        <button type="submit">Update</button>
+        <a href="/authors"><button type="button">Cancel</button></a> 
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const authorId = params.get('id');
+            const firstname = params.get('firstname');
+            const lastname = params.get('lastname');
+            const photo = params.get('photo');
+
+            document.getElementById('authorId').value = authorId;
+            document.getElementById('firstname').value = firstname;
+            document.getElementById('lastname').value = lastname;
+            document.getElementById('photo').value = photo;
+
+            document.getElementById('updateForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                const jsonData = {
+                    authorId: formData.get('authorId'),
+                    firstname: formData.get('firstname'),
+                    lastname: formData.get('lastname'),
+                    photo: formData.get('photo')
+                };
+
+                fetch(`/author/${formData.get('authorId')}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(jsonData),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Author updated successfully");
+                        window.location.href = '/authors';
+                    } else {
+                        throw new Error('Author update failed');
+                    }
+                })
+                .catch(error => {
+                    alert("Error updating author");
+                    console.error('There was a problem with the fetch operation:', error.message);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

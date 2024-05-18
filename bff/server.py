@@ -74,7 +74,11 @@ def book_details(book_id):
     
     except Exception as err:
         return str(err), 500
-    
+
+@app.route('/update_author_form.html', methods=['GET'])
+def update_author_form():
+    return render_template('update_author_form.html')
+
 @app.route('/author/<int:author_id>', methods=['PUT'])
 def update_author(author_id):
     try:
@@ -86,7 +90,7 @@ def update_author(author_id):
 
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
-
+    
 @app.route('/book/<int:book_id>', methods=['PUT'])
 def update_book(book_id):
     try:
@@ -99,7 +103,6 @@ def update_book(book_id):
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
     
-
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
     if request.method == 'POST':
@@ -131,8 +134,6 @@ def add_author():
             return jsonify(success=False, error=str(err)), 500
         
     return render_template('add_form.html')
-
-
 
 @app.route('/css/<path:filename>')
 def serve_css(filename):
