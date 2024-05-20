@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
+	"io/ioutil"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -425,57 +427,71 @@ func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// AddAuthor add a new author to the database
+// AddAuthor adds a new author to the database
 func AddAuthor(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Verificăm metoda HTTP
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+            return
+        }
 
-		// We parse the JSON data received from the request
-		var author Author
-		err := json.NewDecoder(r.Body).Decode(&author)
-		if err != nil {
-			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
+        // We parse the JSON data received from the request
+        var author Author
+        err := json.NewDecoder(r.Body).Decode(&author)
+        if err != nil {
+            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+            return
+        }
+        defer r.Body.Close()
 
-		// We check if all required fields are filled
-		if author.Firstname == "" || author.Lastname == "" {
-			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
-			return
-		}
+        // We check if all required fields are filled
+        if author.Firstname == "" || author.Lastname == "" || author.Photo == "" {
+            http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+            return
+        }
+        // Decode the base64 encoded photo data
+        photoData, err := base64.StdEncoding.DecodeString(author.Photo)
+        if err != nil {
+            http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
+            return
+        }
 
-		// Query to add author
-		query := `
-			INSERT INTO authors (lastname, firstname, photo) 
-			VALUES (?, ?, ?)
-		`
+        // Save the photo to disk
+        photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
+        err = ioutil.WriteFile(photoPath, photoData, 0644)
+        if err != nil {
+            http.Error(w, "Failed to save photo", http.StatusInternalServerError)
+            return
+        }
 
-		// We run the query
-		result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
-			return
-		}
+        // Query to add author with photo path
+        query := `
+            INSERT INTO authors (lastname, firstname, photo_path) 
+            VALUES (?, ?, ?)
+        `
 
-		// We get the inserted author ID
-		id, err := result.LastInsertId()
-		if err != nil {
-			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
-			return
-		}
+        // We run the query
+        result, err := db.Exec(query, author.Lastname, author.Firstname, photoPath)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		// We return the response with the author ID inserted
-		response := map[string]int{"id": int(id)}
-		json.NewEncoder(w).Encode(response)
-	}
+        // We get the inserted author ID
+        id, err := result.LastInsertId()
+        if err != nil {
+            http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusCreated)
+        // We return the response with the author ID inserted
+        response := map[string]int{"id": int(id)}
+        json.NewEncoder(w).Encode(response)
+    }
 }
+
 
 // AddBook adds a new book to the database
 func AddBook(db *sql.DB) http.HandlerFunc {

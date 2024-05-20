@@ -1,44 +1,82 @@
+const rowsPerPage = 24;
+let currentPage = 1;
+let rows = [];
+
+function displayTable(page) {
+    const table = document.getElementById("authorTable");
+    const pagination = document.getElementById("pagination");
+    const start = (page - 1) * rowsPerPage;
+    const end = Math.min(start + rowsPerPage, rows.length);
+
+    rows.forEach((row, index) => {
+        row.style.display = (index >= start && index < end) ? "" : "none";
+    });
+
+    pagination.innerHTML = "";
+
+    const totalPages = Math.ceil(rows.length / rowsPerPage);
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement("button");
+        button.innerText = i;
+        button.className = (i === page) ? "active" : "";
+        button.addEventListener("click", () => {
+            currentPage = i;
+            displayTable(currentPage);
+        });
+        pagination.appendChild(button);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    rows = Array.from(document.getElementById("authorTable").getElementsByTagName("tbody")[0].rows);
+    displayTable(currentPage);
+});
+
 function sortTable(n) {
     const table = document.getElementById("authorTable");
-    const rows = Array.from(table.rows).slice(1); 
     let switching = true;
     let dir = "asc";
-    let switchcount = 0;
+
     while (switching) {
         switching = false;
-        for (let i = 0; i < rows.length - 1; i++) {
+        const rowsArray = Array.from(table.rows).slice(1);
+        for (let i = 0; i < rowsArray.length - 1; i++) {
             let shouldSwitch = false;
-            const x = rows[i].getElementsByTagName("td")[n].innerText.toLowerCase();
-            const y = rows[i + 1].getElementsByTagName("td")[n].innerText.toLowerCase();
+            const x = rowsArray[i].getElementsByTagName("TD")[n].innerText.toLowerCase();
+            const y = rowsArray[i + 1].getElementsByTagName("TD")[n].innerText.toLowerCase();
             if ((dir === "asc" && x > y) || (dir === "desc" && x < y)) {
                 shouldSwitch = true;
                 break;
             }
         }
         if (shouldSwitch) {
-            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            rowsArray[i].parentNode.insertBefore(rowsArray[i + 1], rowsArray[i]);
             switching = true;
-            switchcount++;
         } else {
-            if (switchcount === 0 && dir === "asc") {
+            if (dir === "asc") {
                 dir = "desc";
                 switching = true;
             }
         }
     }
+
+    rows = Array.from(document.getElementById("authorTable").getElementsByTagName("tbody")[0].rows);
+    displayTable(currentPage);
 }
 
 function searchTable() {
     const input = document.getElementById("searchInput").value.toUpperCase();
-    const table = document.getElementById("authorTable");
-    const rows = table.getElementsByTagName("tr");
-    for (let i = 0; i < rows.length; i++) {
-        const td = rows[i].getElementsByTagName("td")[1];
+    rows.forEach(row => {
+        const td = row.getElementsByTagName("td")[1];
         if (td) {
             const txtValue = td.textContent || td.innerText;
-            rows[i].style.display = txtValue.toUpperCase().includes(input) ? "" : "none";
+            row.style.display = txtValue.toUpperCase().includes(input) ? "" : "none";
         }
-    }
+    });
+
+    rows = Array.from(document.getElementById("authorTable").getElementsByTagName("tbody")[0].rows).filter(row => row.style.display === "");
+    currentPage = 1;
+    displayTable(currentPage);
 }
 
 function confirmDelete(authorId) {

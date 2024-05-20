@@ -14,7 +14,7 @@ h2, h3 {
     margin-bottom: 20px; /* Add margin to h3 */
 }
 
-form, #addForm, #updateAuthorForm {
+form, #addForm {
     background-color: #fff;
     max-width: 50%; /* Adjust max-width for consistency */
     margin: 50px auto;

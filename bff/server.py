@@ -1,9 +1,14 @@
 from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect
 import requests
 from flask import jsonify
+import os
+from werkzeug.utils import secure_filename
+
 
 
 app = Flask(__name__)
+
+app.config['UPLOAD_FOLDER'] = '/home/filip/Downloads'
 
 API_URL = "http://localhost:8080"  
 
@@ -108,16 +113,26 @@ def add_author():
     if request.method == 'POST':
         firstname = request.form.get('firstname')
         lastname = request.form.get('lastname')
-        photo = request.form.get('photo')
+        photo = request.files.get('photo')
 
+         # Check if a file was uploaded
+        if photo:
+            # Save the file to a secure location
+            photo_filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_filename)
+            photo.save(photo_path)
+        else:
+            photo_filename = None
+        
         data = {
             'firstname': firstname,
             'lastname': lastname,
-            'photo': photo
+            'photo': photo_filename  # Save the filename or path to the database
         }
 
         try:
             response = requests.post(f"{API_URL}/authors/new", json=data)
+            print(data)
             if response.status_code == 201:
                 return redirect(url_for("get_authors"))
             else:
@@ -126,6 +141,8 @@ def add_author():
                     error_message = response.json().get('error', 'Failed to add author')
                 else:
                     error_message = 'Empty response from the API'
+                    print("Empty response:", response.content)  # Print response content for debugging
+
                 app.logger.error(f"Failed to add author: {error_message}")
                 return jsonify(success=False, error=error_message), 500
             
@@ -133,7 +150,7 @@ def add_author():
             app.logger.error(f"Failed to add author: {err}")
             return jsonify(success=False, error=str(err)), 500
         
-    return render_template('add_form.html')
+    return render_template('add_author_form.html')
 
 @app.route('/css/<path:filename>')
 def serve_css(filename):

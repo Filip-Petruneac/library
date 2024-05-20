@@ -102,12 +102,29 @@ button:hover {
 }
 .add-button-container {
     position: fixed;
-    bottom: 100px;
-    right: 200px;
+    bottom: 1300px;
+    right: 110px;
 }
 
 .add-button {
     font-size: 18px; 
     padding: 10px 20px; 
     background-color: white;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+.pagination button {
+    margin: 0 5px;
+    padding: 10px 20px;
+    border: none;
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+.pagination button.active {
+    background-color: #4CAF50;
+    color: white;
 }
