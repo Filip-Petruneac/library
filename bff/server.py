@@ -4,11 +4,12 @@ from flask import jsonify
 import os
 from werkzeug.utils import secure_filename
 
-
+UPLOAD_FOLDER = './photos'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 
-app.config['UPLOAD_FOLDER'] = '/home/filip/Downloads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 API_URL = "http://localhost:8080"  
 
@@ -113,27 +114,29 @@ def add_author():
     if request.method == 'POST':
         firstname = request.form.get('firstname')
         lastname = request.form.get('lastname')
-        photo = request.files.get('photo')
+        photo = request.files['photo']
 
-         # Check if a file was uploaded
         if photo:
-            # Save the file to a secure location
-            photo_filename = secure_filename(photo.filename)
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_filename)
+            filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'],filename)
             photo.save(photo_path)
+            photo_path = f'photos/{filename}'
+
         else:
-            photo_filename = None
-        
+            photo.filename = None
+            photo_path = None
+
         data = {
             'firstname': firstname,
             'lastname': lastname,
-            'photo': photo_filename  # Save the filename or path to the database
+            'photo': photo_path
         }
 
         try:
             response = requests.post(f"{API_URL}/authors/new", json=data)
-            print(data)
             if response.status_code == 201:
+                if photo_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 return redirect(url_for("get_authors"))
             else:
                 if response.content:
@@ -141,7 +144,7 @@ def add_author():
                     error_message = response.json().get('error', 'Failed to add author')
                 else:
                     error_message = 'Empty response from the API'
-                    print("Empty response:", response.content)  # Print response content for debugging
+                    print("Empty response:", response.content)
 
                 app.logger.error(f"Failed to add author: {error_message}")
                 return jsonify(success=False, error=error_message), 500

@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
-	"io/ioutil"
+	// "encoding/base64"
+	// "io/ioutil"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -449,29 +449,42 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
             http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
             return
         }
-        // Decode the base64 encoded photo data
-        photoData, err := base64.StdEncoding.DecodeString(author.Photo)
-        if err != nil {
-            http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
-            return
-        }
+        // // Decode the base64 encoded photo data
+        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
+        // if err != nil {
+        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
+        //     return
+        // }
 
-        // Save the photo to disk
-        photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
-        err = ioutil.WriteFile(photoPath, photoData, 0644)
-        if err != nil {
-            http.Error(w, "Failed to save photo", http.StatusInternalServerError)
-            return
-        }
+        // // Save the photo to disk
+        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
+        // err = ioutil.WriteFile(photoPath, photoData, 0644)
+        // if err != nil {
+        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
+        //     return     // // Decode the base64 encoded photo data
+        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
+        // if err != nil {
+        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
+        //     return
+        // }
+
+        // // Save the photo to disk
+        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
+        // err = ioutil.WriteFile(photoPath, photoData, 0644)
+        // if err != nil {
+        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
+        //     return
+        // }
+        // }
 
         // Query to add author with photo path
         query := `
-            INSERT INTO authors (lastname, firstname, photo_path) 
+            INSERT INTO authors (lastname, firstname, photo) 
             VALUES (?, ?, ?)
         `
 
         // We run the query
-        result, err := db.Exec(query, author.Lastname, author.Firstname, photoPath)
+        result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo)
         if err != nil {
             http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
             return

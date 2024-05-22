@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Author</title>
     <link rel="stylesheet" href="/css/add_author_form.css">
+    <style>
+        .photo-preview {
+            width: 300px;
+            height: auto;
+            display: none; /* Hide by default */
+        }
+    </style>
 </head>
 <body>
 
@@ -14,11 +21,31 @@
     <input type="text" id="firstname" name="firstname" required><br><br>
     <label for="lastname">Last Name:</label>
     <input type="text" id="lastname" name="lastname" required><br><br>
-    <label for="photo">Photo URL:</label>
-    <input type="file" id="photo" name="photo" accept="image/*"><br><br>
+    <label for="photo">Photo:</label>
+    <input type="file" id="photo" name="photo" accept="image/*" onchange="previewPhoto()"><br><br>
+    <img id="photo-preview" class="photo-preview" src="#" alt="Photo Preview"><br><br>
     <button type="submit">Add Author</button>
     <a href="/authors"><button type="button">Cancel</button></a> 
 </form>
+
+<script>
+    function previewPhoto() {
+        const file = document.getElementById('photo').files[0];
+        const preview = document.getElementById('photo-preview');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block'; // Show the preview
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '#';
+            preview.style.display = 'none'; // Hide the preview if no file is selected
+        }
+    }
+</script>
 
 </body>
 </html>

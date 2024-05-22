@@ -102,8 +102,8 @@ button:hover {
 }
 .add-button-container {
     position: fixed;
-    bottom: 1300px;
-    right: 110px;
+    bottom: 880px;
+    right: 20px;
 }
 
 .add-button {

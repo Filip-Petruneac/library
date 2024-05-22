@@ -52,3 +52,9 @@ button[type="submit"], button[type="button"] {
 button[type="submit"]:hover, button[type="button"]:hover, #addForm button:hover, #updateAuthorForm button:hover {
     background-color: #0056b3;
 }
+
+.photo-preview {
+    width: 100px;
+    height: auto;
+    display: none; /* Hide by default */
+}

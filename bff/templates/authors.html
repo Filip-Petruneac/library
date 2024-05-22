@@ -25,7 +25,13 @@
                     <td>{{ author.id }}</td>
                     <td>{{ author.firstname }}</td>
                     <td>{{ author.lastname }}</td>
-                    <td><img src="{{ author.photo }}" alt="Photo" width="50"></td>
+                    <td>
+                        {% if author.photo %}
+                        <img src="{{ url_for('static', filename=author.photo) }}" alt="Photo" width="50">
+                        {% else %}
+                        No Photo
+                        {% endif %}
+                    </td>
                     <td>
                         <button onclick="redirectToUpdateForm('{{ author.id }}', '{{ author.firstname }}', '{{ author.lastname }}', '{{ author.photo }}')">UPDATE</button>
                         <button onclick="confirmDelete('{{ author.id }}')">DELETE</button>
@@ -39,6 +45,12 @@
     <div class="pagination" id="pagination"></div>
     <div class="add-button-container">
         <a href="/add_author"><button class="add-button">➕</button></a>
+    </div>
+
+    <!-- Modal -->
+    <div id="previewModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="previewImage">
     </div>
 
     <script src="/js/authors.js"></script>
