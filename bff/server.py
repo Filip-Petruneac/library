@@ -4,10 +4,12 @@ from flask import jsonify
 import os
 from werkzeug.utils import secure_filename
 
+UPLOAD_FOLDER = './photos'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 
-app.config['UPLOAD_FOLDER'] = '/home/filip/Downloads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 API_URL = "http://localhost:8080"  
 
@@ -92,6 +94,52 @@ def update_author(author_id):
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
     
+@app.route('/add_author', methods=['GET', 'POST'])
+def add_author():
+    if request.method == 'POST':
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        photo = request.files['photo']
+
+        if photo:
+            filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'],filename)
+            photo.save(photo_path)
+            photo_path = f'photos/{filename}'
+
+        else:
+            photo.filename = None
+            photo_path = None
+
+        data = {
+            'firstname': firstname,
+            'lastname': lastname,
+            'photo': photo_path
+        }
+
+        try:
+            response = requests.post(f"{API_URL}/authors/new", json=data)
+            if response.status_code == 201:
+                # if photo_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+                #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                return redirect(url_for("get_authors"))
+            else:
+                if response.content:
+                    print(response)
+                    error_message = response.json().get('error', 'Failed to add author')
+                else:
+                    error_message = 'Empty response from the API'
+                    print("Empty response:", response.content)
+
+                app.logger.error(f"Failed to add author: {error_message}")
+                return jsonify(success=False, error=error_message), 500
+            
+        except Exception as err:
+            app.logger.error(f"Failed to add author: {err}")
+            return jsonify(success=False, error=str(err)), 500
+        
+    return render_template('add_author_form.html')
+
 @app.route('/css/<path:filename>')
 def serve_css(filename):
     return send_from_directory('static/css', filename)
