@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	// "encoding/base64"
 	// "io/ioutil"
 	"encoding/json"
 	"flag"
@@ -43,8 +42,6 @@ type BookAuthorInfo struct {
     AuthorLastname  string `json:"author_lastname"`
     AuthorFirstname string `json:"author_firstname"`
 }
-
-
 
 type Subscriber struct {
 	ID        int    `json:"id"`
@@ -522,10 +519,14 @@ func AddBook(db *sql.DB) http.HandlerFunc {
         var book NewBook
         err := json.NewDecoder(r.Body).Decode(&book)
         if err != nil {
+            log.Printf("Error decoding JSON: %v", err)
             http.Error(w, "Invalid JSON data", http.StatusBadRequest)
             return
         }
         defer r.Body.Close()
+
+        // Log the received book data for debugging
+        log.Printf("Received book data: %+v", book)
 
         // Check if all required fields are filled
         if book.Title == "" || book.AuthorID == 0 {
@@ -540,7 +541,7 @@ func AddBook(db *sql.DB) http.HandlerFunc {
         `
 
         // Execute the query
-        result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details)
+        result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details)  // Changed here
         if err != nil {
             http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
             return
@@ -555,6 +556,7 @@ func AddBook(db *sql.DB) http.HandlerFunc {
 
         // Return the response with the book ID inserted
         response := map[string]int{"id": int(id)}
+        w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(response)
     }
 }

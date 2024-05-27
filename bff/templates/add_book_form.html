@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Book</title>
+    <link rel="stylesheet" href="/css/add_book_form.css">
+    <style>
+        .photo-preview {
+            width: 300px;
+            height: auto;
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+
+<form method="POST" action="/add_book" enctype="multipart/form-data">
+    <h3>Add New Book</h3>
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required><br><br>
+    <label for="details">Details:</label>
+    <input type="text" id="details" name="details" required><br><br> 
+    <div>
+        <label for="author">Author:</label>
+        <select id="author" name="author" required>
+            {% for author in authors %}
+            <option value="{{ author.id }}">{{ author.firstname }} {{ author.lastname }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <label for="is_borrowed">Is Borrowed:</label>
+    <input type="checkbox" id="is_borrowed" name="is_borrowed"><br><br>
+    <label for="photo">Photo:</label>
+    <input type="file" id="photo" name="photo" accept="image/*" onchange="previewPhoto()"><br><br>
+    <img id="photo-preview" class="photo-preview" src="#" alt="Photo Preview"><br><br>
+    <button type="submit">Add Book</button>
+    <a href="/"><button type="button">Cancel</button></a> 
+</form>
+
+<script>
+    function previewPhoto() {
+        const file = document.getElementById('photo').files[0];
+        const preview = document.getElementById('photo-preview');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block'; 
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '#';
+            preview.style.display = 'none'; 
+        }
+    }
+</script>
+
+</body>
+</html>
