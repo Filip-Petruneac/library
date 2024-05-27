@@ -131,7 +131,7 @@ def add_author():
 def add_book():
     if request.method == 'POST':
         title = request.form.get('title')
-        description = request.form.get('description')
+        details = request.form.get('details')  # Changed here
         author_id = request.form.get('author')
         is_borrowed = request.form.get('is_borrowed', 'off') == 'on'
         photo = request.files['photo']
@@ -151,8 +151,8 @@ def add_book():
 
         data = {
             'title': title,
-            'description': description,
-            'author_id': author_id, 
+            'details': details,  
+            'author_id': author_id,
             'is_borrowed': is_borrowed,
             'photo': photo_path
         }
