@@ -108,6 +108,7 @@ func main() {
 	r.HandleFunc("/authorsbooks", GetAuthorsAndBooks(db)).Methods("GET")
 	r.HandleFunc("/authors/{id}", GetAuthorBooksByID(db)).Methods("GET")
 	r.HandleFunc("/books/{id}", GetBookByID(db)).Methods("GET")
+	r.HandleFunc("/subscribers", GetAllSubscribers(db)).Methods("GET")
 	r.HandleFunc("/subscribers/{id}", GetSubscribersByBookID(db)).Methods("GET")
 	r.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
 	r.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
@@ -383,6 +384,35 @@ func GetBookByID(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// GetAllSubscribers returns a handler that gets all the subscribers in the database.
+func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        query := "SELECT id, lastname, firstname, email FROM subscribers"
+        rows, err := db.Query(query)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
+
+        var subscribers []Subscriber
+        for rows.Next() {
+            var subscriber Subscriber
+            if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+            subscribers = append(subscribers, subscriber)
+        }
+        if err := rows.Err(); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        json.NewEncoder(w).Encode(subscribers)
+    }
+}
+
 func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract the book ID from the URL path using Gorilla Mux
@@ -449,33 +479,6 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
             http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
             return
         }
-        // // Decode the base64 encoded photo data
-        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
-        // if err != nil {
-        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
-        //     return
-        // }
-
-        // // Save the photo to disk
-        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
-        // err = ioutil.WriteFile(photoPath, photoData, 0644)
-        // if err != nil {
-        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
-        //     return     // // Decode the base64 encoded photo data
-        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
-        // if err != nil {
-        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
-        //     return
-        // }
-
-        // // Save the photo to disk
-        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
-        // err = ioutil.WriteFile(photoPath, photoData, 0644)
-        // if err != nil {
-        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
-        //     return
-        // }
-        // }
 
         // Query to add author with photo path
         query := `

@@ -39,6 +39,21 @@ def books():
     except Exception as err:
         return str(err), 500
 
+@app.route('/subscribers', methods=['GET'])
+def get_subscribers():
+    try:
+        response = requests.get(f"{API_URL}/subscribers")
+        if response.status_code == 200:
+            subscribers = response.json()
+            return render_template('subscribers.html', subscribers=subscribers)
+        else:
+            error_message = response.json().get('error', 'Failed to retrieve subscribers')
+            app.logger.error(f"Failed to retrieve subscribers: {error_message}")
+            return jsonify(success=False, error=error_message), 500
+    except Exception as err:
+        app.logger.error(f"Failed to retrieve subscribers: {err}")
+        return jsonify(success=False, error=str(err)), 500
+
 @app.route('/book-details/<int:book_id>')
 def book_details(book_id):
     try:
@@ -139,6 +154,37 @@ def add_author():
             return jsonify(success=False, error=str(err)), 500
         
     return render_template('add_author_form.html')
+
+@app.route('/add_subscriber', methods=['GET', 'POST'])
+def add_subscriber():
+    if request.method == 'POST':
+        id = request.form.get('id')
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        email = request.form.get('email')
+
+        data = {
+            'id': id,
+            'firstname': firstname,
+            'lastname': lastname,
+            'email': email
+        }
+
+        try:
+            response = requests.post(f"{API_URL}/subscribers/new", json=data)
+            if response.status_code == 201:
+                return redirect(url_for("get_authors"))
+            else:
+                error_message = response.json().get('error', 'Failed to add subscriber')
+                app.logger.error(f"Failed to add subscriber: {error_message}")
+                return jsonify(success=False, error=error_message), 500
+
+        except Exception as err:
+            app.logger.error(f"Failed to add subscriber: {err}")
+            return jsonify(success=False, error=str(err)), 500
+    
+    return render_template('add_subscriber.html')
+
 
 @app.route('/css/<path:filename>')
 def serve_css(filename):
