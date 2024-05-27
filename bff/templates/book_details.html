@@ -13,6 +13,15 @@
         <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
         <p>Is Borrowed: {{ book.is_borrowed }}</p>
         <p>Details: {{ book.book_details }}</p>
+        <button onclick="confirmDelete('{{ book.book_id }}')">DELETE</button>
     </div>
+
+   
+    <div id="previewModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="previewImage">
+    </div>
+
+    <script src="/static/js/book_details.js"></script>
 </body>
 </html>

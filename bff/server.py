@@ -19,23 +19,20 @@ def index():
         response = requests.get(f"{API_URL}/books")
         if response.status_code != 200:
             return "Error fetching books from API", 400
-        
         books = response.json()
-        return render_template('books.html', books=books)  
-    
+        return render_template('books.html', books=books)
     except Exception as err:
         return str(err), 500
-    
+
 @app.route('/book-details/<int:book_id>')
 def book_details(book_id):
     try:
         response = requests.get(f"{API_URL}/books/{book_id}")
         if response.status_code != 200:
             return "Error fetching book details from API", 400
-
         book = response.json()
+        app.logger.debug(f"Book details: {book}")  # Log the book details
         return render_template('book_details.html', book=book)
-
     except Exception as err:
         return str(err), 500
 
@@ -58,12 +55,19 @@ def delete_author(author_id):
         response = requests.delete(f"{API_URL}/authors/{author_id}")
         if response.status_code != 200:
             return jsonify(success=False), 400
-        
         return jsonify(success=True)
-    
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
 
+@app.route('/book/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    try:
+        response = requests.delete(f"{API_URL}/books/{book_id}")
+        if response.status_code != 200:
+            return jsonify(success=False), 400
+        return jsonify(success=True)
+    except Exception as err:
+        return jsonify(success=False, error=str(err)), 500
 
 @app.route('/update_author_form.html', methods=['GET'])
 def update_author_form():
