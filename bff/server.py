@@ -98,7 +98,7 @@ def update_author(author_id):
 
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
-    
+
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
     if request.method == 'POST':
@@ -149,7 +149,7 @@ def add_author():
 def add_book():
     if request.method == 'POST':
         title = request.form.get('title')
-        details = request.form.get('details')  # Changed here
+        details = request.form.get('details')  
         author_id = request.form.get('author')
         is_borrowed = request.form.get('is_borrowed', 'off') == 'on'
         photo = request.files['photo']
@@ -236,6 +236,57 @@ def add_subscriber():
     
     return render_template('add_subscriber.html')
 
+
+@app.route('/update_book/<int:book_id>', methods=['GET'])
+def update_book_form(book_id):
+    try:
+        response = requests.get(f"{API_URL}/books/{book_id}")
+        if response.status_code != 200:
+            return "Error fetching book details from API", 400
+        book = response.json()
+
+        response = requests.get(f"{API_URL}/authors")
+        if response.status_code != 200:
+            return "Error fetching authors from API", 400
+        authors = response.json()
+
+        return render_template('update_book_form.html', book=book, authors=authors)
+    except Exception as err:
+        return str(err), 500
+
+@app.route('/book/<int:book_id>', methods=['POST'])
+def update_book(book_id):
+    try:
+        title = request.form.get('title')
+        details = request.form.get('details')
+        author_id = request.form.get('author')
+        is_borrowed = request.form.get('is_borrowed', 'off') == 'on'
+        photo = request.files['photo']
+
+        if photo:
+            filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            photo.save(photo_path)
+            photo_path = f'photos/{filename}'
+        else:
+            photo_path = request.form.get('existing_photo')
+
+        data = {
+            'title': title,
+            'details': details,
+            'author_id': int(author_id),
+            'is_borrowed': is_borrowed,
+            'photo': photo_path
+        }
+
+        response = requests.put(f"{API_URL}/books/{book_id}", json=data)
+        if response.status_code != 200:
+            return jsonify(success=False, error="Error updating book"), 400
+
+        return redirect(url_for('book_details', book_id=book_id))
+    except Exception as err:
+        return jsonify(success=False, error=str(err)), 500
+    
 @app.route('/css/<path:filename>')
 def serve_css(filename):
     return send_from_directory('static/css', filename)

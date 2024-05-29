@@ -14,9 +14,9 @@
         <p>Is Borrowed: {{ book.is_borrowed }}</p>
         <p>Details: {{ book.book_details }}</p>
         <button onclick="confirmDelete('{{ book.book_id }}')">DELETE</button>
+        <button onclick="window.location.href='/update_book/{{ book.book_id }}'">UPDATE</button>
     </div>
 
-   
     <div id="previewModal" class="modal">
         <span class="close" onclick="closeModal()">&times;</span>
         <img class="modal-content" id="previewImage">
