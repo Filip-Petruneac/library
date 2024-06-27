@@ -44,7 +44,6 @@ type BookAuthorInfo struct {
 }
 
 type Subscriber struct {
-	ID        int    `json:"id"`
 	Lastname  string `json:"lastname"`
 	Firstname string `json:"firstname"`
 	Email     string `json:"email"`
@@ -409,7 +408,7 @@ func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 		// Iterate over the query result set and populate the subscribers slice
 		for rows.Next() {
 			var subscriber Subscriber
-			if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+			if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -439,7 +438,7 @@ func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
         var subscribers []Subscriber
         for rows.Next() {
             var subscriber Subscriber
-            if err := rows.Scan(&subscriber.ID, &subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+            if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
             }
@@ -475,33 +474,6 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
             http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
             return
         }
-        // // Decode the base64 encoded photo data
-        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
-        // if err != nil {
-        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
-        //     return
-        // }
-
-        // // Save the photo to disk
-        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
-        // err = ioutil.WriteFile(photoPath, photoData, 0644)
-        // if err != nil {
-        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
-        //     return     // // Decode the base64 encoded photo data
-        // photoData, err := base64.StdEncoding.DecodeString(author.Photo)
-        // if err != nil {
-        //     http.Error(w, "Failed to decode photo data", http.StatusBadRequest)
-        //     return
-        // }
-
-        // // Save the photo to disk
-        // photoPath := fmt.Sprintf("photos/%s_%s.jpg", author.Firstname, author.Lastname)
-        // err = ioutil.WriteFile(photoPath, photoData, 0644)
-        // if err != nil {
-        //     http.Error(w, "Failed to save photo", http.StatusInternalServerError)
-        //     return
-        // }
-        // }
 
         // Query to add author with photo path
         query := `

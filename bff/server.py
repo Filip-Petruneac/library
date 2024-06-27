@@ -208,13 +208,11 @@ def add_book():
 @app.route('/add_subscriber', methods=['GET', 'POST'])
 def add_subscriber():
     if request.method == 'POST':
-        id = request.form.get('id')
         firstname = request.form.get('firstname')
         lastname = request.form.get('lastname')
         email = request.form.get('email')
 
         data = {
-            'id': id,
             'firstname': firstname,
             'lastname': lastname,
             'email': email
@@ -223,7 +221,7 @@ def add_subscriber():
 
         try:
             response = requests.post(f"{API_URL}/subscribers/new", json=data)
-            if response.status_code == 201:
+            if response.status_code == 200:
                 return redirect(url_for("get_subscribers"))
             else:
                 error_message = response.json().get('error', 'Failed to add subscriber')
