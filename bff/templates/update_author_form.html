@@ -5,51 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Author</title>
     <link rel="stylesheet" href="/css/update.css">
-
+    <style>
+        .photo-preview {
+            width: 300px;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <h3>Update Author</h3>
-    <form id="updateForm" method="post">
-        <input type="hidden" id="authorId" name="authorId">
+    <form id="updateForm" method="POST" action="/author/{{ author.id }}" enctype="multipart/form-data">
+        <input type="hidden" id="authorId" name="authorId" value="{{ author.id }}">
         <label for="firstname">First Name:</label>
-        <input type="text" id="firstname" name="firstname"><br><br>
+        <input type="text" id="firstname" name="firstname" value="{{ author.firstname }}" required><br><br>
         <label for="lastname">Last Name:</label>
-        <input type="text" id="lastname" name="lastname"><br><br>
-        <label for="photo">Photo URL:</label>
-        <input type="text" id="photo" name="photo"><br><br>
+        <input type="text" id="lastname" name="lastname" value="{{ author.lastname }}" required><br><br>
+        <label for="photo">Photo:</label>
+        <input type="file" id="photo" name="photo" accept="image/*" onchange="previewPhoto()"><br><br>
+        <img id="photo-preview" class="photo-preview" src="{{ author.photo }}" alt="Photo Preview"><br><br>
+        <input type="hidden" name="existing_photo" id="existing_photo" value="{{ author.photo }}">
         <button type="submit">Update</button>
-        <a href="/authors"><button type="button">Cancel</button></a> 
+        <a href="/authors"><button type="button">Cancel</button></a>
     </form>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const params = new URLSearchParams(window.location.search);
-            const authorId = params.get('id');
-            const firstname = params.get('firstname');
-            const lastname = params.get('lastname');
-            const photo = params.get('photo');
-
-            document.getElementById('authorId').value = authorId;
-            document.getElementById('firstname').value = firstname;
-            document.getElementById('lastname').value = lastname;
-            document.getElementById('photo').value = photo;
-
-            document.getElementById('updateForm').addEventListener('submit', function(event) {
+            const form = document.getElementById('updateForm');
+            form.addEventListener('submit', function(event) {
                 event.preventDefault();
                 const formData = new FormData(this);
-                const jsonData = {
-                    authorId: formData.get('authorId'),
-                    firstname: formData.get('firstname'),
-                    lastname: formData.get('lastname'),
-                    photo: formData.get('photo')
-                };
 
                 fetch(`/author/${formData.get('authorId')}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(jsonData),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    method: 'POST',
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -66,6 +54,24 @@
                 });
             });
         });
+
+        function previewPhoto() {
+            const file = document.getElementById('photo').files[0];
+            const preview = document.getElementById('photo-preview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = '#';
+                preview.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>
+

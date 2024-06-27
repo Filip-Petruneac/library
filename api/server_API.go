@@ -706,67 +706,55 @@ func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
 }
 
 
-// UpdateAuthor updates an existing author in the database
 func UpdateAuthor(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Check the HTTP method
-		if r.Method != http.MethodPut && r.Method != http.MethodPost {
-			http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPut && r.Method != http.MethodPost {
+            http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+            return
+        }
 
-		// Extract the author ID from the URL path
-		vars := mux.Vars(r)
-		authorID, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			http.Error(w, "Invalid author ID", http.StatusBadRequest)
-			return
-		}
+        vars := mux.Vars(r)
+        authorID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid author ID", http.StatusBadRequest)
+            return
+        }
 
-		// Parse the JSON data received from the request
-		var author Author
-		err = json.NewDecoder(r.Body).Decode(&author)
-		if err != nil {
-			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
+        var author Author
+        err = json.NewDecoder(r.Body).Decode(&author)
+        if err != nil {
+            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+            return
+        }
+        defer r.Body.Close()
 
-		// Log the author ID and received data for update
-		log.Printf("Updating author with ID: %d", authorID)
-		log.Printf("Received data: %+v", author)
+        if author.Firstname == "" || author.Lastname == "" {
+            http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+            return
+        }
 
-		// Check if all required fields are filled
-		if author.Firstname == "" || author.Lastname == "" {
-			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
-			return
-		}
+        query := `
+            UPDATE authors 
+            SET lastname = ?, firstname = ?, photo = ? 
+            WHERE id = ?
+        `
 
-		// Query to update the author
-		query := `
-			UPDATE authors 
-			SET lastname = ?, firstname = ?, photo = ? 
-			WHERE id = ?
-		`
+        result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo, authorID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to update author: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		// Execute the query
-		result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo, authorID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to update author: %v", err), http.StatusInternalServerError)
-			return
-		}
+        rowsAffected, _ := result.RowsAffected()
+        if rowsAffected == 0 {
+            http.Error(w, "Author not found", http.StatusNotFound)
+            return
+        }
 
-		// Check if any row was actually updated
-		rowsAffected, _ := result.RowsAffected()
-		if rowsAffected == 0 {
-			http.Error(w, "Author not found", http.StatusNotFound)
-			return
-		}
-
-		// Return the success response
-		fmt.Fprintf(w, "Author updated successfully")
-	}
+        fmt.Fprintf(w, "Author updated successfully")
+    }
 }
+
 
 
 // UpdateBook updates an existing book in the database

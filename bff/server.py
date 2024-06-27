@@ -35,6 +35,7 @@ def book_details(book_id):
         return render_template('book_details.html', book=book)
     except Exception as err:
         return str(err), 500
+    
 @app.route('/subscribers', methods=['GET'])
 def get_subscribers():
     try:
@@ -85,17 +86,46 @@ def delete_book(book_id):
 
 @app.route('/update_author_form.html', methods=['GET'])
 def update_author_form():
-    return render_template('update_author_form.html')
+    author_id = request.args.get('id')
+    firstname = request.args.get('firstname')
+    lastname = request.args.get('lastname')
+    photo = request.args.get('photo')
 
-@app.route('/author/<int:author_id>', methods=['PUT'])
+    author = {
+        'id': author_id,
+        'firstname': firstname,
+        'lastname': lastname,
+        'photo': photo
+    }
+
+    return render_template('update_author_form.html', author=author)
+
+@app.route('/author/<int:author_id>', methods=['POST'])
 def update_author(author_id):
     try:
-        data = request.get_json()
+        firstname = request.form.get('firstname')
+        lastname = request.form.get('lastname')
+        photo = request.files.get('photo')
+
+        if photo:
+            filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            photo.save(photo_path)
+            photo_url = f'/uploads/{filename}'  # Adjust this based on your file serving logic
+        else:
+            photo_url = request.form.get('existing_photo')
+
+        data = {
+            'firstname': firstname,
+            'lastname': lastname,
+            'photo': photo_url
+        }
+
         response = requests.put(f"{API_URL}/authors/{author_id}", json=data)
         if response.status_code != 200:
             return jsonify(success=False, error="Error updating author"), 400
-        return jsonify(success=True)
 
+        return jsonify(success=True)
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
 
