@@ -286,6 +286,7 @@ def update_book(book_id):
         return redirect(url_for('book_details', book_id=book_id))
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
+
     
 @app.route('/css/<path:filename>')
 def serve_css(filename):

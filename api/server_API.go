@@ -816,10 +816,11 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 
 		// Parse the JSON data received from the request
 		var book struct {
-			Title    string `json:"title"`
-			AuthorID int    `json:"author_id"`
-			Photo    string `json:"photo"`
-			Details  string `json:"details"`
+			Title      string `json:"title"`
+			AuthorID   int    `json:"author_id"`
+			Photo      string `json:"photo"`
+			Details    string `json:"details"`
+			IsBorrowed bool   `json:"is_borrowed"`
 		}
 		err = json.NewDecoder(r.Body).Decode(&book)
 		if err != nil {
@@ -841,12 +842,12 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 		// Query to update the book
 		query := `
 			UPDATE books 
-			SET title = ?, author_id = ?, photo = ?, details = ? 
+			SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ? 
 			WHERE id = ?
 		`
 
 		// Execute the query
-		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details, bookID)
+		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details, book.IsBorrowed, bookID)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
 			return
@@ -863,6 +864,7 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 		fmt.Fprintf(w, "Book updated successfully")
 	}
 }
+
 
 // UpdateSubscriber updates an existing subscriber in the database
 func UpdateSubscriber(db *sql.DB) http.HandlerFunc {
