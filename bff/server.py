@@ -23,6 +23,13 @@ def index():
         return render_template('books.html', books=books)
     except Exception as err:
         return str(err), 500
+    
+@app.route('/search_books', methods=['GET'])
+def search_books():
+    query = request.args.get('query', '')
+    response = requests.get(f'{API_URL}/search_books', params={'query': query})
+    books = response.json()
+    return render_template('books.html', books=books)
 
 @app.route('/book-details/<int:book_id>')
 def book_details(book_id):
@@ -31,7 +38,7 @@ def book_details(book_id):
         if response.status_code != 200:
             return "Error fetching book details from API", 400
         book = response.json()
-        app.logger.debug(f"Book details: {book}")  # Log the book details
+        app.logger.debug(f"Book details: {book}")  
         return render_template('book_details.html', book=book)
     except Exception as err:
         return str(err), 500

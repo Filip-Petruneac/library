@@ -117,7 +117,7 @@ func main() {
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
 	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
 	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
-
+    r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
 
 
 
@@ -188,6 +188,53 @@ func GetAllBooks(db *sql.DB) http.HandlerFunc {
 }
 
 
+// SearchBooks returns a handler that searches for books by title or author.
+func SearchBooks(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        query := r.URL.Query().Get("query")
+        if query == "" {
+            http.Error(w, "Query parameter is missing", http.StatusBadRequest)
+            return
+        }
+
+        sqlQuery := `
+            SELECT 
+                books.id AS book_id,
+                books.title AS book_title, 
+                books.author_id AS author_id, 
+                books.photo AS book_photo, 
+                books.is_borrowed AS is_borrowed, 
+                books.details AS book_details,
+                authors.Lastname AS author_lastname, 
+                authors.Firstname AS author_firstname
+            FROM books
+            JOIN authors ON books.author_id = authors.id
+            WHERE books.title LIKE ? OR authors.Firstname LIKE ? OR authors.Lastname LIKE ?
+        `
+        rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
+
+        var books []BookAuthorInfo
+        for rows.Next() {
+            var book BookAuthorInfo
+            if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            books = append(books, book)
+        }
+        if err := rows.Err(); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        json.NewEncoder(w).Encode(books)
+    }
+}
 
 func GetAuthors(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

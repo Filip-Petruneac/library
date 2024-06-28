@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Books</title>
     <link rel="stylesheet" href="/static/css/books.css">
+ 
 </head>
 <body>
 <nav class="navbar">
     <a href="/authors">Authors</a>
     <a href="/subscribers">Subscribers</a>
-    <div class="top-right">
-        <a href="/add_book"><button class="add-button">➕ Add Book</button></a>
-    </div>
+    <a href="/add_book">➕Add Book</a>
+
+    <form action="/search_books" method="GET" class="search-form">
+        <input type="text" name="query" placeholder="Search by title or author...">
+        <button type="submit">Search</button>
+    </form>
 </nav>
 <div class="container">
     {% for book in books %}
@@ -26,3 +30,4 @@
 </div>
 </body>
 </html>
+
