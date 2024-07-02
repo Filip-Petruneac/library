@@ -23,7 +23,11 @@
     <div class="book-square">
         <h3>{{ book.book_title }}</h3>
         <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
-        <img src="{{ book.book_photo }}" >
+        {% if book.photo %}
+            <img src="{{ url_for('static', filename=book.photo) }}" alt="Book cover">
+        {% else %}
+            <p>No image available</p>
+        {% endif %}
         <a href="/book-details/{{ book.book_id }}"><button>More Details</button></a>
     </div>
     {% endfor %}

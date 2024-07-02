@@ -4,12 +4,15 @@ from flask import jsonify
 import os
 from werkzeug.utils import secure_filename
 
-UPLOAD_FOLDER = './photos'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 API_URL = "http://localhost:8080"  
 
@@ -35,13 +38,13 @@ def search_books():
 def book_details(book_id):
     try:
         response = requests.get(f"{API_URL}/books/{book_id}")
-        if response.status_code != 200:
-            return "Error fetching book details from API", 400
+        response.raise_for_status() 
         book = response.json()
-        app.logger.debug(f"Book details: {book}")  
+        app.logger.debug(f"Book details: {book}")
         return render_template('book_details.html', book=book)
-    except Exception as err:
-        return str(err), 500
+    except requests.RequestException as err:
+        app.logger.error(f"Error fetching book details: {err}")
+        return f"Error fetching book details: {err}", 500
     
 @app.route('/subscribers', methods=['GET'])
 def get_subscribers():
@@ -186,7 +189,7 @@ def add_author():
 def add_book():
     if request.method == 'POST':
         title = request.form.get('title')
-        details = request.form.get('details')  
+        details = request.form.get('details')
         author_id = request.form.get('author')
         is_borrowed = request.form.get('is_borrowed', 'off') == 'on'
         photo = request.files['photo']
@@ -195,41 +198,37 @@ def add_book():
             filename = secure_filename(photo.filename)
             photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(photo_path)
-            photo_path = f'photos/{filename}'
+            photo_url = f'uploads/{filename}'
         else:
-            photo_path = None
-
-        try:
-            author_id = int(author_id)
-        except ValueError:
-            return jsonify(success=False, error="Author ID must be an integer"), 400
+            photo_url = None
 
         data = {
             'title': title,
-            'details': details,  
-            'author_id': author_id,
+            'details': details,
+            'author_id': int(author_id),
             'is_borrowed': is_borrowed,
-            'photo': photo_path
+            'photo': photo_url
         }
 
-        app.logger.debug(f"Data to send to API: {data}")
+        headers = {'Content-Type': 'application/json'}
 
         try:
-            response = requests.post(f"{API_URL}/books/new", json=data)
+            response = requests.post(f"{API_URL}/books/new", json=data, headers=headers)
             app.logger.debug(f"API Response: {response.status_code}, Content: {response.content}")
 
-            if response.status_code == 200: 
-                response_data = response.json()
-                app.logger.debug(f"Book added successfully: {response_data}")
+            if response.status_code == 200:
                 return redirect(url_for("index"))
             else:
                 error_message = response.json().get('error', 'Failed to add book')
                 app.logger.error(f"Failed to add book: {error_message}")
                 return jsonify(success=False, error=error_message), 500
 
-        except Exception as err:
+        except requests.RequestException as err:
             app.logger.error(f"Failed to add book: {err}")
             return jsonify(success=False, error=str(err)), 500
+
+    # GET request handling...
+
 
     try:
         response = requests.get(f"{API_URL}/authors")

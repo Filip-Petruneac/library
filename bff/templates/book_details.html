@@ -9,7 +9,7 @@
 <body>
     <div class="details-container">
         <h2 id="title">{{ book.book_title }}</h2>
-        <img src="data:image/jpeg;base64,{{ book.photo }}" >
+        <img src="{{ url_for('static', filename=book.photo) }}" alt="Book cover">
         <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
         <p>Is Borrowed: {{ book.is_borrowed }}</p>
         <p>Details: {{ book.book_details }}</p>
