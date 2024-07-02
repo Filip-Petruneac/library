@@ -121,7 +121,7 @@ def update_author(author_id):
             filename = secure_filename(photo.filename)
             photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(photo_path)
-            photo_url = f'/uploads/{filename}'  # Adjust this based on your file serving logic
+            photo_url = f'/uploads/{filename}' 
         else:
             photo_url = request.form.get('existing_photo')
 

@@ -12,9 +12,9 @@
         <table border="1" id="authorTable">
             <thead>
                 <tr>
-                    <th onclick="sortTable(0)">ID</th>
-                    <th onclick="sortTable(1)">Firstname</th>
-                    <th onclick="sortTable(2)">Lastname</th>
+                    
+                    <th onclick="sortTable(0)">Firstname</th>
+                    <th onclick="sortTable(1)">Lastname</th>
                     <th>Photo</th>
                     <th>Actions</th>
                 </tr>
@@ -22,7 +22,6 @@
             <tbody>
                 {% for author in authors %}
                 <tr>
-                    <td>{{ author.id }}</td>
                     <td>{{ author.firstname }}</td>
                     <td>{{ author.lastname }}</td>
                     <td>

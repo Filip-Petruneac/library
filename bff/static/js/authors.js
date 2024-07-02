@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     displayTable(currentPage);
 });
 
+
 function sortTable(n) {
     const table = document.getElementById("authorTable");
     let switching = true;
@@ -64,10 +65,11 @@ function sortTable(n) {
     displayTable(currentPage);
 }
 
+
 function searchTable() {
     const input = document.getElementById("searchInput").value.toUpperCase();
     rows.forEach(row => {
-        const td = row.getElementsByTagName("td")[1];
+        const td = row.getElementsByTagName("td")[0];
         if (td) {
             const txtValue = td.textContent || td.innerText;
             row.style.display = txtValue.toUpperCase().includes(input) ? "" : "none";
@@ -85,6 +87,7 @@ function confirmDelete(authorId) {
         deleteAuthor(authorId);
     }
 }
+
 
 function deleteAuthor(authorId) {
     fetch(`/author/${authorId}`, {
@@ -112,6 +115,7 @@ function deleteAuthor(authorId) {
         console.error('There was a problem with the fetch operation:', error.message);
     });
 }
+
 
 function redirectToUpdateForm(authorId, firstname, lastname, photo) {
     const url = new URL('/update_author_form.html', window.location.origin);
