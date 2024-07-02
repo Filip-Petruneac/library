@@ -148,37 +148,27 @@ def add_author():
 
         if photo:
             filename = secure_filename(photo.filename)
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'],filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(photo_path)
-            photo_path = f'photos/{filename}'
-
+            photo_url = f'uploads/{filename}'  
         else:
-            photo.filename = None
-            photo_path = None
+            photo_url = None
 
         data = {
             'firstname': firstname,
             'lastname': lastname,
-            'photo': photo_path
+            'photo': photo_url  
         }
 
         try:
             response = requests.post(f"{API_URL}/authors/new", json=data)
             if response.status_code == 201:
-                # if photo_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
-                #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 return redirect(url_for("get_authors"))
             else:
-                if response.content:
-                    print(response)
-                    error_message = response.json().get('error', 'Failed to add author')
-                else:
-                    error_message = 'Empty response from the API'
-                    print("Empty response:", response.content)
-
+                error_message = response.json().get('error', 'Failed to add author')
                 app.logger.error(f"Failed to add author: {error_message}")
                 return jsonify(success=False, error=error_message), 500
-            
+        
         except Exception as err:
             app.logger.error(f"Failed to add author: {err}")
             return jsonify(success=False, error=str(err)), 500
@@ -227,9 +217,7 @@ def add_book():
             app.logger.error(f"Failed to add book: {err}")
             return jsonify(success=False, error=str(err)), 500
 
-    # GET request handling...
-
-
+  
     try:
         response = requests.get(f"{API_URL}/authors")
         if response.status_code != 200:
