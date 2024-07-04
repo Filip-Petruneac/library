@@ -7,21 +7,27 @@
     <link rel="stylesheet" href="/css/authors.css">
 </head>
 <body>
+    <nav class="navbar">
+        <form action="/search_authors" method="GET" class="search-form">
+            <input type="text" name="query" placeholder="Search by firstname or lastname...">
+            <button type="submit">Search</button>
+        </form>
+    </nav>
     <div class="table-container">
-        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search for authors..">
         <table border="1" id="authorTable">
             <thead>
                 <tr>
-                    
-                    <th onclick="sortTable(0)">Firstname</th>
-                    <th onclick="sortTable(1)">Lastname</th>
+                    <th onclick="sortTable(0)">ID</th>
+                    <th onclick="sortTable(1)">Firstname</th>
+                    <th onclick="sortTable(2)">Lastname</th>
                     <th>Photo</th>
                     <th>Actions</th>
                 </tr>
-            </thead>struct 
+            </thead>
             <tbody>
                 {% for author in authors %}
                 <tr>
+                    <td>{{ author.id }}</td>
                     <td>{{ author.firstname }}</td>
                     <td>{{ author.lastname }}</td>
                     <td>

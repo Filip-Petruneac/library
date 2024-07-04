@@ -14,6 +14,12 @@ import (
 	"github.com/gorilla/mux"
 
 )
+type AuthorInfo struct {
+    ID        int    `json:"id"`
+    Firstname string `json:"firstname"`
+    Lastname  string `json:"lastname"`
+    Photo     string `json:"photo,omitempty"` // omitempty to avoid empty fields in the JSON response
+}
 
 // Sample data structure to store dummy data
 type Author struct {
@@ -118,6 +124,8 @@ func main() {
 	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
 	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
     r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
+    r.HandleFunc("/search_authors", SearchAuthors(db)).Methods("GET")
+
 
 
 
@@ -233,6 +241,49 @@ func SearchBooks(db *sql.DB) http.HandlerFunc {
             return
         }
         json.NewEncoder(w).Encode(books)
+    }
+}
+
+// SearchAuthors returns a handler that searches for authors by firstname or lastname.
+func SearchAuthors(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        query := r.URL.Query().Get("query")
+        if query == "" {
+            http.Error(w, "Query parameter is missing", http.StatusBadRequest)
+            return
+        }
+
+        sqlQuery := `
+            SELECT 
+                id, 
+                Firstname, 
+                Lastname, 
+                photo 
+            FROM authors
+            WHERE Firstname LIKE ? OR Lastname LIKE ?`
+
+        rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
+
+        var authors []AuthorInfo
+        for rows.Next() {
+            var author AuthorInfo
+            if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            authors = append(authors, author)
+        }
+        if err := rows.Err(); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        json.NewEncoder(w).Encode(authors)
     }
 }
 
@@ -474,9 +525,10 @@ func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 // GetAllSubscribers returns a handler that gets all the subscribers in the database.
 func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        query := "SELECT id, lastname, firstname, email FROM subscribers"
+        query := "SELECT lastname, firstname, email FROM subscribers"
         rows, err := db.Query(query)
         if err != nil {
+            log.Printf("Query error: %v", err)
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
@@ -486,17 +538,23 @@ func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
         for rows.Next() {
             var subscriber Subscriber
             if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+                log.Printf("Scan error: %v", err)
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
             }
             subscribers = append(subscribers, subscriber)
         }
         if err := rows.Err(); err != nil {
+            log.Printf("Rows error: %v", err)
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
 
-        json.NewEncoder(w).Encode(subscribers)
+        err = json.NewEncoder(w).Encode(subscribers)
+        if err != nil {
+            log.Printf("JSON encoding error: %v", err)
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
     }
 }
 // AddAuthor adds a new author to the database

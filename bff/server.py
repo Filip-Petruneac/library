@@ -34,6 +34,14 @@ def search_books():
     books = response.json()
     return render_template('books.html', books=books)
 
+@app.route('/search_authors', methods=['GET'])
+def search_authors():
+    query = request.args.get('query', '')
+    response = requests.get(f'{API_URL}/search_authors', params={'query': query})
+    authors = response.json()
+    return render_template('authors.html', authors=authors)
+
+
 @app.route('/book-details/<int:book_id>')
 def book_details(book_id):
     try:
