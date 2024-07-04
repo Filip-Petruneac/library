@@ -212,8 +212,8 @@ def add_author():
             response = requests.post(f"{API_URL}/authors/new", json=data)
             if response.status_code == 201:
                 resp_data = response.json()
-                id_author = resp_data.get(id, 0)
-                if (id == 0):
+                id_author = resp_data.get("id", 0)
+                if (id_author == 0):
                     error_message = response.json().get('error', 'Failed to add author')
                     app.logger.error(f"Failed to add photo for author: {error_message}")
                     # TODO Delete created author...

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io"
 	"os"
+	"path/filepath"
 
 	// "io/ioutil"
 	"encoding/json"
@@ -16,39 +17,38 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
+
 type AuthorInfo struct {
-    ID        int    `json:"id"`
-    Firstname string `json:"firstname"`
-    Lastname  string `json:"lastname"`
-    Photo     string `json:"photo,omitempty"` // omitempty to avoid empty fields in the JSON response
+	ID        int    `json:"id"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	Photo     string `json:"photo,omitempty"` // omitempty to avoid empty fields in the JSON response
 }
 
 // Sample data structure to store dummy data
 type Author struct {
-	ID           int    `json:"id"`
-	Lastname     string `json:"lastname"`
-	Firstname    string `json:"firstname"`
-	Photo        string `json:"photo"`
+	ID        int    `json:"id"`
+	Lastname  string `json:"lastname"`
+	Firstname string `json:"firstname"`
+	Photo     string `json:"photo"`
 }
-
 
 type AuthorBook struct {
 	AuthorFirstname string `json:"author_firstname"`
-    AuthorLastname  string `json:"author_lastname"`
-    BookTitle string `json:"book_title"`
-    BookPhoto string `json:"book_photo"`
-
+	AuthorLastname  string `json:"author_lastname"`
+	BookTitle       string `json:"book_title"`
+	BookPhoto       string `json:"book_photo"`
 }
 
 type BookAuthorInfo struct {
-    BookID          int    `json:"book_id"`
-    BookTitle       string `json:"book_title"`
-    AuthorID        int    `json:"author_id"`
-    BookPhoto       string `json:"book_photo"`
-    IsBorrowed      bool   `json:"is_borrowed"`
-    BookDetails     string `json:"book_details"`
-    AuthorLastname  string `json:"author_lastname"`
-    AuthorFirstname string `json:"author_firstname"`
+	BookID          int    `json:"book_id"`
+	BookTitle       string `json:"book_title"`
+	AuthorID        int    `json:"author_id"`
+	BookPhoto       string `json:"book_photo"`
+	IsBorrowed      bool   `json:"is_borrowed"`
+	BookDetails     string `json:"book_details"`
+	AuthorLastname  string `json:"author_lastname"`
+	AuthorFirstname string `json:"author_firstname"`
 }
 
 type Subscriber struct {
@@ -58,11 +58,11 @@ type Subscriber struct {
 }
 
 type NewBook struct {
-    Title       string `json:"title"`
-    AuthorID    int    `json:"author_id"`
-    Photo       string `json:"photo"`
-    IsBorrowed  bool   `json:"is_borrowed"`
-    Details     string `json:"details"`
+	Title      string `json:"title"`
+	AuthorID   int    `json:"author_id"`
+	Photo      string `json:"photo"`
+	IsBorrowed bool   `json:"is_borrowed"`
+	Details    string `json:"details"`
 }
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
@@ -77,7 +77,7 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	
+
 	// Check if the connection is successful
 	err = db.Ping()
 	if err != nil {
@@ -126,14 +126,10 @@ func main() {
 	r.HandleFunc("/authors/{id}", DeleteAuthor(db)).Methods("DELETE")
 	r.HandleFunc("/books/{id}", DeleteBook(db)).Methods("DELETE")
 	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
-    r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
-    r.HandleFunc("/search_authors", SearchAuthors(db)).Methods("GET")
-
-
-
+	r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
+	r.HandleFunc("/search_authors", SearchAuthors(db)).Methods("GET")
 
 	http.Handle("/", r)
-
 
 	log.Println("Started on port", *port)
 	fmt.Println("To close connection CTRL+C :-)")
@@ -144,7 +140,6 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
 
 // Handler functions...
 
@@ -160,8 +155,8 @@ func Info(w http.ResponseWriter, r *http.Request) {
 
 // GetAllBooks returns a handler that gets all the books in the database along with the author's first and last name.
 func GetAllBooks(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        query := `
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := `
             SELECT 
                 books.id AS book_id,
                 books.title AS book_title, 
@@ -174,41 +169,40 @@ func GetAllBooks(db *sql.DB) http.HandlerFunc {
             FROM books
             JOIN authors ON books.author_id = authors.id
         `
-        rows, err := db.Query(query)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        defer rows.Close()
-        var books []BookAuthorInfo
-        for rows.Next() {
-            var book BookAuthorInfo
-            if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
+		rows, err := db.Query(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+		var books []BookAuthorInfo
+		for rows.Next() {
+			var book BookAuthorInfo
+			if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-            books = append(books, book)
-        }
-        if err := rows.Err(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        json.NewEncoder(w).Encode(books)
-    }
+			books = append(books, book)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(books)
+	}
 }
-
 
 // SearchBooks returns a handler that searches for books by title or author.
 func SearchBooks(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        query := r.URL.Query().Get("query")
-        if query == "" {
-            http.Error(w, "Query parameter is missing", http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("query")
+		if query == "" {
+			http.Error(w, "Query parameter is missing", http.StatusBadRequest)
+			return
+		}
 
-        sqlQuery := `
+		sqlQuery := `
             SELECT 
                 books.id AS book_id,
                 books.title AS book_title, 
@@ -222,41 +216,41 @@ func SearchBooks(db *sql.DB) http.HandlerFunc {
             JOIN authors ON books.author_id = authors.id
             WHERE books.title LIKE ? OR authors.Firstname LIKE ? OR authors.Lastname LIKE ?
         `
-        rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        defer rows.Close()
+		rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
 
-        var books []BookAuthorInfo
-        for rows.Next() {
-            var book BookAuthorInfo
-            if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
+		var books []BookAuthorInfo
+		for rows.Next() {
+			var book BookAuthorInfo
+			if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-            books = append(books, book)
-        }
-        if err := rows.Err(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        json.NewEncoder(w).Encode(books)
-    }
+			books = append(books, book)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(books)
+	}
 }
 
 // SearchAuthors returns a handler that searches for authors by firstname or lastname.
 func SearchAuthors(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        query := r.URL.Query().Get("query")
-        if query == "" {
-            http.Error(w, "Query parameter is missing", http.StatusBadRequest)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("query")
+		if query == "" {
+			http.Error(w, "Query parameter is missing", http.StatusBadRequest)
+			return
+		}
 
-        sqlQuery := `
+		sqlQuery := `
             SELECT 
                 id, 
                 Firstname, 
@@ -265,29 +259,29 @@ func SearchAuthors(db *sql.DB) http.HandlerFunc {
             FROM authors
             WHERE Firstname LIKE ? OR Lastname LIKE ?`
 
-        rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        defer rows.Close()
+		rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
 
-        var authors []AuthorInfo
-        for rows.Next() {
-            var author AuthorInfo
-            if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
+		var authors []AuthorInfo
+		for rows.Next() {
+			var author AuthorInfo
+			if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-            authors = append(authors, author)
-        }
-        if err := rows.Err(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        json.NewEncoder(w).Encode(authors)
-    }
+			authors = append(authors, author)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(authors)
+	}
 }
 
 func GetAuthors(db *sql.DB) http.HandlerFunc {
@@ -316,8 +310,6 @@ func GetAuthors(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(authors)
 	}
 }
-
-
 
 // GetAuthorsAndBooks returns a handler function that retrieves information about authors and their books.
 func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
@@ -365,16 +357,16 @@ func GetAuthorsAndBooks(db *sql.DB) http.HandlerFunc {
 
 // GetAuthorBooksByID returns a handler function that retrieves information about an author and their books by the author's ID.
 func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-        authorID := vars["id"]
-        id, err := strconv.Atoi(authorID)
-        if err != nil {
-            http.Error(w, "Invalid author ID", http.StatusBadRequest)
-            return
-        }
+		authorID := vars["id"]
+		id, err := strconv.Atoi(authorID)
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
 
-        query := `
+		query := `
             SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, a.Photo AS author_photo, b.title AS book_title, b.photo AS book_photo
             FROM authors_books ab
             JOIN authors a ON ab.author_id = a.id
@@ -382,15 +374,15 @@ func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
             WHERE a.id = ?
         `
 
-        rows, err := db.Query(query, id)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        defer rows.Close()
+		rows, err := db.Query(query, id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
 
-        var authorFirstname, authorLastname, authorPhoto, bookTitle, bookPhoto string
-        var books []AuthorBook
+		var authorFirstname, authorLastname, authorPhoto, bookTitle, bookPhoto string
+		var books []AuthorBook
 
 		for rows.Next() {
 			if err := rows.Scan(&authorFirstname, &authorLastname, &authorPhoto, &bookTitle, &bookPhoto); err != nil {
@@ -402,39 +394,38 @@ func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
 				BookPhoto: bookPhoto,
 			})
 		}
-		
-        if err := rows.Err(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
 
-        authorAndBooks := struct {
-            AuthorFirstname string        `json:"author_firstname"`
-            AuthorLastname  string        `json:"author_lastname"`
-            AuthorPhoto     string        `json:"author_photo"`
-            Books           []AuthorBook `json:"books"`
-        }{
-            AuthorFirstname: authorFirstname,
-            AuthorLastname:  authorLastname,
-            AuthorPhoto:     authorPhoto,
-            Books:           books,
-        }
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        json.NewEncoder(w).Encode(authorAndBooks)
-    }
+		authorAndBooks := struct {
+			AuthorFirstname string       `json:"author_firstname"`
+			AuthorLastname  string       `json:"author_lastname"`
+			AuthorPhoto     string       `json:"author_photo"`
+			Books           []AuthorBook `json:"books"`
+		}{
+			AuthorFirstname: authorFirstname,
+			AuthorLastname:  authorLastname,
+			AuthorPhoto:     authorPhoto,
+			Books:           books,
+		}
+
+		json.NewEncoder(w).Encode(authorAndBooks)
+	}
 }
-
 
 // GetBookById retrieves information about a specific book based on its ID
 func GetBookByID(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bookID := mux.Vars(r)["id"]
 		intBookID, err := strconv.Atoi(bookID)
-        if err != nil {
-            http.Error(w, "Invalid book ID", http.StatusBadRequest)
-            return
-        }
-		query :=`
+		if err != nil {
+			http.Error(w, "Invalid book ID", http.StatusBadRequest)
+			return
+		}
+		query := `
 			SELECT 
 				books.title AS book_title, 
 				books.author_id AS author_id, 
@@ -505,7 +496,7 @@ func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 		defer rows.Close()
 
 		var subscribers []Subscriber
-		
+
 		// Iterate over the query result set and populate the subscribers slice
 		for rows.Next() {
 			var subscriber Subscriber
@@ -527,208 +518,210 @@ func GetSubscribersByBookID(db *sql.DB) http.HandlerFunc {
 
 // GetAllSubscribers returns a handler that gets all the subscribers in the database.
 func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        query := "SELECT lastname, firstname, email FROM subscribers"
-        rows, err := db.Query(query)
-        if err != nil {
-            log.Printf("Query error: %v", err)
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        defer rows.Close()
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := "SELECT lastname, firstname, email FROM subscribers"
+		rows, err := db.Query(query)
+		if err != nil {
+			log.Printf("Query error: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
 
-        var subscribers []Subscriber
-        for rows.Next() {
-            var subscriber Subscriber
-            if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-                log.Printf("Scan error: %v", err)
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-                return
-            }
-            subscribers = append(subscribers, subscriber)
-        }
-        if err := rows.Err(); err != nil {
-            log.Printf("Rows error: %v", err)
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
+		var subscribers []Subscriber
+		for rows.Next() {
+			var subscriber Subscriber
+			if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+				log.Printf("Scan error: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			subscribers = append(subscribers, subscriber)
+		}
+		if err := rows.Err(); err != nil {
+			log.Printf("Rows error: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-        err = json.NewEncoder(w).Encode(subscribers)
-        if err != nil {
-            log.Printf("JSON encoding error: %v", err)
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-    }
+		err = json.NewEncoder(w).Encode(subscribers)
+		if err != nil {
+			log.Printf("JSON encoding error: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
 
 func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        vars := mux.Vars(r)
-        authorID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid author ID", http.StatusBadRequest)
-            return
-        }
+		vars := mux.Vars(r)
+		authorID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
 
-        file, _, err := r.FormFile("file")
-        if err != nil {
-            fmt.Printf("Error get photo from request")
-            http.Error(w, "Error get file", http.StatusInternalServerError)
-            return
-        }
-        defer file.Close()
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			fmt.Printf("Error get photo from request")
+			http.Error(w, "Error get file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
 
-        photo_dir := "./upload/" + strconv.Itoa(authorID)
-        photo_path := photo_dir + "/fullsize"
+		filename := header.Filename
+		
+		ext := filepath.Ext(filename)
 
-        err = os.MkdirAll(photo_dir, os.ModePerm)
-            if err != nil {
-                http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
-                return
-            }
+		photo_dir := "./upload/" + strconv.Itoa(authorID)
+		photo_path := photo_dir + "/fullsize"+ ext
 
-        out, err := os.Create(photo_path)
-        if err != nil {
-            http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
-            return
-        }
-        defer out.Close()
+		err = os.MkdirAll(photo_dir, os.ModePerm)
+		if err != nil {
+			http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
+			return
+		}
 
-        _, err = io.Copy(out, file)
-        if err != nil {
-            http.Error(w, "Error saving file", http.StatusInternalServerError)
-            return
-        }
-        
-        // Query to add author with photo path
-        query := `
+		out, err := os.Create(photo_path)
+		if err != nil {
+			http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
+			return
+		}
+		defer out.Close()
+
+		_, err = io.Copy(out, file)
+		if err != nil {
+			http.Error(w, "Error saving file", http.StatusInternalServerError)
+			return
+		}
+
+		// Query to add author with photo path
+		query := `
             INSERT INTO authors (photo) 
             VALUES (?)
         `
 
-        // We run the query
-        _, err = db.Exec(query, photo_path)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// We run the query
+		_, err = db.Exec(query, photo_path)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        w.WriteHeader(http.StatusOK)
-        fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
-    }
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
+	}
 }
-
 
 // AddAuthor adds a new author to the database
 func AddAuthor(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // We parse the JSON data received from the request
-        var author Author
-        err := json.NewDecoder(r.Body).Decode(&author)
-        if err != nil {
-            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-            return
-        }
-        defer r.Body.Close()
+		// We parse the JSON data received from the request
+		var author Author
+		err := json.NewDecoder(r.Body).Decode(&author)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
 
-        // We check if all required fields are filled
-        if author.Firstname == "" || author.Lastname == "" {
-            http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
-            return
-        }
+		// We check if all required fields are filled
+		if author.Firstname == "" || author.Lastname == "" {
+			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+			return
+		}
 
-        // Query to add author with photo path
-        query := `
+		// Query to add author with photo path
+		query := `
             INSERT INTO authors (lastname, firstname) 
             VALUES (?, ?)
         `
 
-        // We run the query
-        result, err := db.Exec(query, author.Lastname, author.Firstname)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// We run the query
+		result, err := db.Exec(query, author.Lastname, author.Firstname)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // We get the inserted author ID
-        id, err := result.LastInsertId()
-        if err != nil {
-            http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
-            return
-        }
+		// We get the inserted author ID
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+			return
+		}
 
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusCreated)
-        // We return the response with the author ID inserted
-        response := map[string]int{"id": int(id)}
-        json.NewEncoder(w).Encode(response)
-    }
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// We return the response with the author ID inserted
+		response := map[string]int{"id": int(id)}
+		json.NewEncoder(w).Encode(response)
+	}
 }
-
 
 // AddBook adds a new book to the database
 func AddBook(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Check the HTTP method
-        if r.Method != http.MethodPost {
-            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // Parse the JSON data received from the request
-        var book NewBook
-        err := json.NewDecoder(r.Body).Decode(&book)
-        if err != nil {
-            log.Printf("Error decoding JSON: %v", err)
-            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-            return
-        }
-        defer r.Body.Close()
+		// Parse the JSON data received from the request
+		var book NewBook
+		err := json.NewDecoder(r.Body).Decode(&book)
+		if err != nil {
+			log.Printf("Error decoding JSON: %v", err)
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
 
-        // Log the received book data for debugging
-        log.Printf("Received book data: %+v", book)
+		// Log the received book data for debugging
+		log.Printf("Received book data: %+v", book)
 
-        // Check if all required fields are filled
-        if book.Title == "" || book.AuthorID == 0 {
-            http.Error(w, "Book title and author ID are required fields", http.StatusBadRequest)
-            return
-        }
+		// Check if all required fields are filled
+		if book.Title == "" || book.AuthorID == 0 {
+			http.Error(w, "Book title and author ID are required fields", http.StatusBadRequest)
+			return
+		}
 
-        // Query to add book
-        query := `
+		// Query to add book
+		query := `
             INSERT INTO books (title, author_id, photo, is_borrowed, details) 
             VALUES (?, ?, ?, ?, ?)
         `
 
-        // Execute the query
-        result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details)  // Changed here
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query
+		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details) // Changed here
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Get the inserted book ID
-        id, err := result.LastInsertId()
-        if err != nil {
-            http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
-            return
-        }
+		// Get the inserted book ID
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+			return
+		}
 
-        // Return the response with the book ID inserted
-        response := map[string]int{"id": int(id)}
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(response)
-    }
+		// Return the response with the book ID inserted
+		response := map[string]int{"id": int(id)}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
 }
 
 // AddSubscriber adds a new subscriber to the database
@@ -780,7 +773,6 @@ func AddSubscriber(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(response)
 	}
 }
-
 
 // BorrowBook handles borrowing a book by a subscriber
 func BorrowBook(db *sql.DB) http.HandlerFunc {
@@ -877,57 +869,54 @@ func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-
 func UpdateAuthor(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPut && r.Method != http.MethodPost {
-            http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut && r.Method != http.MethodPost {
+			http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        vars := mux.Vars(r)
-        authorID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid author ID", http.StatusBadRequest)
-            return
-        }
+		vars := mux.Vars(r)
+		authorID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
 
-        var author Author
-        err = json.NewDecoder(r.Body).Decode(&author)
-        if err != nil {
-            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-            return
-        }
-        defer r.Body.Close()
+		var author Author
+		err = json.NewDecoder(r.Body).Decode(&author)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
 
-        if author.Firstname == "" || author.Lastname == "" {
-            http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
-            return
-        }
+		if author.Firstname == "" || author.Lastname == "" {
+			http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
+			return
+		}
 
-        query := `
+		query := `
             UPDATE authors 
             SET lastname = ?, firstname = ?, photo = ? 
             WHERE id = ?
         `
 
-        result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo, authorID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to update author: %v", err), http.StatusInternalServerError)
-            return
-        }
+		result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo, authorID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update author: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        rowsAffected, _ := result.RowsAffected()
-        if rowsAffected == 0 {
-            http.Error(w, "Author not found", http.StatusNotFound)
-            return
-        }
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Author not found", http.StatusNotFound)
+			return
+		}
 
-        fmt.Fprintf(w, "Author updated successfully")
-    }
+		fmt.Fprintf(w, "Author updated successfully")
+	}
 }
-
-
 
 // UpdateBook updates an existing book in the database
 func UpdateBook(db *sql.DB) http.HandlerFunc {
@@ -997,257 +986,255 @@ func UpdateBook(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-
 // UpdateSubscriber updates an existing subscriber in the database
 func UpdateSubscriber(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Check the HTTP method
-        if r.Method != http.MethodPut && r.Method != http.MethodPost {
-            http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodPut && r.Method != http.MethodPost {
+			http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // Extract the subscriber ID from the URL path
-        vars := mux.Vars(r)
-        subscriberID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
-            return
-        }
+		// Extract the subscriber ID from the URL path
+		vars := mux.Vars(r)
+		subscriberID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
+			return
+		}
 
-        // Parse the JSON data received from the request
-        var subscriber Subscriber
-        err = json.NewDecoder(r.Body).Decode(&subscriber)
-        if err != nil {
-            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-            return
-        }
-        defer r.Body.Close()
+		// Parse the JSON data received from the request
+		var subscriber Subscriber
+		err = json.NewDecoder(r.Body).Decode(&subscriber)
+		if err != nil {
+			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
 
-        // Log the subscriber ID and received data for update
-        log.Printf("Updating subscriber with ID: %d", subscriberID)
-        log.Printf("Received data: %+v", subscriber)
+		// Log the subscriber ID and received data for update
+		log.Printf("Updating subscriber with ID: %d", subscriberID)
+		log.Printf("Received data: %+v", subscriber)
 
-        // Check if all required fields are filled
-        if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
-            http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
-            return
-        }
+		// Check if all required fields are filled
+		if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
+			http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
+			return
+		}
 
-        // Query to update the subscriber
-        query := `
+		// Query to update the subscriber
+		query := `
             UPDATE subscribers 
             SET lastname = ?, firstname = ?, email = ? 
             WHERE id = ?
         `
 
-        // Execute the query
-        result, err := db.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email, subscriberID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to update subscriber: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query
+		result, err := db.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email, subscriberID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update subscriber: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Check if any row was actually updated
-        rowsAffected, _ := result.RowsAffected()
-        if rowsAffected == 0 {
-            http.Error(w, "Subscriber not found", http.StatusNotFound)
-            return
-        }
+		// Check if any row was actually updated
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Subscriber not found", http.StatusNotFound)
+			return
+		}
 
-        // Return the success response
-        fmt.Fprintf(w, "Subscriber updated successfully")
-    }
+		// Return the success response
+		fmt.Fprintf(w, "Subscriber updated successfully")
+	}
 }
 
 // DeleteAuthor deletes an existing author from the database
 func DeleteAuthor(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Check the HTTP method
-        if r.Method != http.MethodDelete {
-            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodDelete {
+			http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // Extract the author ID from the URL path
-        vars := mux.Vars(r)
-        authorID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid author ID", http.StatusBadRequest)
-            return
-        }
+		// Extract the author ID from the URL path
+		vars := mux.Vars(r)
+		authorID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid author ID", http.StatusBadRequest)
+			return
+		}
 
-        // Query to check if the author has books
-        booksQuery := `
+		// Query to check if the author has books
+		booksQuery := `
             SELECT COUNT(*)
             FROM books
             WHERE author_id = ?
         `
 
-        // Execute the query
-        var numBooks int
-        err = db.QueryRow(booksQuery, authorID).Scan(&numBooks)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to check for books: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query
+		var numBooks int
+		err = db.QueryRow(booksQuery, authorID).Scan(&numBooks)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to check for books: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // If author has books, respond with a bad request
-        if numBooks > 0 {
-            http.Error(w, "Author has associated books, delete books first", http.StatusBadRequest)
-            return
-        }
+		// If author has books, respond with a bad request
+		if numBooks > 0 {
+			http.Error(w, "Author has associated books, delete books first", http.StatusBadRequest)
+			return
+		}
 
-        // Query to delete the author
-        deleteQuery := `
+		// Query to delete the author
+		deleteQuery := `
             DELETE FROM authors
             WHERE id = ?
         `
 
-        // Execute the query to delete the author
-        result, err := db.Exec(deleteQuery, authorID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query to delete the author
+		result, err := db.Exec(deleteQuery, authorID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Check if any row was actually deleted
-        rowsAffected, _ := result.RowsAffected()
-        if rowsAffected == 0 {
-            http.Error(w, "Author not found", http.StatusNotFound)
-            return
-        }
+		// Check if any row was actually deleted
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Author not found", http.StatusNotFound)
+			return
+		}
 
-        // Return the success response
-        fmt.Fprintf(w, "Author deleted successfully")
-    }
+		// Return the success response
+		fmt.Fprintf(w, "Author deleted successfully")
+	}
 }
 
 // DeleteBook deletes an existing book from the database
 func DeleteBook(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Check the HTTP method
-        if r.Method != http.MethodDelete {
-            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodDelete {
+			http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // Extract the book ID from the URL path
-        vars := mux.Vars(r)
-        bookID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid book ID", http.StatusBadRequest)
-            return
-        }
+		// Extract the book ID from the URL path
+		vars := mux.Vars(r)
+		bookID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid book ID", http.StatusBadRequest)
+			return
+		}
 
-        // Query to get the author ID of the book
-        authorIDQuery := `
+		// Query to get the author ID of the book
+		authorIDQuery := `
             SELECT author_id
             FROM books
             WHERE id = ?
         `
 
-        // Execute the query
-        var authorID int
-        err = db.QueryRow(authorIDQuery, bookID).Scan(&authorID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to retrieve author ID: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query
+		var authorID int
+		err = db.QueryRow(authorIDQuery, bookID).Scan(&authorID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to retrieve author ID: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Query to check if the author has any other books
-        otherBooksQuery := `
+		// Query to check if the author has any other books
+		otherBooksQuery := `
             SELECT COUNT(*)
             FROM books
             WHERE author_id = ? AND id != ?
         `
 
-        // Execute the query
-        var numOtherBooks int
-        err = db.QueryRow(otherBooksQuery, authorID, bookID).Scan(&numOtherBooks)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to check for other books: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query
+		var numOtherBooks int
+		err = db.QueryRow(otherBooksQuery, authorID, bookID).Scan(&numOtherBooks)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to check for other books: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Query to delete the book
-        deleteBookQuery := `
+		// Query to delete the book
+		deleteBookQuery := `
             DELETE FROM books
             WHERE id = ?
         `
 
-        // Execute the query to delete the book
-        result, err := db.Exec(deleteBookQuery, bookID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to delete book: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query to delete the book
+		result, err := db.Exec(deleteBookQuery, bookID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to delete book: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Check if any row was actually deleted
-        rowsAffected, _ := result.RowsAffected()
-        if rowsAffected == 0 {
-            http.Error(w, "Book not found", http.StatusNotFound)
-            return
-        }
+		// Check if any row was actually deleted
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Book not found", http.StatusNotFound)
+			return
+		}
 
-        // If the author has no other books, delete the author as well
-        if numOtherBooks == 0 {
-            deleteAuthorQuery := `
+		// If the author has no other books, delete the author as well
+		if numOtherBooks == 0 {
+			deleteAuthorQuery := `
                 DELETE FROM authors
                 WHERE id = ?
             `
 
-            // Execute the query to delete the author
-            _, err = db.Exec(deleteAuthorQuery, authorID)
-            if err != nil {
-                http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
-                return
-            }
-        }
-        
-        fmt.Fprintf(w, "Book deleted successfully")
-    }
-}
+			// Execute the query to delete the author
+			_, err = db.Exec(deleteAuthorQuery, authorID)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+				return
+			}
+		}
 
+		fmt.Fprintf(w, "Book deleted successfully")
+	}
+}
 
 // DeleteSubscriber deletes an existing subscriber from the database
 func DeleteSubscriber(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        // Check the HTTP method
-        if r.Method != http.MethodDelete {
-            http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the HTTP method
+		if r.Method != http.MethodDelete {
+			http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        // Extract the subscriber ID from the URL path
-        vars := mux.Vars(r)
-        subscriberID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
-            return
-        }
+		// Extract the subscriber ID from the URL path
+		vars := mux.Vars(r)
+		subscriberID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
+			return
+		}
 
-        // Query to delete the subscriber
-        deleteQuery := `
+		// Query to delete the subscriber
+		deleteQuery := `
             DELETE FROM subscribers
             WHERE id = ?
         `
 
-        // Execute the query to delete the subscriber
-        result, err := db.Exec(deleteQuery, subscriberID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to delete subscriber: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// Execute the query to delete the subscriber
+		result, err := db.Exec(deleteQuery, subscriberID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to delete subscriber: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        // Check if any row was actually deleted
-        rowsAffected, _ := result.RowsAffected()
-        if rowsAffected == 0 {
-            http.Error(w, "Subscriber not found", http.StatusNotFound)
-            return
-        }
+		// Check if any row was actually deleted
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			http.Error(w, "Subscriber not found", http.StatusNotFound)
+			return
+		}
 
-        // Return the success response
-        fmt.Fprintf(w, "Subscriber deleted successfully")
-    }
+		// Return the success response
+		fmt.Fprintf(w, "Subscriber deleted successfully")
+	}
 }
