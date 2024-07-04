@@ -230,17 +230,7 @@ def add_author():
                     
                     resp = forward_photo(photo_path, url_add_photo, file_extension)
                     
-                    if resp.status_code == 200:
-                        try:
-                            json_response = response.json()
-                            print("Json response: ", json_response)
-                        except ValueError:
-                            print("Error:", resp.status_code, response.text)
-                            error_message = resp.json().get('error', 'Failed to add author')
-                            app.logger.error(f"Failed to add photo for author: {error_message}, {response.status_code}, {response.text}")
-                            # TODO Delete created author...
-                            return jsonify(success=False, error=error_message), 500
-                    else:
+                    if resp.status_code != 200:
                         print("Error:", resp.status_code, response.text)
                         error_message = resp.json().get('error', 'Failed to add author')
                         app.logger.error(f"Failed to add photo for author: {error_message}, {response.status_code}, {response.text}")
@@ -249,7 +239,7 @@ def add_author():
                 
                 return redirect(url_for("get_authors"))
             else:
-                error_message = response.json().get('error', 'Failed to add author')
+                error_message = response.json().get('error', 'Failed to add author whit status code:' + resp.status_code)
                 app.logger.error(f"Failed to add author: {error_message}")
                 return jsonify(success=False, error=error_message), 500
         
