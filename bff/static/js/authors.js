@@ -32,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
     displayTable(currentPage);
 });
 
-
 function sortTable(n) {
     const table = document.getElementById("authorTable");
     let switching = true;
@@ -66,20 +65,6 @@ function sortTable(n) {
 }
 
 
-function searchTable() {
-    const input = document.getElementById("searchInput").value.toUpperCase();
-    rows.forEach(row => {
-        const td = row.getElementsByTagName("td")[0];
-        if (td) {
-            const txtValue = td.textContent || td.innerText;
-            row.style.display = txtValue.toUpperCase().includes(input) ? "" : "none";
-        }
-    });
-
-    rows = Array.from(document.getElementById("authorTable").getElementsByTagName("tbody")[0].rows).filter(row => row.style.display === "");
-    currentPage = 1;
-    displayTable(currentPage);
-}
 
 function confirmDelete(authorId) {
     const isConfirmed = confirm("Are you sure you want to delete this author?");
@@ -87,7 +72,6 @@ function confirmDelete(authorId) {
         deleteAuthor(authorId);
     }
 }
-
 
 function deleteAuthor(authorId) {
     fetch(`/author/${authorId}`, {
@@ -115,7 +99,6 @@ function deleteAuthor(authorId) {
         console.error('There was a problem with the fetch operation:', error.message);
     });
 }
-
 
 function redirectToUpdateForm(authorId, firstname, lastname, photo) {
     const url = new URL('/update_author_form.html', window.location.origin);
