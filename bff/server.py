@@ -231,7 +231,7 @@ def add_author():
                     resp = forward_photo(photo_path, url_add_photo, file_extension)
                     
                     if resp.status_code != 200:
-                        print("Error:", resp.status_code, response.text)
+                        print("Error:", resp.status_code, resp.text)
                         error_message = resp.json().get('error', 'Failed to add author')
                         app.logger.error(f"Failed to add photo for author: {error_message}, {response.status_code}, {response.text}")
                         # TODO Delete created author...
