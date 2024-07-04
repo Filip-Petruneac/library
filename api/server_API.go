@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"io"
+	"os"
+
 	// "io/ioutil"
 	"encoding/json"
 	"flag"
@@ -9,10 +12,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-
 )
 type AuthorInfo struct {
     ID        int    `json:"id"`
@@ -115,6 +117,7 @@ func main() {
 	r.HandleFunc("/book/borrow", BorrowBook(db)).Methods("POST")
 	r.HandleFunc("/book/return", ReturnBorrowedBook(db)).Methods("POST")
 	r.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
+	r.HandleFunc("/author/photo/{id}", AddAuthorPhoto(db)).Methods("POST")
 	r.HandleFunc("/books/new", AddBook(db)).Methods("POST")
 	r.HandleFunc("/subscribers/new", AddSubscriber(db)).Methods("POST")
 	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
@@ -557,6 +560,63 @@ func GetAllSubscribers(db *sql.DB) http.HandlerFunc {
         }
     }
 }
+
+func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+            return
+        }
+
+        vars := mux.Vars(r)
+        authorID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid author ID", http.StatusBadRequest)
+            return
+        }
+
+        file, _, err := r.FormFile("file")
+        if err != nil {
+            fmt.Printf("Error get photo from request")
+            http.Error(w, "Error get file", http.StatusInternalServerError)
+            return
+        }
+        defer file.Close()
+
+        photo_path := "upload/" + strconv.Itoa(authorID) + "/fullsize"
+
+        out, err := os.Create(photo_path)
+        if err != nil {
+            http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
+            return
+        }
+        defer out.Close()
+
+        _, err = io.Copy(out, file)
+        if err != nil {
+            http.Error(w, "Error saving file", http.StatusInternalServerError)
+            return
+        }
+        
+        // Query to add author with photo path
+        query := `
+            INSERT INTO authors (photo) 
+            VALUES (?)
+        `
+
+        // We run the query
+        _, err = db.Exec(query, photo_path)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
+            return
+        }
+
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
+    }
+}
+
+
 // AddAuthor adds a new author to the database
 func AddAuthor(db *sql.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
@@ -575,19 +635,19 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
         defer r.Body.Close()
 
         // We check if all required fields are filled
-        if author.Firstname == "" || author.Lastname == "" || author.Photo == "" {
+        if author.Firstname == "" || author.Lastname == "" {
             http.Error(w, "Firstname and Lastname are required fields", http.StatusBadRequest)
             return
         }
 
         // Query to add author with photo path
         query := `
-            INSERT INTO authors (lastname, firstname, photo) 
-            VALUES (?, ?, ?)
+            INSERT INTO authors (lastname, firstname) 
+            VALUES (?, ?)
         `
 
         // We run the query
-        result, err := db.Exec(query, author.Lastname, author.Firstname, author.Photo)
+        result, err := db.Exec(query, author.Lastname, author.Firstname)
         if err != nil {
             http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
             return
