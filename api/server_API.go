@@ -604,12 +604,12 @@ func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
 
 		// Query to add author with photo path
 		query := `
-            INSERT INTO authors (photo) 
-            VALUES (?)
+            UPDATE authors (photo) 
+            SET photo = ?
+            WHERE id = ?
         `
-
 		// We run the query
-		_, err = db.Exec(query, photo_path)
+		_, err = db.Exec(query, photo_path, authorID)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
 			return
