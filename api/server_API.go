@@ -583,7 +583,14 @@ func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
         }
         defer file.Close()
 
-        photo_path := "upload/" + strconv.Itoa(authorID) + "/fullsize"
+        photo_dir := "./upload/" + strconv.Itoa(authorID)
+        photo_path := photo_dir + "/fullsize"
+
+        err = os.MkdirAll(photo_dir, os.ModePerm)
+            if err != nil {
+                http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
+                return
+            }
 
         out, err := os.Create(photo_path)
         if err != nil {
