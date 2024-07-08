@@ -604,7 +604,7 @@ func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
 
 		// Query to add author with photo path
 		query := `
-            UPDATE authors (photo) 
+            UPDATE authors 
             SET photo = ?
             WHERE id = ?
         `
