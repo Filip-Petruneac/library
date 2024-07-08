@@ -111,3 +111,33 @@
 .search-form button:hover {
     background-color: #45a049; 
 }
+
+.no-books-message-box {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+    height: 80vh; 
+    width: 100%; 
+}
+
+.no-books-message {
+    color: #ff0000; 
+    font-size: 1.5em; 
+    font-weight: bold; 
+    border: 2px solid #ff0000; 
+    padding: 20px; 
+    border-radius: 10px; 
+    background-color: #fff0f0; 
+    text-align: center; 
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 10px;
+}
+
+
+
+

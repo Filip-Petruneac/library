@@ -8,12 +8,18 @@
 </head>
 <body>
     <nav class="navbar">
-        <form action="/search_authors" method="GET" class="search-form">
+        <form name="searchForm" action="/search_authors" method="GET" class="search-form" onsubmit="return validateSearchForm()">
             <input type="text" name="query" placeholder="Search by firstname or lastname...">
             <button type="submit">Search</button>
         </form>
+        <div id="error-message" class="error-message"></div>
     </nav>
     <div class="table-container">
+        {% if message %}
+        <div class="no-authors-message">
+            {{ message }}
+        </div>
+        {% else %}
         <table border="1" id="authorTable">
             <thead>
                 <tr>
@@ -44,6 +50,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% endif %}
     </div>
     
     <div class="pagination" id="pagination"></div>

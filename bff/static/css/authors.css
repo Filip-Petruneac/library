@@ -128,3 +128,21 @@ button:hover {
     background-color: #4CAF50;
     color: white;
 }
+
+
+.no-authors-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60vh; 
+    font-size: 24px;
+    color: red;
+    font-weight: bold;
+    border: 2px solid red;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    background-color: #ffe6e6;
+    text-align: center;
+}
+

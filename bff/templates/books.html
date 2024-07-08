@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Books</title>
     <link rel="stylesheet" href="/static/css/books.css">
- 
+    <script>
+        function validateSearchForm() {
+            var query = document.forms["searchForm"]["query"].value;
+            if (query == "") {
+                document.getElementById("error-message").innerText = "Search field cannot be empty.";
+                return false;
+            }
+            return true;
+        }
+    </script>
 </head>
 <body>
 <nav class="navbar">
@@ -13,25 +22,32 @@
     <a href="/subscribers">Subscribers</a>
     <a href="/add_book">➕Add Book</a>
 
-    <form action="/search_books" method="GET" class="search-form">
+    <form name="searchForm" action="/search_books" method="GET" class="search-form" onsubmit="return validateSearchForm()">
         <input type="text" name="query" placeholder="Search by title or author...">
         <button type="submit">Search</button>
     </form>
+    <div id="error-message" class="error-message"></div>
 </nav>
 <div class="container">
-    {% for book in books %}
-    <div class="book-square">
-        <h3>{{ book.book_title }}</h3>
-        <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
-        {% if book.photo %}
-            <img src="{{ url_for('static', filename=book.photo) }}" alt="Book cover">
-        {% else %}
-            <p>No image available</p>
-        {% endif %}
-        <a href="/book-details/{{ book.book_id }}"><button>More Details</button></a>
-    </div>
-    {% endfor %}
+    {% if message %}
+        <div class="no-books-message">{{ message }}</div>
+    {% endif %}
+    
+    {% if books %}
+        {% for book in books %}
+        <div class="book-square">
+            <h3>{{ book.book_title }}</h3>
+            <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
+            {% if book.book_photo %}
+                <img src="{{ url_for('static', filename=book.book_photo) }}" alt="Book cover">
+            {% else %}
+                <p>No image available</p>
+            {% endif %}
+            <a href="/book-details/{{ book.book_id }}"><button>More Details</button></a>
+        </div>
+        {% endfor %}
+    {% endif %}
 </div>
+    <script src="/js/books.js"></script>
 </body>
 </html>
-

@@ -31,15 +31,35 @@ def index():
 def search_books():
     query = request.args.get('query', '')
     response = requests.get(f'{API_URL}/search_books', params={'query': query})
+    
+    if response.status_code != 200:
+        return f"Error: {response.text}", response.status_code
+    
     books = response.json()
-    return render_template('books.html', books=books)
+    
+    if books is None or not books:
+        books = []
+        message = "Was not found."
+    else:
+        message = ""
+
+    return render_template('books.html', books=books, message=message)
 
 @app.route('/search_authors', methods=['GET'])
 def search_authors():
     query = request.args.get('query', '')
     response = requests.get(f'{API_URL}/search_authors', params={'query': query})
+    
+    if response.status_code != 200:
+        return f"Error: {response.text}", response.status_code
     authors = response.json()
-    return render_template('authors.html', authors=authors)
+    
+    if authors is None or not authors:
+        authors = []
+        message = "Was not found"
+    else:
+        message = ""
+    return render_template('authors.html', authors=authors, message=message)
 
 
 @app.route('/book-details/<int:book_id>')
