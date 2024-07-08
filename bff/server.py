@@ -147,42 +147,6 @@ def update_author(author_id):
     except Exception as err:
         return jsonify(success=False, error=str(err)), 500
 
-@app.route('/add_author_old', methods=['GET', 'POST'])
-def add_author_old():
-    if request.method == 'POST':
-        firstname = request.form.get('firstname')
-        lastname = request.form.get('lastname')
-        photo = request.files['photo']
-
-        if photo:
-            filename = secure_filename(photo.filename)
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            photo.save(photo_path)
-            photo_url = f'uploads/{filename}'  
-        else:
-            photo_url = None
-
-        data = {
-            'firstname': firstname,
-            'lastname': lastname,
-            'photo': photo_url  
-        }
-
-        try:
-            response = requests.post(f"{API_URL}/authors/new", json=data)
-            if response.status_code == 201:
-                return redirect(url_for("get_authors"))
-            else:
-                error_message = response.json().get('error', 'Failed to add author')
-                app.logger.error(f"Failed to add author: {error_message}")
-                return jsonify(success=False, error=error_message), 500
-        
-        except Exception as err:
-            app.logger.error(f"Failed to add author: {err}")
-            return jsonify(success=False, error=str(err)), 500
-        
-    return render_template('add_author_form.html')
-
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
     if request.method == 'POST':
