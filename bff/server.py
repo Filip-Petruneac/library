@@ -3,6 +3,7 @@ import requests
 from flask import jsonify
 import os
 from werkzeug.utils import secure_filename
+from functools import wraps
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
@@ -15,6 +16,29 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 API_URL = "http://localhost:8080"  
+
+def validate_body_length(max_length, field_limits=None):
+    if field_limits is None:
+        field_limits = {}
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if request.method in ['POST', 'PUT']:
+                data = request.form.to_dict()
+                total_length = 0
+
+                for key, value in data.items():
+                    if key in field_limits:
+                        if len(value) > field_limits[key]:
+                            return jsonify(success=False, error=f"{key.capitalize()} field too long, should not exceed {field_limits[key]} characters."), 400
+                    total_length += len(value)
+                if total_length > max_length:
+                    return jsonify(success=False, error=f"Request body too long, should not exceed {max_length} characters."), 400
+
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 @app.route('/')
 def index():
@@ -139,6 +163,7 @@ def update_author_form():
     return render_template('update_author_form.html', author=author)
 
 @app.route('/author/<int:author_id>', methods=['POST'])
+@validate_body_length(40)
 def update_author(author_id):
     try:
         firstname = request.form.get('firstname')
@@ -168,6 +193,7 @@ def update_author(author_id):
         return jsonify(success=False, error=str(err)), 500
 
 @app.route('/add_author', methods=['GET', 'POST'])
+@validate_body_length(40)
 def add_author():
     if request.method == 'POST':
         firstname = request.form.get('firstname')
@@ -244,6 +270,7 @@ def forward_photo(path, url, extension):
             
 
 @app.route('/add_book', methods=['GET', 'POST'])
+@validate_body_length(1000, {'title': 50, 'details': 250})
 def add_book():
     if request.method == 'POST':
         title = request.form.get('title')
@@ -298,6 +325,7 @@ def add_book():
     return render_template('add_book_form.html', authors=authors)
 
 @app.route('/add_subscriber', methods=['GET', 'POST'])
+@validate_body_length(40)
 def add_subscriber():
     if request.method == 'POST':
         firstname = request.form.get('firstname')
@@ -345,6 +373,7 @@ def update_book_form(book_id):
         return str(err), 500
 
 @app.route('/book/<int:book_id>', methods=['POST'])
+@validate_body_length(40, {'details': 250})
 def update_book(book_id):
     try:
         title = request.form.get('title')
