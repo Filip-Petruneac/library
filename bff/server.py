@@ -373,7 +373,7 @@ def update_book_form(book_id):
         return str(err), 500
 
 @app.route('/book/<int:book_id>', methods=['POST'])
-@validate_body_length(40, {'details': 250})
+@validate_body_length(1000, {'title': 50, 'details': 250})
 def update_book(book_id):
     try:
         title = request.form.get('title')
