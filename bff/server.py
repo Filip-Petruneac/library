@@ -47,7 +47,7 @@ def index():
         if response.status_code != 200:
             return "Error fetching books from API", 400
         books = response.json()
-        return render_template('books.html', books=books)
+        return render_template('authentication.html', books=books)
     except Exception as err:
         return str(err), 500
     

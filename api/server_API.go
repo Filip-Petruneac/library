@@ -65,6 +65,12 @@ type NewBook struct {
 	Details    string `json:"details"`
 }
 
+type User struct {
+	ID 				int
+	Email 			string
+	HashedPassword	[]byte
+}
+
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
 	var err error
 

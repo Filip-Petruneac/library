@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Login</title>
+    <link rel="stylesheet" href="/css/authentication.css">
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Library</h2>
+    <form action="action_page.php" method="post">
+        <div class="container">
+            <label for="Email"><b>Email</b></label>
+            <input type="text" placeholder="Enter Email" name="Email" required>
+
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="psw" required>
+
+            <button type="submit">Login</button>
+        </div>
+
+        <div class="container cancel-container">
+            <button type="button" class="cancelbtn">Cancel</button>
+        </div>
+
+        <div class="container options">
+            <a href="create_account.html" class="option">Create an Account</a>
+            <a href="forgot_password.html" class="option">Forgot Password?</a>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>
