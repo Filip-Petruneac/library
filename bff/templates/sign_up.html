@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Sign Up</title>
+    <link rel="stylesheet" href="/css/sign_up.css">
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Library Sign Up</h2>
+    <form action="/register" method="post">
+        <div class="container">
+            {% if error %}
+                <div class="error" style="color: red;">{{ error }}</div>
+            {% endif %}
+
+            <label for="Email"><b>Email</b></label>
+            <input type="text" placeholder="Enter Email" name="email">
+
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="password">
+
+            <button type="submit">Sign Up</button>
+        </div>
+
+        <!-- <div class="container cancel-container">
+            <button type="button" class="cancelbtn">Cancel</button>
+        </div> -->
+    </form>
+</div>
+
+</body>
+</html>

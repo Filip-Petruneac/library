@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect
+from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect, make_response
 import requests
 from flask import jsonify
 import os
@@ -47,10 +47,42 @@ def index():
         if response.status_code != 200:
             return "Error fetching books from API", 400
         books = response.json()
-        return render_template('authentication.html', books=books)
+        return render_template('books.html', books=books)
     except Exception as err:
         return str(err), 500
     
+
+@app.route('/register', methods=['POST', 'GET'])
+def signup():
+    if request.method == "GET":
+        return render_template('sign_up.html')
+    if request.method == "POST":
+        try:
+            r = requests.post(f'{API_URL}/singup', request.form, headers=request.headers)
+            response_json = r.json()
+
+            if r.status_code == 201:
+                # return make_response(jsonify({"message": response_json.get("message", "User registered successfully")}), 201)
+                return redirect(url_for("login"))
+            elif r.status_code == 400:
+                error_message = response_json.get("message", "Invalid email or password")
+                return render_template('sign_up.html', error=error_message)
+                # return make_response(jsonify({"error": response_json.get("message", "Invalid email or password")}), 400)
+            elif r.status_code == 409:
+                error_message = response_json.get("message", "Email already in use")
+                return render_template('sign_up.html', error=error_message)
+            elif r.status_code == 500:
+                return make_response(jsonify({"error": response_json.get("message", "Internal server error")}), 500)
+            else:
+                return make_response(jsonify({"error": "An unexpected error occurred"}), r.status_code)
+        except requests.RequestException as e:
+            return make_response(jsonify({"error": "Failed to connect to the external API", "details": str(e)}), 500)
+        
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+
 @app.route('/search_books', methods=['GET'])
 def search_books():
     query = request.args.get('query', '')

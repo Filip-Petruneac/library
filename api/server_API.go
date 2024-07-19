@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	// "io/ioutil"
 	"encoding/json"
@@ -14,8 +15,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/sessions"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthorInfo struct {
@@ -66,9 +70,12 @@ type NewBook struct {
 }
 
 type User struct {
-	ID 				int
-	Email 			string
-	HashedPassword	[]byte
+	Email    string
+	Password string
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
 }
 
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
@@ -134,6 +141,7 @@ func main() {
 	r.HandleFunc("/subscribers/{id}", DeleteSubscriber(db)).Methods("DELETE")
 	r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
 	r.HandleFunc("/search_authors", SearchAuthors(db)).Methods("GET")
+	r.HandleFunc("/singup", signupUser(db)).Methods("POST")
 
 	http.Handle("/", r)
 
@@ -147,7 +155,73 @@ func main() {
 	}
 }
 
+var (
+	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
+	key   = []byte("super-secret-key")
+	store = sessions.NewCookieStore(key)
+)
+
+
 // Handler functions...
+func signupUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		pattern := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+		domainPattern := regexp.MustCompile(`@(gmail\.com|yahoo\.com|outlook\.com)$`)
+
+		u := User{
+			Email:    r.FormValue("email"),
+			Password: r.FormValue("password"),
+		}
+
+		matches := pattern.MatchString(u.Email)
+		domainMatches := domainPattern.MatchString(u.Email)
+		if !matches || !domainMatches || u.Password == "" || u.Email == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+			return
+		}
+
+		var existingUserID int
+		query := `SELECT id FROM users WHERE email = ?`
+		err := db.QueryRow(query, u.Email).Scan(&existingUserID)
+		if err != nil && err != sql.ErrNoRows {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"})
+			return
+		}
+
+		if existingUserID != 0 {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Email already in use"})
+			return
+		}
+		
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Error hashing password"})
+			return
+		}
+
+		query = `INSERT INTO users (email, password) VALUES(?, ?)`
+		_, err = db.Exec(query, u.Email, hashedPassword)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: fmt.Sprintf("Failed to insert user: %v", err)})
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+	}
+}
+
+func login(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		return
+	}
+}
 
 // Home handles requests to the homepage
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -581,13 +655,11 @@ func AddAuthorPhoto(db *sql.DB) http.HandlerFunc {
 		defer file.Close()
 
 		filename := header.Filename
-		
+
 		ext := filepath.Ext(filename)
 
 		photo_dir := "./upload/" + strconv.Itoa(authorID)
-		photo_path := photo_dir + "/fullsize."+ ext
-
-
+		photo_path := photo_dir + "/fullsize." + ext
 
 		err = os.MkdirAll(photo_dir, 0777)
 		if err != nil {
