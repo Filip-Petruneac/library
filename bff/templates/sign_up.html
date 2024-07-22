@@ -20,7 +20,8 @@
             <input type="text" placeholder="Enter Email" name="email">
 
             <label for="psw"><b>Password</b></label>
-            <input type="password" placeholder="Enter Password" name="password">
+            <input id="psw" type="password" placeholder="Enter Password" name="password">
+            <input type="checkbox" onclick="myFunction()">Show Password
 
             <button type="submit">Sign Up</button>
         </div>
@@ -30,6 +31,15 @@
         </div> -->
     </form>
 </div>
-
+<script>
+    function myFunction() {
+      var x = document.getElementById("psw");
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+    }
+</script>
 </body>
 </html>

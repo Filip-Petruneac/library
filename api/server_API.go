@@ -15,8 +15,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/sessions"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
@@ -142,6 +140,7 @@ func main() {
 	r.HandleFunc("/search_books", SearchBooks(db)).Methods("GET")
 	r.HandleFunc("/search_authors", SearchAuthors(db)).Methods("GET")
 	r.HandleFunc("/singup", signupUser(db)).Methods("POST")
+	r.HandleFunc("/login", loginUser(db)).Methods("POST")
 
 	http.Handle("/", r)
 
@@ -156,18 +155,13 @@ func main() {
 }
 
 var (
-	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
-	key   = []byte("super-secret-key")
-	store = sessions.NewCookieStore(key)
+	pattern       = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	domainPattern = regexp.MustCompile(`@(gmail\.com|yahoo\.com|outlook\.com)$`)
 )
-
 
 // Handler functions...
 func signupUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		pattern := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-		domainPattern := regexp.MustCompile(`@(gmail\.com|yahoo\.com|outlook\.com)$`)
-
 		u := User{
 			Email:    r.FormValue("email"),
 			Password: r.FormValue("password"),
@@ -195,8 +189,8 @@ func signupUser(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(ErrorResponse{Message: "Email already in use"})
 			return
 		}
-		
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), 10)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(ErrorResponse{Message: "Error hashing password"})
@@ -217,9 +211,51 @@ func signupUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func login(db *sql.DB) http.HandlerFunc {
+type Response struct {
+	ExistingUserID int    `json:"existingUserID"`
+	Message        string `json:"message"`
+}
+
+func loginUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		return
+		u := User{
+			Email:    r.FormValue("email"),
+			Password: r.FormValue("password"),
+		}
+
+		matches := pattern.MatchString(u.Email)
+		domainMatches := domainPattern.MatchString(u.Email)
+
+		if !matches || !domainMatches || u.Password == "" || u.Email == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+			return
+		}
+
+		var existingUserID int
+		var hashedPassword []byte
+		query := `SELECT id, password FROM users WHERE email = ?`
+		err := db.QueryRow(query, u.Email).Scan(&existingUserID, &hashedPassword)
+		if err != nil && err != sql.ErrNoRows {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"})
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(u.Password))
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+			return
+		}
+
+		resp := Response{
+			ExistingUserID: existingUserID,
+			Message:        "User registered successfully",
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 

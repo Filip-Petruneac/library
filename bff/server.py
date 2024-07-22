@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect, make_response
 import requests
 from flask import jsonify
-import os
+import os, datetime
 from werkzeug.utils import secure_filename
 from functools import wraps
 
@@ -62,17 +62,15 @@ def signup():
             response_json = r.json()
 
             if r.status_code == 201:
-                # return make_response(jsonify({"message": response_json.get("message", "User registered successfully")}), 201)
                 return redirect(url_for("login"))
             elif r.status_code == 400:
-                error_message = response_json.get("message", "Invalid email or password")
+                error_message = response_json.get("message")
                 return render_template('sign_up.html', error=error_message)
-                # return make_response(jsonify({"error": response_json.get("message", "Invalid email or password")}), 400)
             elif r.status_code == 409:
-                error_message = response_json.get("message", "Email already in use")
+                error_message = response_json.get("message")
                 return render_template('sign_up.html', error=error_message)
             elif r.status_code == 500:
-                return make_response(jsonify({"error": response_json.get("message", "Internal server error")}), 500)
+                return make_response(jsonify({"error": response_json.get("message")}), 500)
             else:
                 return make_response(jsonify({"error": "An unexpected error occurred"}), r.status_code)
         except requests.RequestException as e:
@@ -82,6 +80,35 @@ def signup():
 def login():
     if request.method == "GET":
         return render_template("login.html")
+    if request.method == "POST":
+        try:
+            r = requests.post(f'{API_URL}/login', request.form, headers=request.headers)
+            response_json = r.json()
+
+            if r.status_code == 200:
+                id = response_json.get("existingUserID")
+                expire_date = datetime.datetime.now()
+                expire_date = expire_date + datetime.timedelta(days=1)
+
+                resp = make_response(redirect("/"))  
+                resp.set_cookie("authenticatedUserID", value=str(id), expires=expire_date) 
+
+                return resp
+            elif r.status_code == 400:
+                error_message = response_json.get("message")
+                return render_template('login.html', error=error_message)
+            elif r.status_code == 500:
+                return make_response(jsonify({"error": response_json.get("message")}), 500)
+            else:
+                return make_response(jsonify({"error": "An unexpected error occurred"}), r.status_code)
+        except requests.RequestException as e:
+            return make_response(jsonify({"error": "Failed to connect to the external API", "details": str(e)}), 500)
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    resp = make_response(redirect("/"))
+    resp.set_cookie('authenticatedUserID', '', expires=0)
+    return resp
 
 @app.route('/search_books', methods=['GET'])
 def search_books():

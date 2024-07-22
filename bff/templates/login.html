@@ -12,11 +12,15 @@
     <h2>Library LogIn</h2>
     <form action="/login" method="post">
         <div class="container">
+            {% if error %}
+                <div class="error" style="color: red;">{{ error }}</div>
+            {% endif %}
             <label for="Email"><b>Email</b></label>
-            <input type="text" placeholder="Enter Email" name="Email" required>
+            <input type="text" placeholder="Enter Email" name="email" required>
 
             <label for="psw"><b>Password</b></label>
-            <input type="password" placeholder="Enter Password" name="psw" required>
+            <input id="psw" type="password" placeholder="Enter Password" name="password" required>
+            <input type="checkbox" onclick="myFunction()">Show Password
 
             <button type="submit">Login</button>
         </div>
@@ -29,6 +33,15 @@
         </div>
     </form>
 </div>
-
+<script>
+    function myFunction() {
+      var x = document.getElementById("psw");
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+    }
+</script>
 </body>
 </html>
