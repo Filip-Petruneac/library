@@ -236,11 +236,19 @@ func loginUser(db *sql.DB) http.HandlerFunc {
 		var hashedPassword []byte
 		query := `SELECT id, password FROM users WHERE email = ?`
 		err := db.QueryRow(query, u.Email).Scan(&existingUserID, &hashedPassword)
-		if err != nil && err != sql.ErrNoRows {
+
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(ErrorResponse{Message: "User doesn't exist!"})
+			return
+		}
+
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"})
 			return
-		}
+		} 
+
 
 		err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(u.Password))
 		if err == bcrypt.ErrMismatchedHashAndPassword {

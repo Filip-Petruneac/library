@@ -40,7 +40,20 @@ def validate_body_length(max_length, field_limits=None):
         return wrapper
     return decorator
 
+def is_authenticated():
+    user_id = request.cookies.get('authenticatedUserID')
+    return user_id is not None
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_authenticated():
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
+@login_required
 def index():
     try:
         response = requests.get(f"{API_URL}/books")
@@ -50,7 +63,6 @@ def index():
         return render_template('books.html', books=books)
     except Exception as err:
         return str(err), 500
-    
 
 @app.route('/register', methods=['POST', 'GET'])
 def signup():
@@ -95,6 +107,9 @@ def login():
 
                 return resp
             elif r.status_code == 400:
+                error_message = response_json.get("message")
+                return render_template('login.html', error=error_message)
+            elif r.status_code == 404:
                 error_message = response_json.get("message")
                 return render_template('login.html', error=error_message)
             elif r.status_code == 500:
@@ -158,6 +173,7 @@ def book_details(book_id):
         return f"Error fetching book details: {err}", 500
     
 @app.route('/subscribers', methods=['GET'])
+@login_required
 def get_subscribers():
     try:
         response = requests.get(f"{API_URL}/subscribers")
@@ -173,6 +189,7 @@ def get_subscribers():
         return jsonify(success=False, error=str(err)), 500
     
 @app.route('/authors', methods=['GET'])
+@login_required
 def get_authors():
     try:
         response = requests.get(f"{API_URL}/authors")
@@ -186,6 +203,7 @@ def get_authors():
         return str(err), 500
     
 @app.route('/author/<int:author_id>', methods=['DELETE'])
+@login_required
 def delete_author(author_id):
     try:
         response = requests.delete(f"{API_URL}/authors/{author_id}")
@@ -196,6 +214,7 @@ def delete_author(author_id):
         return jsonify(success=False, error=str(err)), 500
 
 @app.route('/book/<int:book_id>', methods=['DELETE'])
+@login_required
 def delete_book(book_id):
     try:
         response = requests.delete(f"{API_URL}/books/{book_id}")
@@ -222,6 +241,7 @@ def update_author_form():
     return render_template('update_author_form.html', author=author)
 
 @app.route('/author/<int:author_id>', methods=['POST'])
+@login_required
 @validate_body_length(40)
 def update_author(author_id):
     try:
@@ -252,6 +272,7 @@ def update_author(author_id):
         return jsonify(success=False, error=str(err)), 500
 
 @app.route('/add_author', methods=['GET', 'POST'])
+@login_required
 @validate_body_length(40)
 def add_author():
     if request.method == 'POST':
@@ -329,6 +350,7 @@ def forward_photo(path, url, extension):
             
 
 @app.route('/add_book', methods=['GET', 'POST'])
+@login_required
 @validate_body_length(1000, {'title': 50, 'details': 250})
 def add_book():
     if request.method == 'POST':
@@ -384,6 +406,7 @@ def add_book():
     return render_template('add_book_form.html', authors=authors)
 
 @app.route('/add_subscriber', methods=['GET', 'POST'])
+@login_required
 @validate_body_length(40)
 def add_subscriber():
     if request.method == 'POST':
@@ -415,6 +438,7 @@ def add_subscriber():
 
 
 @app.route('/update_book/<int:book_id>', methods=['GET'])
+@login_required
 def update_book_form(book_id):
     try:
         response = requests.get(f"{API_URL}/books/{book_id}")
@@ -432,6 +456,7 @@ def update_book_form(book_id):
         return str(err), 500
 
 @app.route('/book/<int:book_id>', methods=['POST'])
+@login_required
 @validate_body_length(1000, {'title': 50, 'details': 250})
 def update_book(book_id):
     try:
