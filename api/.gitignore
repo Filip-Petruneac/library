@@ -1,5 +1,4 @@
-output
-input.jpg
-mymodule
-photos
 upload
+go.mod
+go.sum
+.env

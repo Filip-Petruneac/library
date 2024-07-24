@@ -99,7 +99,7 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 }
 
 func main() {
-	port := flag.String("port", "8080", "Server Port")
+	port := flag.String("port", "8081", "Server Port")
 	dbUsername := flag.String("db-user", "root", "Database Username")
 	dbPassword := flag.String("db-password", "password", "Database Password")
 	dbHostname := flag.String("db-hostname", "localhost", "Database hostname")
