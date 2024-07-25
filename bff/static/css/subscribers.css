@@ -10,18 +10,6 @@ body {
 
 }
 
-h1 {
-    text-align: center;
-    color: #333;
-    background-color: white; /* Set background color to white */
-    padding: 10px 0; /* Add padding for better appearance */
-    margin: 0; /* Remove default margin */
-    position: fixed; /* Fixed position */
-    width: 100%; /* Take full width */
-    top: 0; /* Stick to top */
-    z-index: 1000; /* Ensure it appears above other content */
-}
-
 
 table {
     width: 80%;

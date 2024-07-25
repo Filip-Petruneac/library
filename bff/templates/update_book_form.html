@@ -1,19 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Book</title>
-    <link rel="stylesheet" href="/css/add_book_form.css">
-    <style>
-        .photo-preview {
-            width: 300px;
-            height: auto;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Update Book{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/add_book_form.css">
+<style>
+    .photo-preview {
+        width: 300px;
+        height: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <form method="POST" action="/book/{{ book.book_id }}" enctype="multipart/form-data">
     <h3>Update Book</h3>
     <label for="title">Title:</label>
@@ -37,7 +36,9 @@
     <button type="submit">Update Book</button>
     <a href="/"><button type="button">Cancel</button></a> 
 </form>
+{% endblock %}
 
+{% block scripts %}
 <script>
     function previewPhoto() {
         const file = document.getElementById('photo').files[0];
@@ -56,7 +57,4 @@
         }
     }
 </script>
-
-</body>
-</html>
-
+{% endblock %}

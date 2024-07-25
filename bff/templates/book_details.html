@@ -1,27 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Details</title>
-    <link rel="stylesheet" href="/static/css/book_details.css">
-</head>
-<body>
-    <div class="details-container">
-        <h2 id="title">{{ book.book_title }}</h2>
-        <img src="{{ url_for('static', filename=book.photo) }}" alt="Book cover">
-        <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
-        <p>Is Borrowed: {{ book.is_borrowed }}</p>
-        <p>Details: {{ book.book_details }}</p>
-        <button onclick="confirmDelete('{{ book.book_id }}')">DELETE</button>
-        <button onclick="window.location.href='/update_book/{{ book.book_id }}'">UPDATE</button>
-    </div>
+{% extends "base.html" %}
 
-    <div id="previewModal" class="modal">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <img class="modal-content" id="previewImage">
-    </div>
+{% block title %}Book Details{% endblock %}
 
-    <script src="/static/js/book_details.js"></script>
-</body>
-</html>
+{% block head %}
+<link rel="stylesheet" href="/static/css/book_details.css">
+{% endblock %}
+
+{% block content %}
+<div class="details-container">
+    <h2 id="title">{{ book.book_title }}</h2>
+    <img src="{{ url_for('static', filename=book.photo) }}" alt="Book cover">
+    <p>By: {{ book.author_firstname }} {{ book.author_lastname }}</p>
+    <p>Is Borrowed: {{ book.is_borrowed }}</p>
+    <p>Details: {{ book.book_details }}</p>
+    <button onclick="confirmDelete('{{ book.book_id }}')">DELETE</button>
+    <button onclick="window.location.href='/update_book/{{ book.book_id }}'">UPDATE</button>
+</div>
+
+<div id="previewModal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="previewImage">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/book_details.js"></script>
+{% endblock %}
+

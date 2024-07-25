@@ -1,20 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Book</title>
-    <link rel="stylesheet" href="/css/add_book_form.css">
-    <style>
-        .photo-preview {
-            width: 300px;
-            height: auto;
-            display: none; 
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Add Book{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/add_book_form.css">
+<style>
+    .photo-preview {
+        width: 300px;
+        height: auto;
+        display: none; 
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <form method="POST" action="/add_book" enctype="multipart/form-data">
     <h3>Add New Book</h3>
     <label for="title">Title:</label>
@@ -56,6 +55,5 @@
         }
     }
 </script>
+{% endblock %}
 
-</body>
-</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Library{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <ul>
+                <li class="{{ 'active' if request.path == '/books' else '' }}">
+                    {% if request.path != '/books' %}
+                        <a href="/">Books</a>
+                    {% else %}
+                        <span>Books</span>
+                    {% endif %}
+                </li>
+                <li class="{{ 'active' if request.path == '/authors' else '' }}">
+                    {% if request.path != '/authors' %}
+                        <a href="/authors">Authors</a>
+                    {% else %}
+                        <span>Authors</span>
+                    {% endif %}
+                </li>
+                <li class="{{ 'active' if request.path == '/subscribers' else '' }}">
+                    {% if request.path != '/subscribers' %}
+                        <a href="/subscribers">Subscribers</a>
+                    {% else %}
+                        <span>Subscribers</span>
+                    {% endif %}
+                </li>
+                <!-- Alte link-uri de navigare -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,27 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Subscriber</title>
-    <link rel="stylesheet" href="/css/add_subscriber.css">
-</head>
-<body>
-    <h1>Add New Subscriber</h1>
-    <form action="/add_subscriber" method="post">
-        <label for="firstname">First Name</label>
-        <input type="text" id="firstname" name="firstname" required>
-        <br><br>
-        
-        <label for="lastname">Last Name</label>
-        <input type="text" id="lastname" name="lastname" required>
-        <br><br>
-        
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
-        <br><br>
-        
-        <button type="submit">Add Subscriber</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Add Subscriber{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/add_subscriber.css">
+{% endblock %}
+
+{% block content %}
+<h1>Add New Subscriber</h1>
+<form action="/add_subscriber" method="post">
+    <label for="firstname">First Name</label>
+    <input type="text" id="firstname" name="firstname" required>
+    <br><br>
+    
+    <label for="lastname">Last Name</label>
+    <input type="text" id="lastname" name="lastname" required>
+    <br><br>
+    
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required>
+    <br><br>
+    
+    <button type="submit">Add Subscriber</button>
+</form>
+{% endblock %}
+

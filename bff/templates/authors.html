@@ -1,69 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Authors</title>
-    <link rel="stylesheet" href="/css/authors.css">
-</head>
-<body>
-    <nav class="navbar">
-        <form name="searchForm" action="/search_authors" method="GET" class="search-form" onsubmit="return validateSearchForm()">
-            <input type="text" name="query" placeholder="Search by firstname or lastname...">
-            <button type="submit">Search</button>
-        </form>
-        <div id="error-message" class="error-message"></div>
-    </nav>
-    <div class="table-container">
-        {% if message %}
-        <div class="no-authors-message">
-            {{ message }}
-        </div>
-        {% else %}
-        <table border="1" id="authorTable">
-            <thead>
-                <tr>
-                    <th onclick="sortTable(0)">Firstname</th>
-                    <th onclick="sortTable(1)">Lastname</th>
-                    <th>Photo</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            
-            <tbody>
-                {% for author in authors %}
-                <tr>
-                    <td>{{ author.firstname }}</td>
-                    <td>{{ author.lastname }}</td>
-                    <td>
-                        {% if author.photo %}
-                        <img src="{{ url_for('static', filename=author.photo) }}" alt="Author photo" width="50">
-                        {% else %}
-                        No Photo
-                        {% endif %}
-                    </td>
-                    <td>
-                        <button onclick="redirectToUpdateForm('{{ author.id }}', '{{ author.firstname }}', '{{ author.lastname }}', '{{ author.photo }}')">UPDATE</button>
-                        <button onclick="confirmDelete('{{ author.id }}')">DELETE</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
-    </div>
-    
-    <div class="pagination" id="pagination"></div>
-    <div class="add-button-container">
-        <a href="/add_author"><button class="add-button">➕</button></a>
-    </div>
+{% extends "base.html" %}
 
-    <!-- Modal -->
-    <div id="previewModal" class="modal">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <img class="modal-content" id="previewImage">
-    </div>
+{% block title %}Authors{% endblock %}
 
-    <script src="/js/authors.js"></script>
-</body>
-</html>
+{% block head %}
+<link rel="stylesheet" href="/static/css/authors.css">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <form name="searchForm" action="/search_authors" method="GET" class="search-form" onsubmit="return validateSearchForm()">
+        <input type="text" name="query" placeholder="Search by firstname or lastname...">
+        <button type="submit">Search</button>
+    </form>
+    <div id="error-message" class="error-message"></div>
+</div>
+
+<div class="table-container">
+    {% if message %}
+    <div class="no-authors-message">
+        {{ message }}
+    </div>
+    {% else %}
+    <table border="1" id="authorTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Firstname</th>
+                <th onclick="sortTable(1)">Lastname</th>
+                <th>Photo</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td>{{ author.firstname }}</td>
+                <td>{{ author.lastname }}</td>
+                <td>
+                    {% if author.photo %}
+                    <img src="{{ url_for('static', filename=author.photo) }}" alt="Author photo" width="50">
+                    {% else %}
+                    No Photo
+                    {% endif %}
+                </td>
+                <td>
+                    <button onclick="redirectToUpdateForm('{{ author.id }}', '{{ author.firstname }}', '{{ author.lastname }}', '{{ author.photo }}')">UPDATE</button>
+                    <button onclick="confirmDelete('{{ author.id }}')">DELETE</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<div class="pagination" id="pagination"></div>
+<div class="add-button-container">
+    <a href="/add_author"><button class="add-button">➕</button></a>
+</div>
+
+<!-- Modal -->
+<div id="previewModal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="previewImage">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/authors.js"></script>
+{% endblock %}

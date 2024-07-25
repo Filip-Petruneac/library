@@ -1,20 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Author</title>
-    <link rel="stylesheet" href="/css/add_author_form.css">
-    <style>
-        .photo-preview {
-            width: 300px;
-            height: auto;
-            display: none; /* Hide by default */
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Add Author{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/add_author_form.css">
+<style>
+    .photo-preview {
+        width: 300px;
+        height: auto;
+        display: none; 
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <form method="POST" action="/add_author" enctype="multipart/form-data">
     <h3>Add New Author</h3>
     <label for="firstname">First Name:</label>
@@ -37,15 +36,13 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 preview.src = e.target.result;
-                preview.style.display = 'block'; // Show the preview
+                preview.style.display = 'block'; 
             };
             reader.readAsDataURL(file);
         } else {
             preview.src = '#';
-            preview.style.display = 'none'; // Hide the preview if no file is selected
+            preview.style.display = 'none'; 
         }
     }
 </script>
-
-</body>
-</html>
+{% endblock %}
