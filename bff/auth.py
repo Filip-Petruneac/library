@@ -1,10 +1,10 @@
 from functools import wraps
-from flask import request, redirect, url_for, make_response, jsonify, render_template
+from flask import Flask, request, redirect, url_for, make_response, jsonify, render_template
 import requests
 import datetime
 
 API_URL = "http://localhost:8081"
-
+app = Flask(__name__)
 def is_authenticated():
     user_id = request.cookies.get('authenticatedUserID')
     return user_id is not None
@@ -68,8 +68,9 @@ def login():
             else:
                 return make_response(jsonify({"error": "An unexpected error occurred"}), r.status_code)
         except requests.RequestException as e:
+           
             return make_response(jsonify({"error": "Failed to connect to the external API", "details": str(e)}), 500)
-
+@app.route('/logout')
 def logout():
     resp = make_response(redirect("/"))
     resp.set_cookie('authenticatedUserID', '', expires=0)

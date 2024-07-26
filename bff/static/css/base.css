@@ -1,8 +1,8 @@
 .navbar {
-    display: block !important;
-    visibility: visible !important;
-    position: relative !important;
-    background-color: red !important; /* Culoare de fundal vizibilă */
+    display: block;
+    visibility: visible;
+    position: relative;
+    background-color: red; 
 }
 
 .navbar ul li.active {
@@ -11,11 +11,11 @@
 }
 
 .navbar ul li span {
-    cursor: default; /* Oprește schimbarea cursorului pe span-uri */
+    cursor: default; 
 }
 
 .navbar {
-    background-color: #f8f9fa; /* Sau altă culoare mai vizibilă */
+    background-color: #f8f9fa; 
     border-bottom: 1px solid #dee2e6;
 }
 
@@ -32,15 +32,18 @@
 
 .navbar ul li a, .navbar ul li span {
     text-decoration: none;
-    color: #343a40; /* Textul să fie vizibil */
+    color:red; 
     font-weight: bold;
 }
 
 .navbar ul li a:hover, .navbar ul li span:hover {
-    color: #0056b3; /* Schimbă culoarea la hover */
+    color: #0056b3; 
 }
 
 .navbar ul li.active a, .navbar ul li.active span {
-    color: #007bff; /* Culoarea pentru elementul activ */
+    color: #007bff;
     cursor: default;
+}
+.navbar ul li a.logout {
+    color: red;
 }

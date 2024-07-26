@@ -6,7 +6,7 @@ body {
     background-image: url('/static/matthew-feeney-Nwkh-n6l25w-unsplash.jpg');
     background-size: cover;
     background-position: center;
-    position: relative; /* Add this line */
+    position: relative; 
 
 }
 
