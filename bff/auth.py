@@ -4,7 +4,9 @@ import requests
 import datetime
 
 API_URL = "http://localhost:8081"
+
 app = Flask(__name__)
+
 def is_authenticated():
     user_id = request.cookies.get('authenticatedUserID')
     return user_id is not None
