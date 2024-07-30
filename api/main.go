@@ -86,11 +86,11 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 
 func main() {
 	port := flag.String("port", "8081", "Server Port")
-	dbUsername := flag.String("db-user", "root", "Database Username")
+	dbUsername := flag.String("db-user","root", "Database Username")
 	dbPassword := flag.String("db-password", "password", "Database Password")
-	dbHostname := flag.String("db-hostname", "localhost", "Database hostname")
-	dbPort := flag.String("db-port", "4450", "Database port")
-	dbName := flag.String("db-name", "library", "Database name")
+	dbHostname := flag.String("db-hostname", "db", "Database hostname")
+	dbPort := flag.String("db-port", "3306", "Database port")
+	dbName := flag.String("db-name", "db", "Database name")
 
 	db, err := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
 	if err != nil {

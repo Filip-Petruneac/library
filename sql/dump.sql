@@ -1,48 +1,54 @@
 -- Create authors table
 CREATE TABLE `authors` (
-  `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
   `Lastname` VARCHAR(255),
   `Firstname` VARCHAR(255),
   `photo` VARCHAR(255)
 );
 
--- Create authors_books table
-CREATE TABLE `authors_books` (
-  `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
-  `author_id` INTEGER,
-  `book_id` INTEGER
-);
-
 -- Create books table
 CREATE TABLE `books` (
-  `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
   `photo` VARCHAR(255),
   `title` VARCHAR(255) NOT NULL,
-  `author_id` INTEGER NOT NULL,
-  `details` TEXT COMMENT 'Content of the post',
+  `author_id` INT NOT NULL,
+  `details` TEXT COMMENT 'Content of the book',
   `is_borrowed` BOOLEAN DEFAULT FALSE
+);
+
+-- Create authors_books table
+CREATE TABLE `authors_books` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `author_id` INT,
+  `book_id` INT,
+  FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`),
+  FOREIGN KEY (`book_id`) REFERENCES `books` (`id`)
 );
 
 -- Create subscribers table
 CREATE TABLE `subscribers` (
-  `id` INTEGER AUTO_INCREMENT PRIMARY KEY,
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
   `Lastname` VARCHAR(255),
   `Firstname` VARCHAR(255),
-  `Email` VARCHAR(255)
+  `Email` VARCHAR(255) UNIQUE NOT NULL
 );
 
 -- Create borrowed_books table
 CREATE TABLE `borrowed_books` (
-  `subscriber_id` INTEGER,
-  `book_id` INTEGER,
+  `subscriber_id` INT,
+  `book_id` INT,
   `date_of_borrow` TIMESTAMP,
-  `return_date` TIMESTAMP
+  `return_date` TIMESTAMP,
+  FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`),
+  FOREIGN KEY (`book_id`) REFERENCES `books` (`id`)
 );
 
--- Add foreign keys
-ALTER TABLE `books` ADD FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`);
-ALTER TABLE `borrowed_books` ADD FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`);
-ALTER TABLE `borrowed_books` ADD FOREIGN KEY (`book_id`) REFERENCES `books` (`id`);
+-- Create users table
+CREATE TABLE `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(100) UNIQUE NOT NULL,
+  `password` TEXT NOT NULL
+);
 
 -- Insert values into authors
 INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES
@@ -83,3 +89,11 @@ INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES
 (3, 3),
 (4, 4),
 (5, 5);
+
+-- Insert values into users
+INSERT INTO `users` (`email`, `password`) VALUES
+('admin@example.com', 'admin_password_hash'),
+('user1@example.com', 'user1_password_hash'),
+('user2@example.com', 'user2_password_hash'),
+('user3@example.com', 'user3_password_hash'),
+('user4@example.com', 'user4_password_hash');

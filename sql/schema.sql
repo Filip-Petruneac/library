@@ -34,6 +34,12 @@ CREATE TABLE `borrowed_books` (
   `return_date` TIMESTAMP
 );
 
+CREATE TABLE `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(100) UNIQUE NOT NULL,
+  `password` TEXT NOT NULL
+);
+
 ALTER TABLE `books` ADD FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`);
 ALTER TABLE `books` ADD FOREIGN KEY (`is_borrowed`) REFERENCES `subscribers` (`id`);
 ALTER TABLE `borrowed_books` ADD FOREIGN KEY (`subscriber_id`) REFERENCES `subscribers` (`id`);

@@ -1,4 +1,2 @@
 upload
-go.mod
-go.sum
-.env
+tmp

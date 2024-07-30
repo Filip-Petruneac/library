@@ -1,16 +1,31 @@
 version: '3.8'
-
 services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - 8081:8081
+    restart: always
+    links:
+      - db
+    networks:
+      - my-network
   db:
-    image: mysql:8.0
-    build: ./sql
+    image: mysql:latest
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_USER: filip
-      MYSQL_DATABASE: library
+      MYSQL_DATABASE: db
       MYSQL_PASSWORD: password
     ports:
-      - "4450:3306"
+      - 4450:3306
+    volumes:
+      - ./sql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
     networks:
       - my-network
 
+networks:
+  my-network:
+    driver: bridge
