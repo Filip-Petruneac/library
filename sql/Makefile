@@ -9,7 +9,7 @@ mysql:
 		-e MYSQL_USER=$(MYSQL_USER) \
 		-e MYSQL_PASSWORD=$(MYSQL_PASSWORD) \
 		-p 4450:$(MYSQL_PORT) \
-		-v $(PWD)/schema.sql:/docker-entrypoint-initdb.d/schema.sql \
+		-v $(PWD)/dump.sql:/docker-entrypoint-initdb.d/dump.sql \
 		mysql:latest
 
 .PHONY: mysql
