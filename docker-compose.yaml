@@ -13,7 +13,6 @@ services:
       - my-network
 
   db:
-    container_name: my_sql_database
     image: mysql:latest
     restart: always
     environment:
