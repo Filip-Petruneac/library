@@ -7,11 +7,13 @@ services:
     ports:
       - 8081:8081
     restart: always
-    links:
+    depends_on:
       - db
     networks:
       - my-network
+
   db:
+    container_name: my_sql_database
     image: mysql:latest
     restart: always
     environment:
@@ -23,9 +25,18 @@ services:
       - 4450:3306
     volumes:
       - ./sql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - mysql-data:/var/lib/mysql
     networks:
       - my-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   my-network:
     driver: bridge
+
+volumes:
+  mysql-data:

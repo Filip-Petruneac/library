@@ -116,7 +116,6 @@ func main() {
 	r.HandleFunc("/authors/new", AddAuthor(db)).Methods("POST")
 	r.HandleFunc("/author/photo/{id}", AddAuthorPhoto(db)).Methods("POST")
 	r.HandleFunc("/books/new", AddBook(db)).Methods("POST")
-	r.HandleFunc("/books/photo/{id}", AddBookPhoto(db)).Methods("POST")
 	r.HandleFunc("/subscribers/new", AddSubscriber(db)).Methods("POST")
 	r.HandleFunc("/authors/{id}", UpdateAuthor(db)).Methods("PUT", "POST")
 	r.HandleFunc("/books/{id}", UpdateBook(db)).Methods("PUT", "POST")
@@ -667,74 +666,6 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// AddBookPhoto adds a photo to an existing book in the database
-func AddBookPhoto(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-            return
-        }
-
-        vars := mux.Vars(r)
-        bookID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid book ID", http.StatusBadRequest)
-            return
-        }
-
-        file, header, err := r.FormFile("file")
-        if err != nil {
-            fmt.Printf("Error get photo from request")
-            http.Error(w, "Error get file", http.StatusInternalServerError)
-            return
-        }
-        defer file.Close()
-
-        filename := header.Filename
-
-        ext := filepath.Ext(filename)
-
-        photo_dir := "./upload/books/" + strconv.Itoa(bookID)
-        photo_path := photo_dir + "/fullsize" + ext
-
-        err = os.MkdirAll(photo_dir, 0777)
-        if err != nil {
-            http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
-            return
-        }
-
-        out, err := os.Create(photo_path)
-        if err != nil {
-            http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
-            return
-        }
-        defer out.Close()
-
-        _, err = io.Copy(out, file)
-        if err != nil {
-            http.Error(w, "Error saving file", http.StatusInternalServerError)
-            return
-        }
-
-        // Query to update book with photo path
-        query := `
-            UPDATE books 
-            SET photo = ?
-            WHERE id = ?
-        `
-
-        // We run the query
-        _, err = db.Exec(query, photo_path, bookID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
-            return
-        }
-
-        w.WriteHeader(http.StatusOK)
-        fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
-    }
-}
-
 // AddBook adds a new book to the database
 func AddBook(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -765,8 +696,8 @@ func AddBook(db *sql.DB) http.HandlerFunc {
 
 		// Query to add book
 		query := `
-            INSERT INTO books (title, author_id, is_borrowed, details) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO books (title, author_id, photo, is_borrowed, details) 
+            VALUES (?, ?, ?, ?, ?)
         `
 
 		// Execute the query

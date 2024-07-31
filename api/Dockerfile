@@ -12,11 +12,18 @@ RUN go build -o main .
 
 FROM alpine:latest
 
+RUN apk --no-cache add wget \
+    && wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-v0.6.1.tar.gz \
+    && rm dockerize-linux-amd64-v0.6.1.tar.gz \
+    && apk del wget
+
+
 WORKDIR /root/
 
 COPY --from=builder /app/main .
 
 EXPOSE 8081
 
-CMD ["./main"]
+CMD ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
 
