@@ -11,7 +11,22 @@ services:
       - db
     networks:
       - my-network
+    command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
 
+  bff:
+    build:
+      context: ./bff
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - my-network
+    command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
+
+      
   db:
     image: mysql:latest
     restart: always

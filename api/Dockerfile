@@ -18,7 +18,6 @@ RUN apk --no-cache add wget \
     && rm dockerize-linux-amd64-v0.6.1.tar.gz \
     && apk del wget
 
-
 WORKDIR /root/
 
 COPY --from=builder /app/main .
