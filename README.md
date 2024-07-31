@@ -16,6 +16,7 @@ This is a Go-based REST API for a Library Management System. It provides endpoin
 - Go (version 1.15 or later)
 - MySQL database
 - Git (optional, for cloning the repository)
+- Docker and Docker Compose (for containerized deployment)
 
 ## Dependencies
 
@@ -51,3 +52,33 @@ This project uses the following external packages:
 - `GET /search_authors`: Search authors
 - `POST /signup`: User signup
 - `POST /login`: User login
+
+## Docker Compose Commands
+
+To run the application using Docker Compose, follow these steps:
+
+1. Make sure you have Docker and Docker Compose installed on your system.
+
+2. Clone the repository (if you haven't already):
+git clone https://github.com/yourusername/library-management-system.git
+cd library-management-system
+
+3. Build and start the containers:
+docker-compose up --build
+
+4. To stop the containers, use:
+docker-compose down
+
+5. To rebuild the application after making changes:
+docker-compose up --build
+
+6. To view logs of the running containers:
+docker-compose logs
+
+7. To access the application, open a web browser and go to:
+http://localhost:8081
+
+8. To stop the containers and remove the volumes:
+docker-compose down -v
+
+Note: Make sure to update your Go application to use the environment variables for database connection (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) instead of hardcoded values.
