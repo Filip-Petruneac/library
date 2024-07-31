@@ -16,7 +16,7 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-API_URL = "http://localhost:8081"  
+API_URL = "http://api:8081"  
 
 def validate_body_length(max_length, field_limits=None):
     if field_limits is None:
@@ -440,4 +440,4 @@ def serve_js(filename):
     return send_from_directory('static/js', filename)
 
 if __name__ == '__main__':
-    app.run(debug=True, host= '0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

@@ -25,8 +25,7 @@ services:
     networks:
       - my-network
     command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
-
-      
+    
   db:
     image: mysql:latest
     restart: always
