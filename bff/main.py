@@ -300,40 +300,52 @@ def add_book():
         is_borrowed = request.form.get('is_borrowed', 'off') == 'on'
         photo = request.files['photo']
 
-        if photo:
-            filename = secure_filename(photo.filename)
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            photo.save(photo_path)
-            photo_url = f'uploads/{filename}'
-        else:
-            photo_url = None
-
         data = {
             'title': title,
             'details': details,
             'author_id': int(author_id),
             'is_borrowed': is_borrowed,
-            'photo': photo_url
+            'photo': ""  
         }
 
-        headers = {'Content-Type': 'application/json'}
-
         try:
-            response = requests.post(f"{API_URL}/books/new", json=data, headers=headers)
-            app.logger.debug(f"API Response: {response.status_code}, Content: {response.content}")
+            response = requests.post(f"{API_URL}/books/new", json=data)
+            if response.status_code == 201:
+                resp_data = response.json()
+                id_book = resp_data.get("id", 0)
+                if (id_book == 0):
+                    error_message = response.json().get('error', 'Failed to add book')
+                    app.logger.error(f"Failed to add book: {error_message}")
+                    return jsonify(success=False, error=error_message), 500
+                
+                url_add_photo = f"{API_URL}/book/photo/{id_book}"
 
-            if response.status_code == 200:
+                if photo:
+                    filename = secure_filename(photo.filename)
+                    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    photo.save(photo_path)
+                    
+                    _, file_extension = os.path.splitext(photo_path)
+                    
+                    resp = forward_photo(photo_path, url_add_photo, file_extension)
+                    
+                    if resp.status_code != 200:
+                        print("Error:", resp.status_code, resp.text)
+                        error_message = resp.json().get('error', 'Failed to add photo for book')
+                        app.logger.error(f"Failed to add photo for book: {error_message}, {resp.status_code}, {resp.text}")
+
+                        return jsonify(success=False, error=error_message), 500
+                
                 return redirect(url_for("index"))
             else:
-                error_message = response.json().get('error', 'Failed to add book')
+                error_message = response.json().get('error', f'Failed to add book with status code: {response.status_code}')
                 app.logger.error(f"Failed to add book: {error_message}")
                 return jsonify(success=False, error=error_message), 500
-
-        except requests.RequestException as err:
+        
+        except Exception as err:
             app.logger.error(f"Failed to add book: {err}")
             return jsonify(success=False, error=str(err)), 500
-
-  
+    
     try:
         response = requests.get(f"{API_URL}/authors")
         if response.status_code != 200:
