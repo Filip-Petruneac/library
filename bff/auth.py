@@ -2,8 +2,9 @@ from functools import wraps
 from flask import Flask, request, redirect, url_for, make_response, jsonify, render_template
 import requests
 import datetime
+import os
 
-API_URL = "http://api:8081"
+API_URL = os.getenv("API_URL", "http://localhost:8081")
 
 app = Flask(__name__)
 

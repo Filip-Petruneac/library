@@ -7,10 +7,14 @@ services:
     ports:
       - 8081:8081
     restart: always
-    depends_on:
-      - db
     networks:
       - my-network
+    environment:
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_HOSTNAME=db
+      - DB_PORT=3306
+      - DB_NAME=db
     command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
 
   bff:
@@ -20,10 +24,10 @@ services:
     ports:
       - 5000:5000
     restart: always
-    depends_on:
-      - db
     networks:
       - my-network
+    environment:
+      - API_URL=http://api:8081
     command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
     
   db:

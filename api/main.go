@@ -14,13 +14,15 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+
 )
 
 type AuthorInfo struct {
 	ID        int    `json:"id"`
 	Firstname string `json:"firstname"`
 	Lastname  string `json:"lastname"`
-	Photo     string `json:"photo,omitempty"` 
+	Photo     string `json:"photo,omitempty"`
 }
 
 type Author struct {
@@ -62,44 +64,41 @@ type NewBook struct {
 	Details    string `json:"details"`
 }
 
-func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
-	var err error
-
-	// Constructing the DSN (Data Source Name)
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname)
-
-	// Open a connection to the database
-	var db *sql.DB
-	db, err = sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	// Check if the connection is successful
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-	log.Println("Connected to the MySQL database!")
-	return db, nil
-}
-
 func main() {
 	port := flag.String("port", "8081", "Server Port")
-	dbUsername := flag.String("db-user","root", "Database Username")
-	dbPassword := flag.String("db-password", "password", "Database Password")
-	dbHostname := flag.String("db-hostname", "db", "Database hostname")
-	dbPort := flag.String("db-port", "3306", "Database port")
-	dbName := flag.String("db-name", "db", "Database name")
+    flag.Parse()
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, continuing with environment variables or defaults")
+	}
 
-	db, err := initDB(*dbUsername, *dbPassword, *dbHostname, *dbPort, *dbName)
+	dbUsername := getEnv("DB_USER", "root")
+	dbPassword := getEnv("DB_PASSWORD", "password")
+	dbHostname := getEnv("DB_HOSTNAME", "db")
+	dbPort := getEnv("DB_PORT", "3306")
+	dbName := getEnv("DB_NAME", "db")
+
+	db, err := initDB(dbUsername, dbPassword, dbHostname, dbPort, dbName)
 	if err != nil {
 		log.Fatalf("Error initializing database: %v", err)
 	}
 	defer db.Close()
 
-	log.Println("Starting our server.")
+	log.Println("Starting our server on port", *port)
 
+	r := setupRouter(db)
+
+	log.Println("Started on port", *port)
+	fmt.Println("To close connection CTRL+C :-)")
+
+	// Spinning up the server.
+	err = http.ListenAndServe(":"+*port, r)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func setupRouter(db *sql.DB) *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", Home)
@@ -129,16 +128,35 @@ func main() {
 	r.HandleFunc("/singup", signupUser(db)).Methods("POST")
 	r.HandleFunc("/login", loginUser(db)).Methods("POST")
 
-	http.Handle("/", r)
+	return r
+}
 
-	log.Println("Started on port", *port)
-	fmt.Println("To close connection CTRL+C :-)")
-
-	// Spinning up the server.
-	err = http.ListenAndServe(":"+*port, nil)
-	if err != nil {
-		log.Fatal(err)
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
+	return defaultValue
+}
+
+func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
+	var err error
+
+	// Constructing the DSN (Data Source Name)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname)
+
+	// Open a connection to the database
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// Check if the connection is successful
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+	log.Println("Connected to the MySQL database!")
+	return db, nil
 }
 
 // Home handles requests to the homepage
@@ -669,70 +687,70 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 
 // AddBookPhoto adds a photo to an existing book in the database
 func AddBookPhoto(db *sql.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodPost {
-            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-            return
-        }
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+			return
+		}
 
-        vars := mux.Vars(r)
-        bookID, err := strconv.Atoi(vars["id"])
-        if err != nil {
-            http.Error(w, "Invalid book ID", http.StatusBadRequest)
-            return
-        }
+		vars := mux.Vars(r)
+		bookID, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			http.Error(w, "Invalid book ID", http.StatusBadRequest)
+			return
+		}
 
-        file, header, err := r.FormFile("file")
-        if err != nil {
-            fmt.Printf("Error get photo from request")
-            http.Error(w, "Error get file", http.StatusInternalServerError)
-            return
-        }
-        defer file.Close()
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			fmt.Printf("Error get photo from request")
+			http.Error(w, "Error get file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
 
-        filename := header.Filename
+		filename := header.Filename
 
-        ext := filepath.Ext(filename)
+		ext := filepath.Ext(filename)
 
-        photo_dir := "./upload/books/" + strconv.Itoa(bookID)
-        photo_path := photo_dir + "/fullsize" + ext
+		photo_dir := "./upload/books/" + strconv.Itoa(bookID)
+		photo_path := photo_dir + "/fullsize" + ext
 
-        err = os.MkdirAll(photo_dir, 0777)
-        if err != nil {
-            http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
-            return
-        }
+		err = os.MkdirAll(photo_dir, 0777)
+		if err != nil {
+			http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
+			return
+		}
 
-        out, err := os.Create(photo_path)
-        if err != nil {
-            http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
-            return
-        }
-        defer out.Close()
+		out, err := os.Create(photo_path)
+		if err != nil {
+			http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
+			return
+		}
+		defer out.Close()
 
-        _, err = io.Copy(out, file)
-        if err != nil {
-            http.Error(w, "Error saving file", http.StatusInternalServerError)
-            return
-        }
+		_, err = io.Copy(out, file)
+		if err != nil {
+			http.Error(w, "Error saving file", http.StatusInternalServerError)
+			return
+		}
 
-        // Query to update book with photo path
-        query := `
+		// Query to update book with photo path
+		query := `
             UPDATE books 
             SET photo = ?
             WHERE id = ?
         `
 
-        // We run the query
-        _, err = db.Exec(query, photo_path, bookID)
-        if err != nil {
-            http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
-            return
-        }
+		// We run the query
+		_, err = db.Exec(query, photo_path, bookID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-        w.WriteHeader(http.StatusOK)
-        fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
-    }
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
+	}
 }
 
 // AddBook adds a new book to the database

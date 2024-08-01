@@ -16,7 +16,7 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-API_URL = "http://api:8081"  
+API_URL = os.getenv("API_URL", "http://localhost:8081")  
 
 def validate_body_length(max_length, field_limits=None):
     if field_limits is None:
