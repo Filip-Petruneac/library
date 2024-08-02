@@ -20,12 +20,54 @@ This is a Go-based REST API for a Library Management System. It provides endpoin
 
 ## Dependencies
 
-This project uses the following external packages:
+This project uses the following packages:
 
-- github.com/go-sql-driver/mysql
-- github.com/gorilla/mux
-- golang.org/x/crypto/bcrypt
+- Standard library packages:
+  - "database/sql"
+  - "encoding/json"
+  - "flag"
+  - "fmt"
+  - "io"
+  - "log"
+  - "net/http"
+  - "os"
+  - "path/filepath"
+  - "strconv"
 
+- External packages:
+  - github.com/go-sql-driver/mysql
+  - github.com/gorilla/mux
+  - github.com/joho/godotenv
+
+To install the external dependencies, run:
+
+go get github.com/go-sql-driver/mysql
+go get github.com/gorilla/mux
+go get github.com/joho/godotenv
+
+Alternatively, you can use Go modules (if not already in use) by running:
+
+go mod init <your-module-name>
+go mod tidy
+
+This will automatically download and manage the required dependencies.
+
+## Environment Variables
+
+Create a `.env` file in the root of the project with the following specifications:
+
+DB_USER
+DB_PASSWORD
+DB_HOSTNAME
+DB_PORT
+DB_NAME
+MYSQL_ROOT_PASSWORD
+MYSQL_USER
+MYSQL_DATABASE
+MYSQL_PASSWORD
+API_URL
+
+Make sure to set appropriate values for these variables according to your development or production environment. The Go application should be updated to use these environment variables for database connection and other configurations instead of hardcoded values.
 
 ## API Endpoints
 
