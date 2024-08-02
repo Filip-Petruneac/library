@@ -17,4 +17,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 CMD ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
-

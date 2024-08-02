@@ -9,12 +9,8 @@ services:
     restart: always
     networks:
       - my-network
-    environment:
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_HOSTNAME=db
-      - DB_PORT=3306
-      - DB_NAME=db
+    env_file:
+      - .env
     command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
 
   bff:
@@ -26,18 +22,15 @@ services:
     restart: always
     networks:
       - my-network
-    environment:
-      - API_URL=http://api:8081
+    env_file:
+      - .env
     command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
     
   db:
     image: mysql:latest
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_USER: filip
-      MYSQL_DATABASE: db
-      MYSQL_PASSWORD: password
+    env_file:
+      - .env
     ports:
       - 4450:3306
     volumes:
