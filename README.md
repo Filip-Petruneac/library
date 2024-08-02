@@ -56,15 +56,20 @@ This will automatically download and manage the required dependencies.
 
 Create a `.env` file in the root of the project with the following specifications:
 
-DB_USER
-DB_PASSWORD
+# Database connection variables
 DB_HOSTNAME
 DB_PORT
 DB_NAME
+DB_USER
+DB_PASSWORD
+
+# MySQL specific variables
 MYSQL_ROOT_PASSWORD
-MYSQL_USER
 MYSQL_DATABASE
+MYSQL_USER
 MYSQL_PASSWORD
+
+# API configuration
 API_URL
 
 Make sure to set appropriate values for these variables according to your development or production environment. The Go application should be updated to use these environment variables for database connection and other configurations instead of hardcoded values.
