@@ -25,4 +25,3 @@ COPY --from=builder /app/main .
 EXPOSE 8081
 
 CMD ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
-

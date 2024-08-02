@@ -12,4 +12,4 @@ mysql:
 		-v $(PWD)/dump.sql:/docker-entrypoint-initdb.d/dump.sql \
 		mysql:latest
 
-.PHONY: mysql
+.PHONY: 
