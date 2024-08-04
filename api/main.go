@@ -56,7 +56,7 @@ type Subscriber struct {
 	Email     string `json:"email"`
 }
 
-type NewBook struct {
+type Book struct {
 	Title      string `json:"title"`
 	AuthorID   int    `json:"author_id"`
 	Photo      string `json:"photo"`
@@ -685,128 +685,103 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// AddBookPhoto adds a photo to an existing book in the database
 func AddBookPhoto(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+            return
+        }
 
-		vars := mux.Vars(r)
-		bookID, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			http.Error(w, "Invalid book ID", http.StatusBadRequest)
-			return
-		}
+        vars := mux.Vars(r)
+        bookID, err := strconv.Atoi(vars["id"])
+        if err != nil {
+            http.Error(w, "Invalid book ID", http.StatusBadRequest)
+            return
+        }
 
-		file, header, err := r.FormFile("file")
-		if err != nil {
-			fmt.Printf("Error get photo from request")
-			http.Error(w, "Error get file", http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
+        file, header, err := r.FormFile("file")
+        if err != nil {
+            http.Error(w, "Error getting file", http.StatusInternalServerError)
+            return
+        }
+        defer file.Close()
 
-		filename := header.Filename
+        filename := header.Filename
+        ext := filepath.Ext(filename)
+        photoDir := "./upload/books/" + strconv.Itoa(bookID)
+        photoPath := photoDir + "/fullsize" + ext
 
-		ext := filepath.Ext(filename)
+        err = os.MkdirAll(photoDir, 0777)
+        if err != nil {
+            http.Error(w, "Unable to create directories on disk", http.StatusInternalServerError)
+            return
+        }
 
-		photo_dir := "./upload/books/" + strconv.Itoa(bookID)
-		photo_path := photo_dir + "/fullsize" + ext
+        out, err := os.Create(photoPath)
+        if err != nil {
+            http.Error(w, "Unable to create file on disk", http.StatusInternalServerError)
+            return
+        }
+        defer out.Close()
 
-		err = os.MkdirAll(photo_dir, 0777)
-		if err != nil {
-			http.Error(w, "Unable to create the directories on disk", http.StatusInternalServerError)
-			return
-		}
+        _, err = io.Copy(out, file)
+        if err != nil {
+            http.Error(w, "Error saving file", http.StatusInternalServerError)
+            return
+        }
 
-		out, err := os.Create(photo_path)
-		if err != nil {
-			http.Error(w, "Unable to create the file on disk", http.StatusInternalServerError)
-			return
-		}
-		defer out.Close()
+        query := `UPDATE books SET photo = ? WHERE id = ?`
+        _, err = db.Exec(query, photoPath, bookID)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		_, err = io.Copy(out, file)
-		if err != nil {
-			http.Error(w, "Error saving file", http.StatusInternalServerError)
-			return
-		}
-
-		// Query to update book with photo path
-		query := `
-            UPDATE books 
-            SET photo = ?
-            WHERE id = ?
-        `
-
-		// We run the query
-		_, err = db.Exec(query, photo_path, bookID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "File uploaded successfully: %s\n", photo_path)
-	}
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
+    }
 }
 
-// AddBook adds a new book to the database
 func AddBook(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Check the HTTP method
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "Only POST method is supported", http.StatusMethodNotAllowed)
+            return
+        }
 
-		// Parse the JSON data received from the request
-		var book NewBook
-		err := json.NewDecoder(r.Body).Decode(&book)
-		if err != nil {
-			log.Printf("Error decoding JSON: %v", err)
-			http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
+        var book Book
+        err := json.NewDecoder(r.Body).Decode(&book)
+        if err != nil {
+            http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+            return
+        }
+        defer r.Body.Close()
 
-		// Log the received book data for debugging
-		log.Printf("Received book data: %+v", book)
+        if book.Title == "" || book.AuthorID == 0 {
+            http.Error(w, "Title and AuthorID are required fields", http.StatusBadRequest)
+            return
+        }
 
-		// Check if all required fields are filled
-		if book.Title == "" || book.AuthorID == 0 {
-			http.Error(w, "Book title and author ID are required fields", http.StatusBadRequest)
-			return
-		}
+        query := `INSERT INTO books (title, details, author_id, is_borrowed) VALUES (?, ?, ?, ?)`
+        result, err := db.Exec(query, book.Title, book.Details, book.AuthorID, book.IsBorrowed)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
+            return
+        }
 
-		// Query to add book
-		query := `
-            INSERT INTO books (title, author_id, is_borrowed, details) 
-            VALUES (?, ?, ?, ?)
-        `
+        id, err := result.LastInsertId()
+        if err != nil {
+            http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
+            return
+        }
 
-		// Execute the query
-		result, err := db.Exec(query, book.Title, book.AuthorID, book.Photo, book.IsBorrowed, book.Details) // Changed here
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		// Get the inserted book ID
-		id, err := result.LastInsertId()
-		if err != nil {
-			http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
-			return
-		}
-
-		// Return the response with the book ID inserted
-		response := map[string]int{"id": int(id)}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusCreated)
+        response := map[string]int{"id": int(id)}
+        json.NewEncoder(w).Encode(response)
+    }
 }
+
 
 // AddSubscriber adds a new subscriber to the database
 func AddSubscriber(db *sql.DB) http.HandlerFunc {

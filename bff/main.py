@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect, make_response
+from flask import Flask, render_template, jsonify, request, url_for, send_from_directory, redirect, json, make_response
 import requests
 import os
 from functools import wraps
@@ -279,15 +279,12 @@ def add_author():
         
     return render_template('add_author_form.html')
 
-
 def forward_photo(path, url, extension):
     with open(path, 'rb') as file:
         files = {'file': (path, file, f'image/{extension}')}        
         response = requests.post(url, files=files)
         
     return response
-    
-            
 
 @app.route('/add_book', methods=['GET', 'POST'])
 @login_required
@@ -305,57 +302,65 @@ def add_book():
             'details': details,
             'author_id': int(author_id),
             'is_borrowed': is_borrowed,
-            'photo': ""  
+            'photo': ""
         }
 
         try:
             response = requests.post(f"{API_URL}/books/new", json=data)
-            if response.status_code == 201:
-                resp_data = response.json()
-                id_book = resp_data.get("id", 0)
-                if (id_book == 0):
-                    error_message = response.json().get('error', 'Failed to add book')
-                    app.logger.error(f"Failed to add book: {error_message}")
-                    return jsonify(success=False, error=error_message), 500
-                
-                url_add_photo = f"{API_URL}/book/photo/{id_book}"
+            response.raise_for_status()
+            
+            resp_data = response.json()
+            id_book = resp_data.get("id")
+            if not id_book:
+                error_message = "Failed to get book ID from API response"
+                app.logger.error(error_message)
+                return render_template('add_book_form.html', authors=authors, error=error_message)
 
-                if photo:
-                    filename = secure_filename(photo.filename)
-                    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    photo.save(photo_path)
-                    
-                    _, file_extension = os.path.splitext(photo_path)
-                    
-                    resp = forward_photo(photo_path, url_add_photo, file_extension)
-                    
-                    if resp.status_code != 200:
-                        print("Error:", resp.status_code, resp.text)
-                        error_message = resp.json().get('error', 'Failed to add photo for book')
-                        app.logger.error(f"Failed to add photo for book: {error_message}, {resp.status_code}, {resp.text}")
+            if photo:
+                filename = secure_filename(photo.filename)
+                photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                photo.save(photo_path)
 
-                        return jsonify(success=False, error=error_message), 500
+                _, file_extension = os.path.splitext(photo_path)
+                url_add_photo = f"{API_URL}/books/photo/{id_book}"
                 
-                return redirect(url_for("index"))
-            else:
-                error_message = response.json().get('error', f'Failed to add book with status code: {response.status_code}')
-                app.logger.error(f"Failed to add book: {error_message}")
-                return jsonify(success=False, error=error_message), 500
-        
-        except Exception as err:
+                resp = forward_photo(photo_path, url_add_photo, file_extension)
+                if resp.status_code != 200:
+                    error_message = resp.json().get('error', 'Failed to upload photo')
+                    app.logger.error(f"Failed to upload photo: {error_message}")
+                    return render_template('add_book_form.html', authors=authors, error=error_message)
+
+            return redirect(url_for("index"))
+
+        except requests.RequestException as err:
             app.logger.error(f"Failed to add book: {err}")
-            return jsonify(success=False, error=str(err)), 500
-    
+            return render_template('add_book_form.html', authors=authors, error=str(err))
     try:
         response = requests.get(f"{API_URL}/authors")
-        if response.status_code != 200:
-            return "Error fetching authors from API", 400
+        response.raise_for_status()
         authors = response.json()
-    except Exception as err:
+    except requests.RequestException as err:
         app.logger.error(f"Failed to fetch authors: {err}")
-        return str(err), 500
+        authors = []
 
     return render_template('add_book_form.html', authors=authors)
+
+@app.route('/books/<int:book_id>/photo', methods=['POST'])
+def upload_book_photo(book_id):
+    if 'photo' not in request.files:
+        return jsonify({"error": "No photo provided"}), 400
+
+    photo = request.files['photo']
+    filename = secure_filename(photo.filename)
+    photo_path = os.path.join('/path/to/photos', filename)
+    
+    try:
+        photo.save(photo_path)
+        # Optionally, update the book entry with the photo path
+        # update_book_photo_path(book_id, photo_path)
+        return jsonify({"message": "Photo uploaded successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/add_subscriber', methods=['GET', 'POST'])
 @login_required
