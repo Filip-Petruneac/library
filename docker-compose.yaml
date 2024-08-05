@@ -35,7 +35,7 @@ services:
       - 4450:3306
     volumes:
       - ./sql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
-      # - mysql-data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
     networks:
       - my-network
     healthcheck:
