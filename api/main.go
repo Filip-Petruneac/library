@@ -209,7 +209,6 @@ func GetAllBooks(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// SearchBooks returns a handler that searches for books by title or author.
 func SearchBooks(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("query")
@@ -253,51 +252,41 @@ func SearchBooks(db *sql.DB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(books)
 	}
 }
 
-// SearchAuthors returns a handler that searches for authors by firstname or lastname.
 func SearchAuthors(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("query")
-		if query == "" {
-			http.Error(w, "Query parameter is missing", http.StatusBadRequest)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        query := r.URL.Query().Get("query")
+        if query == "" {
+            http.Error(w, "Query parameter is required", http.StatusBadRequest)
+            return
+        }
 
-		sqlQuery := `
-            SELECT 
-                id, 
-                Firstname, 
-                Lastname, 
-                photo 
-            FROM authors
-            WHERE Firstname LIKE ? OR Lastname LIKE ?`
+        rows, err := db.Query(`SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE ? OR Lastname LIKE ?`, "%"+query+"%", "%"+query+"%")
+        if err != nil {
+            http.Error(w, "Error executing query", http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
 
-		rows, err := db.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
+        authors := []AuthorInfo{}
+        for rows.Next() {
+            var author AuthorInfo
+            if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
+                http.Error(w, "Error scanning row", http.StatusInternalServerError)
+                return
+            }
+            authors = append(authors, author)
+        }
 
-		var authors []AuthorInfo
-		for rows.Next() {
-			var author AuthorInfo
-			if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			authors = append(authors, author)
-		}
-		if err := rows.Err(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		json.NewEncoder(w).Encode(authors)
-	}
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(authors); err != nil {
+            http.Error(w, "Error encoding response", http.StatusInternalServerError)
+        }
+    }
 }
 
 func GetAuthors(db *sql.DB) http.HandlerFunc {
