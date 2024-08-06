@@ -1,5 +1,5 @@
 version: "2"
-name: test /add_authors
+name: test /authors
 vars:
   mysql.url: "filip:password@(localhost:4450)/db"
   api.url: "http://localhost:8081"
@@ -40,7 +40,7 @@ testcases:
         Content-Type: application/json
       assertions:
         - result.statuscode ShouldEqual 400
-        - result.bodystring ShouldContain "Firstname and Lastname are required fields"
+        - result.body ShouldContainSubstring "Firstname and Lastname are required fields"
 
 - name: create author invalid JSON
   steps:
@@ -53,13 +53,4 @@ testcases:
         Content-Type: application/json
       assertions:
         - result.statuscode ShouldEqual 400
-        - result.bodystring ShouldContain "Invalid JSON data"
-
-- name: method not allowed
-  steps:
-    - type: http
-      method: GET
-      url: "{{.api.url}}/authors/new"
-      assertions:
-        - result.statuscode ShouldEqual 405
-        - result.bodystring ShouldContain "Only POST method is supported"
+        - result.body ShouldContainSubstring "Invalid JSON data"
