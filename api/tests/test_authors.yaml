@@ -16,6 +16,16 @@ testcases:
         - "TRUNCATE authors;"
         - "SET FOREIGN_KEY_CHECKS = 1;"
 
+- name: init db
+  steps:
+    - type: sql
+      driver: mysql
+      dsn: "{{.mysql.url}}"
+      commands:
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg')"
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg')"
+
+
 - name: create author
   steps:
     - type: http
@@ -54,3 +64,38 @@ testcases:
       assertions:
         - result.statuscode ShouldEqual 400
         - result.body ShouldContainSubstring "Invalid JSON data"
+
+- name: get authors
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/authors"
+      headers: 
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 200
+        - result.body ShouldContainSubstring id
+        - result.body ShouldContainSubstring lastname
+        - result.body ShouldContainSubstring firstname
+        - result.body ShouldContainSubstring photo
+        - result.body ShouldContainSubstring String
+        - result.body ShouldContainSubstring Valid
+        - result.bodyjson ShouldNotBeNil
+
+- name: search authors 
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/authors?query=John"
+      headers: 
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 200
+        - result.body ShouldContainSubstring id
+        - result.body ShouldContainSubstring lastname
+        - result.body ShouldContainSubstring firstname
+        - result.body ShouldContainSubstring photo
+        - result.body ShouldContainSubstring "John"
+        - result.body ShouldContainSubstring "Doe"
+        - result.bodyjson ShouldNotBeNil
+

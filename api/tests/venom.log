@@ -1,0 +1,795 @@
+Aug  7 13:35:18.734 [INFO] Reading test_authors.yaml
+Aug  7 13:35:18.735 [INFO] Parsing testsuite test_authors.yaml : map[__Len__:2 __Type__:Map api.url:http://localhost:8081 mysql.url:filip:password@(localhost:4450)/db venom.datetime:2024-08-07T13:35:18+03:00 venom.testsuite:test /authors venom.testsuite.filename:test_authors.yaml venom.testsuite.filepath:test_authors.yaml venom.testsuite.name:test /authors venom.testsuite.shortName:test_authors venom.testsuite.workdir:/home/filip/Desktop/library-project/api/tests venom.timestamp:1723026918]
+Aug  7 13:35:18.742 [DEBU] Testsuite (test_authors.yaml) variables: map[__Len__:2 __Type__:Map api.url:http://localhost:8081 mysql.url:filip:password@(localhost:4450)/db venom.datetime:2024-08-07T13:35:18+03:00 venom.testsuite:test /authors venom.testsuite.filename:test_authors.yaml venom.testsuite.filepath:test_authors.yaml venom.testsuite.name:test /authors venom.testsuite.shortName:test_authors venom.testsuite.workdir:/home/filip/Desktop/library-project/api/tests venom.timestamp:1723026918]
+Aug  7 13:35:18.742 [DEBU] nb testsuites: 1
+Aug  7 13:35:18.742 [INFO] [test /authors] Starting testsuite
+Aug  7 13:35:18.742 [INFO] [test /authors] [clean-db] Starting testcase
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] Running testcase with variable venom.testcase: clean-db
+Aug  7 13:35:18.742 [INFO] [test /authors] [clean-db] Step #0 content is: {"commands":["SET FOREIGN_KEY_CHECKS = 0;","TRUNCATE authors_books;","TRUNCATE authors;","SET FOREIGN_KEY_CHECKS = 1;"],"driver":"mysql","dsn":"filip:password@(localhost:4450)/db","type":"sql"}
+Aug  7 13:35:18.742 [DEBU] [test /authors] [clean-db] [sql] connecting to database mysql, filip:password@(localhost:4450)/db
+
+Aug  7 13:35:18.743 [DEBU] [test /authors] [clean-db] [sql] Executing command number 0
+
+Aug  7 13:35:18.743 [DEBU] [test /authors] [clean-db] [sql] Executing command number 1
+
+Aug  7 13:35:18.771 [DEBU] [test /authors] [clean-db] [sql] Executing command number 2
+
+Aug  7 13:35:18.794 [DEBU] [test /authors] [clean-db] [sql] Executing command number 3
+
+Aug  7 13:35:18.794 [DEBU] [test /authors] [clean-db] [sql] result of runTestStepExecutor: {Queries:[{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]}
+Aug  7 13:35:18.794 [INFO] [test /authors] [clean-db] Ending testcase
+Aug  7 13:35:18.794 [INFO] [test /authors] [init-db] Starting testcase
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testcase: init-db
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.794 [DEBU] [test /authors] [init-db] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.794 [INFO] [test /authors] [init-db] Step #0 content is: {"commands":["INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg')","INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg')"],"driver":"mysql","dsn":"filip:password@(localhost:4450)/db","type":"sql"}
+Aug  7 13:35:18.795 [DEBU] [test /authors] [init-db] [sql] connecting to database mysql, filip:password@(localhost:4450)/db
+
+Aug  7 13:35:18.795 [DEBU] [test /authors] [init-db] [sql] Executing command number 0
+
+Aug  7 13:35:18.800 [DEBU] [test /authors] [init-db] [sql] Executing command number 1
+
+Aug  7 13:35:18.803 [DEBU] [test /authors] [init-db] [sql] result of runTestStepExecutor: {Queries:[{Rows:[]} {Rows:[]}]}
+Aug  7 13:35:18.804 [INFO] [test /authors] [init-db] Ending testcase
+Aug  7 13:35:18.804 [INFO] [test /authors] [create-author] Starting testcase
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.__type__: Result
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries: [{Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testcase: create-author
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.__len__: 2
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable init-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.804 [DEBU] [test /authors] [create-author] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.804 [INFO] [test /authors] [create-author] Step #0 content is: {"assertions":["result.statuscode ShouldEqual 201","result.bodyjson ShouldContainKey id"],"body":"{\"firstname\": \"John\", \"lastname\": \"Doe\"}\n","headers":{"Content-Type":"application/json"},"method":"POST","type":"http","url":"http://localhost:8081/authors/new"}
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author] [http] result of runTestStepExecutor: {TimeSeconds:0.004511753 StatusCode:201 Request:{Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "John", "lastname": "Doe"}
+ Form:map[] PostForm:map[]} Body:{"id":3}
+ BodyJSON:map[id:3] Headers:map[Content-Length:9 Content-Type:application/json Date:Wed, 07 Aug 2024 10:35:18 GMT] Err:}
+Aug  7 13:35:18.810 [INFO] [test /authors] [create-author] Ending testcase
+Aug  7 13:35:18.810 [INFO] [test /authors] [create-author-missing-fields] Starting testcase
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers.content-length: 9
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.form.__len__: 0
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.body: {"id":3}
+
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.810 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.postform.__type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.__type__: Result
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.__type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers.__type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.err: 
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers: map[Content-Length:9 Content-Type:application/json Date:Wed, 07 Aug 2024 10:35:18 GMT]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries: [{Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.__type__: Result
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.method: POST
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.postform: map[]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers.__len__: 3
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.body: {"firstname": "John", "lastname": "Doe"}
+
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "John", "lastname": "Doe"}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.timeseconds: 0.004511753
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.__len__: 7
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.statuscode: 201
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.bodyjson.__len__: 1
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.bodyjson.__type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.form: map[]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.postform.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.bodyjson: map[id:3]
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.form.__type__: Map
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable venom.testcase: create-author-missing-fields
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.request.__len__: 6
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.headers.content-type: application/json
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable create-author.result.bodyjson.id: 3
+Aug  7 13:35:18.811 [DEBU] [test /authors] [create-author-missing-fields] Running testcase with variable init-db.result.queries.__len__: 2
+Aug  7 13:35:18.812 [INFO] [test /authors] [create-author-missing-fields] Step #0 content is: {"assertions":["result.statuscode ShouldEqual 400","result.body ShouldContainSubstring \"Firstname and Lastname are required fields\""],"body":"{\"firstname\": \"\", \"lastname\": \"\"}\n","headers":{"Content-Type":"application/json"},"method":"POST","type":"http","url":"http://localhost:8081/authors/new"}
+Aug  7 13:35:18.812 [DEBU] [test /authors] [create-author-missing-fields] [http] result of runTestStepExecutor: {TimeSeconds:0.00033073 StatusCode:400 Request:{Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "", "lastname": ""}
+ Form:map[] PostForm:map[]} Body:Firstname and Lastname are required fields
+ BodyJSON:<nil> Headers:map[Content-Length:43 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff] Err:}
+Aug  7 13:35:18.814 [INFO] [test /authors] [create-author-missing-fields] Ending testcase
+Aug  7 13:35:18.814 [INFO] [test /authors] [create-author-invalid-JSON] Starting testcase
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.bodyjson: 
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.__type__: Map
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers.content-type: application/json
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.x-content-type-options: nosniff
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.form.__type__: Map
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers.content-length: 9
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "", "lastname": ""}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.postform.__len__: 0
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.__len__: 6
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.content-length: 43
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.form: map[]
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.bodyjson.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.__type__: Result
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.err: 
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.__len__: 7
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.timeseconds: 0.00033073
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.postform: map[]
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "John", "lastname": "Doe"}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers.__len__: 3
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.body: Firstname and Lastname are required fields
+
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.__len__: 2
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.__type__: Map
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.814 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.form.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.statuscode: 400
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.bodyjson.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.postform.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.err: 
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers: map[Content-Length:43 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.timeseconds: 0.004511753
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.postform: map[]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.statuscode: 201
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.body: {"firstname": "John", "lastname": "Doe"}
+
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.form.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.form: map[]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.postform.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.__type__: Result
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.__type__: Result
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.__len__: 6
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.bodyjson.id: 3
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.headers.__len__: 4
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries: [{Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.__len__: 7
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.header.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.body: {"firstname": "", "lastname": ""}
+
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.postform.__type__: Map
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.method: POST
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.__type__: Array
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.body: {"id":3}
+
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable venom.testcase: create-author-invalid-JSON
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author-missing-fields.result.request.method: POST
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.bodyjson: map[id:3]
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable init-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.request.form.__len__: 0
+Aug  7 13:35:18.815 [DEBU] [test /authors] [create-author-invalid-JSON] Running testcase with variable create-author.result.headers: map[Content-Length:9 Content-Type:application/json Date:Wed, 07 Aug 2024 10:35:18 GMT]
+Aug  7 13:35:18.815 [INFO] [test /authors] [create-author-invalid-JSON] Step #0 content is: {"assertions":["result.statuscode ShouldEqual 400","result.body ShouldContainSubstring \"Invalid JSON data\""],"body":"{invalid-json}\n","headers":{"Content-Type":"application/json"},"method":"POST","type":"http","url":"http://localhost:8081/authors/new"}
+Aug  7 13:35:18.816 [DEBU] [test /authors] [create-author-invalid-JSON] [http] result of runTestStepExecutor: {TimeSeconds:0.000386555 StatusCode:400 Request:{Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{invalid-json}
+ Form:map[] PostForm:map[]} Body:Invalid JSON data
+ BodyJSON:<nil> Headers:map[Content-Length:18 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff] Err:}
+Aug  7 13:35:18.817 [INFO] [test /authors] [create-author-invalid-JSON] Ending testcase
+Aug  7 13:35:18.817 [INFO] [test /authors] [get-authors] Starting testcase
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers: map[Content-Length:18 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers.content-type: application/json
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.form.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.__len__: 7
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.__len__: 6
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.bodyjson.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.bodyjson: map[id:3]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers.__len__: 3
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.err: 
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.form.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.postform.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.body: Invalid JSON data
+
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.timeseconds: 0.000386555
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.form.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.bodyjson: 
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.postform: map[]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.__len__: 4
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.bodyjson: 
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers.content-length: 9
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.__len__: 6
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.body: {"firstname": "John", "lastname": "Doe"}
+
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.err: 
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.body: {"firstname": "", "lastname": ""}
+
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.form.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.__type__: Result
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.postform.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.body: {"id":3}
+
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.__type__: Result
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.body: {invalid-json}
+
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.postform.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.postform: map[]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.postform.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers: map[Content-Length:9 Content-Type:application/json Date:Wed, 07 Aug 2024 10:35:18 GMT]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers.__type__: Map
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.__len__: 4
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.method: POST
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.content-length: 18
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.method: POST
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries: [{Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.817 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform: map[]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "John", "lastname": "Doe"}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.__type__: Result
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.__type__: Result
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.x-content-type-options: nosniff
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.__len__: 7
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{invalid-json}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.bodyjson.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.statuscode: 400
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.content-length: 43
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.form: map[]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.timeseconds: 0.00033073
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.statuscode: 400
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.body: Firstname and Lastname are required fields
+
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.timeseconds: 0.004511753
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.method: POST
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.form.__len__: 0
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.form: map[]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testcase: get-authors
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.__type__: Map
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.bodyjson.id: 3
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.__len__: 7
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.__len__: 2
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers: map[Content-Length:43 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.statuscode: 201
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.headers.x-content-type-options: nosniff
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.headers.__type__: Map
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable init-db.result.queries.__type__: Array
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "", "lastname": ""}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.err: 
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-missing-fields.result.request.header.__len__: 1
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.form.__len__: 0
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.__len__: 6
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author-invalid-JSON.result.request.form: map[]
+Aug  7 13:35:18.818 [DEBU] [test /authors] [get-authors] Running testcase with variable create-author.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.818 [INFO] [test /authors] [get-authors] Step #0 content is: {"assertions":["result.statuscode ShouldEqual 200","result.body ShouldContainSubstring id","result.body ShouldContainSubstring lastname","result.body ShouldContainSubstring firstname","result.body ShouldContainSubstring photo","result.body ShouldContainSubstring String","result.body ShouldContainSubstring Valid","result.bodyjson ShouldNotBeNil"],"headers":{"Content-Type":"application/json"},"method":"GET","type":"http","url":"http://localhost:8081/authors"}
+Aug  7 13:35:18.820 [DEBU] [test /authors] [get-authors] [http] result of runTestStepExecutor: {TimeSeconds:0.000786695 StatusCode:200 Request:{Method:GET URL:http://localhost:8081/authors Header:map[Content-Type:[application/json]] Body: Form:map[] PostForm:map[]} Body:[{"id":1,"lastname":"Rowling","firstname":"J.K.","photo":{"String":"rowling.jpg","Valid":true}},{"id":2,"lastname":"Doe","firstname":"John","photo":{"String":"john.jpg","Valid":true}},{"id":3,"lastname":"Doe","firstname":"John","photo":{"String":"","Valid":false}}]
+ BodyJSON:<nil> Headers:map[Content-Length:266 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT] Err:}
+Aug  7 13:35:18.820 [INFO] [test /authors] [get-authors] Ending testcase
+Aug  7 13:35:18.820 [INFO] [test /authors] [search-authors] Starting testcase
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.postform.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.timeseconds: 0.00033073
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.method: GET
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.__len__: 4
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.postform.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.body: {"firstname": "", "lastname": ""}
+
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2: {Rows:[]}
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable __Len__: 12
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.__len__: 7
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.bodyjson.id: 3
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.postform: map[]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.bodyjson: 
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite: test /authors
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.x-content-type-options: nosniff
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.__len__: 6
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testcase: search-authors
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3: {Rows:[]}
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.form.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.libdir: 
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2.rows: []
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3.rows.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.postform.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.url: http://localhost:8081/authors
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.form.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform: map[]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{invalid-json}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2.rows.__type__: Array
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers.__len__: 3
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.__type__: Array
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.__type__: Result
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.form: map[]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers.__len__: 3
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers: map[Content-Length:266 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.x-content-type-options: nosniff
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers: map[Content-Length:43 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.timeseconds: 0.000786695
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite.shortName: test_authors
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.content-length: 43
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.__type__: Result
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable api.url: http://localhost:8081
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3.__type__: QueryResult
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries: [{Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.body: Firstname and Lastname are required fields
+
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.postform.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries: [{Rows:[]} {Rows:[]} {Rows:[]} {Rows:[]}]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.body: [{"id":1,"lastname":"Rowling","firstname":"J.K.","photo":{"String":"rowling.jpg","Valid":true}},{"id":2,"lastname":"Doe","firstname":"John","photo":{"String":"john.jpg","Valid":true}},{"id":3,"lastname":"Doe","firstname":"John","photo":{"String":"","Valid":false}}]
+
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.timeseconds: 0.000386555
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.__type__: Result
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.form: map[]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.form.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.__len__: 7
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.__len__: 4
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0.__type__: QueryResult
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers: map[Content-Length:9 Content-Type:application/json Date:Wed, 07 Aug 2024 10:35:18 GMT]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable mysql.url: filip:password@(localhost:4450)/db
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.__len__: 6
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.bodyjson: 
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.bodyjson.__type__: Map
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.statuscode: 400
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers.content-length: 266
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.body: Invalid JSON data
+
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.__len__: 4
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.__type__: Result
+Aug  7 13:35:18.820 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.bodyjson: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.__len__: 7
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite.filename: test_authors.yaml
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.body: {invalid-json}
+
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.form.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.err: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.datetime: 2024-08-07T13:35:18+03:00
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.statuscode: 201
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2.rows.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.postform.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers.content-length: 9
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.form.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers.date: Wed, 07 Aug 2024 10:35:18 GMT
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0.rows: []
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.postform.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers.content-length: 18
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.method: POST
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type: [application/json]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.err: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.postform.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.bodyjson: map[id:3]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.headers.content-type: text/plain; charset=utf-8
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.__type__: Result
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request: {Method:GET URL:http://localhost:8081/authors Header:map[Content-Type:[application/json]] Body: Form:map[] PostForm:map[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.statuscode: 400
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.headers.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite.filepath: test_authors.yaml
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.form: map[]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header: map[Content-Type:[application/json]]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1.rows.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "", "lastname": ""}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.body: {"id":3}
+
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.postform: map[]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.__len__: 7
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite.name: test /authors
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.err: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.form.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.form.__type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3.rows: []
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.timestamp: 1723026918
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries3.rows.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0.rows.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries0: {Rows:[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.body: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1.__type__: QueryResult
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1.rows: []
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable __Type__: Map
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.body: {"firstname": "John", "lastname": "Doe"}
+
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.method: POST
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.__len__: 2
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request: {Method:POST URL:http://localhost:8081/authors/new Header:map[Content-Type:[application/json]] Body:{"firstname": "John", "lastname": "Doe"}
+ Form:map[] PostForm:map[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries2.__type__: QueryResult
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.url: http://localhost:8081/authors/new
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.headers.content-type: application/json
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.result.queries.queries1: {Rows:[]}
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.header.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.bodyjson.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.timeseconds: 0.004511753
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.testsuite.workdir: /home/filip/Desktop/library-project/api/tests
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.executable: /usr/local/bin/venom
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.form: map[]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable clean-db.__type__: Result
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.__len__: 6
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.headers: map[Content-Length:18 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT X-Content-Type-Options:nosniff]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.header.content-type.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.content-type.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.err: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.__len__: 6
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.header.__len__: 1
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.form.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries1.rows.__type__: Array
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.request.header.content-type.content-type0: application/json
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable init-db.result.queries.queries0.rows.__len__: 0
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-missing-fields.result.request.postform: map[]
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author-invalid-JSON.result.request.__type__: HTTPRequest
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable venom.outputdir: 
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable get-authors.result.statuscode: 200
+Aug  7 13:35:18.821 [DEBU] [test /authors] [search-authors] Running testcase with variable create-author.result.request.method: POST
+Aug  7 13:35:18.821 [INFO] [test /authors] [search-authors] Step #0 content is: {"assertions":["result.statuscode ShouldEqual 200","result.body ShouldContainSubstring id","result.body ShouldContainSubstring lastname","result.body ShouldContainSubstring firstname","result.body ShouldContainSubstring photo","result.body ShouldContainSubstring \"John\"","result.body ShouldContainSubstring \"Doe\"","result.bodyjson ShouldNotBeNil"],"headers":{"Content-Type":"application/json"},"method":"GET","type":"http","url":"http://localhost:8081/authors?query=John"}
+Aug  7 13:35:18.824 [DEBU] [test /authors] [search-authors] [http] result of runTestStepExecutor: {TimeSeconds:0.000882655 StatusCode:200 Request:{Method:GET URL:http://localhost:8081/authors?query=John Header:map[Content-Type:[application/json]] Body: Form:map[] PostForm:map[]} Body:[{"id":1,"lastname":"Rowling","firstname":"J.K.","photo":{"String":"rowling.jpg","Valid":true}},{"id":2,"lastname":"Doe","firstname":"John","photo":{"String":"john.jpg","Valid":true}},{"id":3,"lastname":"Doe","firstname":"John","photo":{"String":"","Valid":false}}]
+ BodyJSON:<nil> Headers:map[Content-Length:266 Content-Type:text/plain; charset=utf-8 Date:Wed, 07 Aug 2024 10:35:18 GMT] Err:}
+Aug  7 13:35:18.824 [INFO] [test /authors] [search-authors] Ending testcase
+Aug  7 13:35:18.824 [INFO] [test /authors] Ending testsuite
+Aug  7 13:35:18.824 [DEBU] final status: PASS
