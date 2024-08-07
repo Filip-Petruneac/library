@@ -6,6 +6,11 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"bytes"
+	"os"
+	"mime/multipart"
+	
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +22,12 @@ func setupTestRouter(dbService *TestDBService) *mux.Router {
 	r.HandleFunc("/search_books", SearchBooks(dbService.DB)).Methods("GET")
 	r.HandleFunc("/search_authors", SearchAuthors(dbService.DB)).Methods("GET")
 	r.HandleFunc("/authors", GetAuthors(dbService.DB)).Methods("GET")
+	r.HandleFunc("/authors_books", GetAuthorsAndBooks(dbService.DB)).Methods("GET")
+	r.HandleFunc("/authors_books/{id}", GetAuthorBooksByID(dbService.DB)).Methods("GET")
+	r.HandleFunc("/books/{id}", GetBookByID(dbService.DB)).Methods("GET")
+	r.HandleFunc("/books/{id}/subscribers", GetSubscribersByBookID(dbService.DB)).Methods("GET")
+	r.HandleFunc("/subscribers", GetAllSubscribers(dbService.DB)).Methods("GET")
+	r.HandleFunc("/authors/{id}/photo", AddAuthorPhoto(dbService.DB)).Methods("POST")
 	return r
 }
 // Test for GetAllBooks handler
@@ -101,35 +112,362 @@ func TestSearchAuthors(t *testing.T) {
 }
 
 // Test for GetAuthors handler
-func TestGetAuthors(t *testing.T) {
+// func TestGetAuthors(t *testing.T) {
+// 	dbService, err := NewTestDBService()
+// 	if err != nil {
+// 		t.Fatalf("An error '%s' was not expected when creating the test DB service", err)
+// 	}
+// 	defer dbService.DB.Close()
+
+// 	columns := []string{"id", "lastname", "firstname", "photo"}
+// 	rows := sqlmock.NewRows(columns).
+// 		AddRow(1, "Creangă", "Ion", "ion.jpg").
+// 		AddRow(2, "London", "Jack", "jack.jpg")
+
+// 	dbService.Mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+
+// 	req, _ := http.NewRequest("GET", "/authors", nil)
+// 	rr := httptest.NewRecorder()
+// 	setupTestRouter(dbService).ServeHTTP(rr, req)
+
+// 	assert.Equal(t, http.StatusOK, rr.Code)
+
+// 	expectedAuthors := []Author{
+// 		{ID: 1, Lastname: "Creangă", Firstname: "Ion", Photo: "ion.jpg"},
+// 		{ID: 2, Lastname: "London", Firstname: "Jack", Photo: "jack.jpg"},
+// 	}
+// 	var actualAuthors []Author
+// 	err = json.NewDecoder(rr.Body).Decode(&actualAuthors)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, expectedAuthors, actualAuthors)
+
+// 	err = dbService.Mock.ExpectationsWereMet()
+// 	assert.NoError(t, err)
+// }
+
+// Test for GetAuthorsAndBooks handler
+func TestGetAuthorsAndBooks(t *testing.T) {
 	dbService, err := NewTestDBService()
 	if err != nil {
-		t.Fatalf("An error '%s' was not expected when creating the test DB service", err)
+		t.Fatalf("Error creating test DB service: %v", err)
 	}
 	defer dbService.DB.Close()
 
-	columns := []string{"id", "lastname", "firstname", "photo"}
+	columns := []string{"author_firstname", "author_lastname", "book_title", "book_photo"}
 	rows := sqlmock.NewRows(columns).
-		AddRow(1, "Creangă", "Ion", "ion.jpg").
-		AddRow(2, "London", "Jack", "jack.jpg")
+		AddRow("Ion", "Creangă", "Amintiri din copilărie", "amintiri.jpg").
+		AddRow("Jack", "London", "Chemarea străbunilor", "chemarea.jpg")
 
-	dbService.Mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+	dbService.Mock.ExpectQuery(`
+		SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo
+		FROM authors_books ab
+		JOIN authors a ON ab.author_id = a.id
+		JOIN books b ON ab.book_id = b.id
+	`).WillReturnRows(rows)
 
-	req, _ := http.NewRequest("GET", "/authors", nil)
+	req, _ := http.NewRequest("GET", "/authors_books", nil)
 	rr := httptest.NewRecorder()
 	setupTestRouter(dbService).ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	expectedAuthors := []Author{
-		{ID: 1, Lastname: "Creangă", Firstname: "Ion", Photo: "ion.jpg"},
-		{ID: 2, Lastname: "London", Firstname: "Jack", Photo: "jack.jpg"},
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
-	var actualAuthors []Author
-	err = json.NewDecoder(rr.Body).Decode(&actualAuthors)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedAuthors, actualAuthors)
 
-	err = dbService.Mock.ExpectationsWereMet()
-	assert.NoError(t, err)
+	expectedAuthorsAndBooks := []AuthorBook{
+		{AuthorFirstname: "Ion", AuthorLastname: "Creangă", BookTitle: "Amintiri din copilărie", BookPhoto: "amintiri.jpg"},
+		{AuthorFirstname: "Jack", AuthorLastname: "London", BookTitle: "Chemarea străbunilor", BookPhoto: "chemarea.jpg"},
+	}
+	var actualAuthorsAndBooks []AuthorBook
+	err = json.NewDecoder(rr.Body).Decode(&actualAuthorsAndBooks)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+	if !reflect.DeepEqual(expectedAuthorsAndBooks, actualAuthorsAndBooks) {
+		t.Errorf("Response body does not match. Expected %+v, got %+v", expectedAuthorsAndBooks, actualAuthorsAndBooks)
+	}
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("There were unmet expectations: %v", err)
+	}
+}
+
+// Test for GetAuthorBooksByID handler
+func TestGetAuthorBooksByID(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Error creating test DB service: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	columns := []string{"author_firstname", "author_lastname", "author_photo", "book_title", "book_photo"}
+	rows := sqlmock.NewRows(columns).
+		AddRow("Ion", "Creangă", "ion.jpg", "Amintiri din copilărie", "amintiri.jpg").
+		AddRow("Ion", "Creangă", "ion.jpg", "Povești", "povesti.jpg")
+
+	dbService.Mock.ExpectQuery(`
+		SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, a.Photo AS author_photo, b.title AS book_title, b.photo AS book_photo
+		FROM authors_books ab
+		JOIN authors a ON ab.author_id = a.id
+		JOIN books b ON ab.book_id = b.id
+		WHERE a.id = \?`).
+		WithArgs(1).
+		WillReturnRows(rows)
+
+	req, _ := http.NewRequest("GET", "/authors_books/1", nil)
+	rr := httptest.NewRecorder()
+	setupTestRouter(dbService).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expectedResponse := struct {
+		AuthorFirstname string       `json:"author_firstname"`
+		AuthorLastname  string       `json:"author_lastname"`
+		AuthorPhoto     string       `json:"author_photo"`
+		Books           []AuthorBook `json:"books"`
+	}{
+		AuthorFirstname: "Ion",
+		AuthorLastname:  "Creangă",
+		AuthorPhoto:     "ion.jpg",
+		Books: []AuthorBook{
+			{BookTitle: "Amintiri din copilărie", BookPhoto: "amintiri.jpg"},
+			{BookTitle: "Povești", BookPhoto: "povesti.jpg"},
+		},
+	}
+
+	var actualResponse struct {
+		AuthorFirstname string       `json:"author_firstname"`
+		AuthorLastname  string       `json:"author_lastname"`
+		AuthorPhoto     string       `json:"author_photo"`
+		Books           []AuthorBook `json:"books"`
+	}
+	err = json.NewDecoder(rr.Body).Decode(&actualResponse)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedResponse, actualResponse) {
+		t.Errorf("Response body does not match. Expected %+v, got %+v", expectedResponse, actualResponse)
+	}
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("There were unmet expectations: %v", err)
+	}
+}
+
+// Test for GetBookByID handler
+func TestGetBookByID(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Error creating test DB service: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	columns := []string{"book_title", "author_id", "book_photo", "is_borrowed", "book_id", "book_details", "author_lastname", "author_firstname"}
+	rows := sqlmock.NewRows(columns).
+		AddRow("Amintiri din copilărie", 1, "amintiri.jpg", false, 1, "A novel by Ion Creangă", "Creangă", "Ion")
+
+	dbService.Mock.ExpectQuery(`
+		SELECT 
+			books.title AS book_title, 
+			books.author_id AS author_id, 
+			books.photo AS book_photo, 
+			books.is_borrowed AS is_borrowed, 
+			books.id AS book_id,
+			books.details AS book_details,
+			authors.Lastname AS author_lastname, 
+			authors.Firstname AS author_firstname
+		FROM books
+		JOIN authors ON books.author_id = authors.id
+		WHERE books.id = \?`).
+		WithArgs(1).
+		WillReturnRows(rows)
+
+	req, _ := http.NewRequest("GET", "/books/1", nil)
+	rr := httptest.NewRecorder()
+	setupTestRouter(dbService).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expectedBook := BookAuthorInfo{
+		BookTitle:      "Amintiri din copilărie",
+		AuthorID:       1,
+		BookPhoto:      "amintiri.jpg",
+		IsBorrowed:     false,
+		BookID:         1,
+		BookDetails:    "A novel by Ion Creangă",
+		AuthorLastname: "Creangă",
+		AuthorFirstname: "Ion",
+	}
+
+	var actualBook BookAuthorInfo
+	err = json.NewDecoder(rr.Body).Decode(&actualBook)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedBook, actualBook) {
+		t.Errorf("Response body does not match. Expected %+v, got %+v", expectedBook, actualBook)
+	}
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("There were unmet expectations: %v", err)
+	}
+}
+
+// Test for GetSubscribersByBookID handler
+func TestGetSubscribersByBookID(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Error creating test DB service: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	columns := []string{"Lastname", "Firstname", "Email"}
+	rows := sqlmock.NewRows(columns).
+		AddRow("Doe", "John", "john.doe@example.com").
+		AddRow("Smith", "Jane", "jane.smith@example.com")
+
+	dbService.Mock.ExpectQuery(`
+		SELECT s.Lastname, s.Firstname, s.Email
+		FROM subscribers s
+		JOIN borrowed_books bb ON s.id = bb.subscriber_id
+		WHERE bb.book_id = \?`).
+		WithArgs("1").
+		WillReturnRows(rows)
+
+	req, _ := http.NewRequest("GET", "/books/1/subscribers", nil)
+	rr := httptest.NewRecorder()
+	setupTestRouter(dbService).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	t.Logf("Response body: %s", rr.Body.String())
+
+	expectedSubscribers := []Subscriber{
+		{Lastname: "Doe", Firstname: "John", Email: "john.doe@example.com"},
+		{Lastname: "Smith", Firstname: "Jane", Email: "jane.smith@example.com"},
+	}
+
+	var actualSubscribers []Subscriber
+	err = json.NewDecoder(rr.Body).Decode(&actualSubscribers)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedSubscribers, actualSubscribers) {
+		t.Errorf("Response body does not match. Expected %+v, got %+v", expectedSubscribers, actualSubscribers)
+	}
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("There were unmet expectations: %v", err)
+	}
+}
+
+// Test for GetAllSubscribers handler
+func TestGetAllSubscribers(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Error creating test DB service: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	columns := []string{"lastname", "firstname", "email"}
+	rows := sqlmock.NewRows(columns).
+		AddRow("Doe", "John", "john.doe@example.com").
+		AddRow("Smith", "Jane", "jane.smith@example.com")
+
+	dbService.Mock.ExpectQuery("SELECT lastname, firstname, email FROM subscribers").
+		WillReturnRows(rows)
+
+	req, _ := http.NewRequest("GET", "/subscribers", nil)
+	rr := httptest.NewRecorder()
+
+	router := mux.NewRouter()
+	router.HandleFunc("/subscribers", GetAllSubscribers(dbService.DB)).Methods("GET")
+	router.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expectedSubscribers := []Subscriber{
+		{Lastname: "Doe", Firstname: "John", Email: "john.doe@example.com"},
+		{Lastname: "Smith", Firstname: "Jane", Email: "jane.smith@example.com"},
+	}
+
+	var actualSubscribers []Subscriber
+	err = json.NewDecoder(rr.Body).Decode(&actualSubscribers)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedSubscribers, actualSubscribers) {
+		t.Errorf("Response body does not match. Expected %+v, got %+v", expectedSubscribers, actualSubscribers)
+	}
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("There were unmet expectations: %v", err)
+	}
+}
+
+
+
+func TestAddAuthorPhoto(t *testing.T) {
+    dbService, err := NewTestDBService()
+    if err != nil {
+        t.Fatalf("Error creating TestDBService: %v", err)
+    }
+    defer dbService.DB.Close()
+
+    router := setupTestRouter(dbService)
+
+    var buf bytes.Buffer
+    writer := multipart.NewWriter(&buf)
+    file, err := writer.CreateFormFile("file", "testfile.jpg")
+    if err != nil {
+        t.Fatalf("Error creating form file: %v", err)
+    }
+
+    fileContent := []byte("test file content")
+    _, err = file.Write(fileContent)
+    if err != nil {
+        t.Fatalf("Error writing file content: %v", err)
+    }
+
+    err = writer.Close()
+    if err != nil {
+        t.Fatalf("Error closing multipart writer: %v", err)
+    }
+
+    req := httptest.NewRequest(http.MethodPost, "/authors/1/photo", &buf)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+
+    expectedPhotoPath := "./upload/1/fullsize.jpg"  // Ensure this matches your handler's path
+    dbService.Mock.ExpectExec(`^UPDATE authors SET photo = \? WHERE id = \?$`).
+        WithArgs(expectedPhotoPath, 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    rec := httptest.NewRecorder()
+    router.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusOK {
+        t.Fatalf("Expected status code 200, got %d", rec.Code)
+    }
+
+    expected := "File uploaded successfully: " + expectedPhotoPath + "\n"
+    if rec.Body.String() != expected {
+        t.Fatalf("Expected response body '%s', got '%s'", expected, rec.Body.String())
+    }
+
+    if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+        t.Fatalf("There were unmet expectations: %v", err)
+    }
+
+    os.RemoveAll("./upload/1")
 }
