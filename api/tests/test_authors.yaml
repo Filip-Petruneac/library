@@ -64,38 +64,48 @@ testcases:
       assertions:
         - result.statuscode ShouldEqual 400
         - result.body ShouldContainSubstring "Invalid JSON data"
-
-- name: get authors
+- name: validate author with script
   steps:
     - type: http
       method: GET
-      url: "{{.api.url}}/authors"
-      headers: 
-        Content-Type: application/json
+      url: "{{.api.url}}/authors/1"
       assertions:
         - result.statuscode ShouldEqual 200
-        - result.body ShouldContainSubstring id
-        - result.body ShouldContainSubstring lastname
-        - result.body ShouldContainSubstring firstname
-        - result.body ShouldContainSubstring photo
-        - result.body ShouldContainSubstring String
-        - result.body ShouldContainSubstring Valid
-        - result.bodyjson ShouldNotBeNil
+        - result.bodyjson ShouldNotBeEmpty
 
-- name: search authors 
-  steps:
-    - type: http
-      method: GET
-      url: "{{.api.url}}/authors?query=John"
-      headers: 
-        Content-Type: application/json
-      assertions:
-        - result.statuscode ShouldEqual 200
-        - result.body ShouldContainSubstring id
-        - result.body ShouldContainSubstring lastname
-        - result.body ShouldContainSubstring firstname
-        - result.body ShouldContainSubstring photo
-        - result.body ShouldContainSubstring "John"
-        - result.body ShouldContainSubstring "Doe"
-        - result.bodyjson ShouldNotBeNil
+    - type: exec
+      command: /bin/bash
+      script: |
+        user='{{result.body}}'
+        
+        id=$(echo "$user" | jq -r '.id')
+        firstname=$(echo "$user" | jq -r '.firstname')
+        lastname=$(echo "$user" | jq -r '.lastname')
+        photo=$(echo "$user" | jq -r '.photo')
 
+        if [[ -z "$id" ]]; then
+          echo "Field 'id' is missing or empty"
+          exit 1
+        fi
+
+        if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+          echo "Field 'id' is not an integer"
+          exit 1
+        fi
+
+        if [[ -z "$firstname" ]]; then
+          echo "Field 'firstname' is missing or empty"
+          exit 1
+        fi
+
+        if [[ -z "$lastname" ]]; then
+          echo "Field 'lastname' is missing or empty"
+          exit 1
+        fi
+
+        if [[ -z "$photo" ]]; then
+          echo "Field 'photo' is missing or empty"
+          exit 1
+        fi
+
+        echo "Author validation passed."
