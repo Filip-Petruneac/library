@@ -9,6 +9,8 @@ import (
 	"bytes"
 	"os"
 	"mime/multipart"
+	"strings"
+	"fmt"
 	
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -28,6 +30,7 @@ func setupTestRouter(dbService *TestDBService) *mux.Router {
 	r.HandleFunc("/books/{id}/subscribers", GetSubscribersByBookID(dbService.DB)).Methods("GET")
 	r.HandleFunc("/subscribers", GetAllSubscribers(dbService.DB)).Methods("GET")
 	r.HandleFunc("/authors/{id}/photo", AddAuthorPhoto(dbService.DB)).Methods("POST")
+	r.HandleFunc("/books/photo/{id}", AddBookPhoto(dbService.DB)).Methods("POST")
 	return r
 }
 // Test for GetAllBooks handler
@@ -417,7 +420,7 @@ func TestGetAllSubscribers(t *testing.T) {
 }
 
 
-
+// Test for AddAuthorPhoto handler
 func TestAddAuthorPhoto(t *testing.T) {
     dbService, err := NewTestDBService()
     if err != nil {
@@ -471,3 +474,143 @@ func TestAddAuthorPhoto(t *testing.T) {
 
     os.RemoveAll("./upload/1")
 }
+
+// Test for AddAuthor handler
+func TestAddAuthor(t *testing.T) {
+    dbService, err := NewTestDBService()
+    if err != nil {
+        t.Fatalf("Error creating TestDBService: %v", err)
+    }
+    defer dbService.DB.Close()
+
+    handler := AddAuthor(dbService.DB)
+
+    req := httptest.NewRequest(http.MethodGet, "/authors", nil)
+    rec := httptest.NewRecorder()
+
+    handler.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusMethodNotAllowed {
+        t.Logf("Response body: %s", rec.Body.String())
+        t.Fatalf("Expected status code 405, got %d", rec.Code)
+    }
+
+    req = httptest.NewRequest(http.MethodPost, "/authors", strings.NewReader("{invalid json"))
+    rec = httptest.NewRecorder()
+
+    handler.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusBadRequest {
+        t.Logf("Response body: %s", rec.Body.String())
+        t.Fatalf("Expected status code 400, got %d", rec.Code)
+    }
+
+    reqBody := `{"firstname": ""}`
+    req = httptest.NewRequest(http.MethodPost, "/authors", strings.NewReader(reqBody))
+    rec = httptest.NewRecorder()
+
+    handler.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusBadRequest {
+        t.Logf("Response body: %s", rec.Body.String())
+        t.Fatalf("Expected status code 400, got %d", rec.Code)
+    }
+
+    reqBody = `{"firstname": "John", "lastname": "Doe"}`
+    req = httptest.NewRequest(http.MethodPost, "/authors", strings.NewReader(reqBody))
+    req.Header.Set("Content-Type", "application/json")
+
+    dbService.Mock.ExpectExec(`^INSERT INTO authors \(lastname, firstname\) VALUES \(\?, \?\)$`).
+        WithArgs("Doe", "John").
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    rec = httptest.NewRecorder()
+
+    handler.ServeHTTP(rec, req)
+
+    if rec.Code != http.StatusCreated {
+        t.Logf("Response body: %s", rec.Body.String())
+        t.Fatalf("Expected status code 201, got %d", rec.Code)
+    }
+
+    expectedResponse := `{"id":1}`
+    if strings.TrimSpace(rec.Body.String()) != expectedResponse {
+        t.Fatalf("Expected response body '%s', got '%s'", expectedResponse, rec.Body.String())
+    }
+
+    if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+        t.Fatalf("There were unmet expectations: %v", err)
+    }
+}
+
+// Test for AddBookPhoto handler
+func TestAddBookPhoto(t *testing.T) {
+    dbService, err := NewTestDBService()
+    if err != nil {
+        t.Fatalf("Error creating TestDBService: %v", err)
+    }
+    defer dbService.DB.Close()
+
+    router := mux.NewRouter()
+    router.HandleFunc("/books/{id}/photo", AddBookPhoto(dbService.DB)).Methods(http.MethodPost)
+
+    t.Run("Invalid Book ID", func(t *testing.T) {
+        req := httptest.NewRequest(http.MethodPost, "/books/invalid_id/photo", nil)
+        rec := httptest.NewRecorder()
+        router.ServeHTTP(rec, req)
+
+        if rec.Code != http.StatusBadRequest {
+            t.Logf("Response body: %s", rec.Body.String())
+            t.Fatalf("Expected status code 400, got %d", rec.Code)
+        }
+    })
+
+    t.Run("Valid Book ID and File Upload", func(t *testing.T) {
+        body := new(bytes.Buffer)
+        writer := multipart.NewWriter(body)
+        part, err := writer.CreateFormFile("file", "test.jpg")
+        if err != nil {
+            t.Fatalf("Error creating form file: %v", err)
+        }
+
+        _, err = part.Write([]byte("fake image data"))
+        if err != nil {
+            t.Fatalf("Error writing to form file: %v", err)
+        }
+        writer.Close()
+
+        req := httptest.NewRequest(http.MethodPost, "/books/1/photo", body)
+        req.Header.Set("Content-Type", writer.FormDataContentType())
+        rec := httptest.NewRecorder()
+
+        expectedDir := "./upload/books/1"
+        expectedFilePath := expectedDir + "/fullsize.jpg"
+
+        t.Logf("Expected photo path: %s", expectedFilePath)
+
+        dbService.Mock.ExpectExec(`^UPDATE books SET photo = \? WHERE id = \?$`).
+            WithArgs(expectedFilePath, 1).
+            WillReturnResult(sqlmock.NewResult(1, 1))
+
+        router.ServeHTTP(rec, req)
+
+        t.Logf("Response code: %d", rec.Code)
+        t.Logf("Response body: %s", rec.Body.String())
+
+        if rec.Code != http.StatusOK {
+            t.Fatalf("Expected status code 200, got %d", rec.Code)
+        }
+
+        expectedResponse := fmt.Sprintf("File uploaded successfully: %s\n", expectedFilePath)
+        if rec.Body.String() != expectedResponse {
+            t.Fatalf("Expected response body '%s', got '%s'", expectedResponse, rec.Body.String())
+        }
+
+        if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+            t.Fatalf("There were unmet expectations: %v", err)
+        }
+
+        os.RemoveAll(expectedDir)
+    })
+}
+
