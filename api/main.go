@@ -416,7 +416,10 @@ func GetAuthorBooksByID(db *sql.DB) http.HandlerFunc {
 			Books:           books,
 		}
 
-		json.NewEncoder(w).Encode(authorAndBooks)
+		err = json.NewEncoder(w).Encode(authorAndBooks)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
