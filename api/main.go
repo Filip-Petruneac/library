@@ -647,13 +647,10 @@ func AddAuthor(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Query to add author with photo path
-		query := `
-            INSERT INTO authors (lastname, firstname) 
-            VALUES (?, ?)
-        `
+		query := `INSERT INTO authors (lastname, firstname, photo) VALUES (?, ?, ?)`
 
 		// We run the query
-		result, err := db.Exec(query, author.Lastname, author.Firstname)
+		result, err := db.Exec(query, author.Lastname, author.Firstname, "")
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to insert author: %v", err), http.StatusInternalServerError)
 			return

@@ -520,8 +520,8 @@ func TestAddAuthor(t *testing.T) {
     req = httptest.NewRequest(http.MethodPost, "/authors", strings.NewReader(reqBody))
     req.Header.Set("Content-Type", "application/json")
 
-    dbService.Mock.ExpectExec(`^INSERT INTO authors \(lastname, firstname\) VALUES \(\?, \?\)$`).
-        WithArgs("Doe", "John").
+    dbService.Mock.ExpectExec(`^INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)$`).
+        WithArgs("Doe", "John", "").
         WillReturnResult(sqlmock.NewResult(1, 1))
 
     rec = httptest.NewRecorder()
