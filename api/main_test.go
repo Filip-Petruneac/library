@@ -115,38 +115,38 @@ func TestSearchAuthors(t *testing.T) {
 }
 
 // Test for GetAuthors handler
-// func TestGetAuthors(t *testing.T) {
-// 	dbService, err := NewTestDBService()
-// 	if err != nil {
-// 		t.Fatalf("An error '%s' was not expected when creating the test DB service", err)
-// 	}
-// 	defer dbService.DB.Close()
+func TestGetAuthors(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("An error '%s' was not expected when creating the test DB service", err)
+	}
+	defer dbService.DB.Close()
 
-// 	columns := []string{"id", "lastname", "firstname", "photo"}
-// 	rows := sqlmock.NewRows(columns).
-// 		AddRow(1, "Creangă", "Ion", "ion.jpg").
-// 		AddRow(2, "London", "Jack", "jack.jpg")
+	columns := []string{"id", "lastname", "firstname", "photo"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(1, "Creangă", "Ion", "ion.jpg").
+		AddRow(2, "London", "Jack", "jack.jpg")
 
-// 	dbService.Mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+	dbService.Mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
 
-// 	req, _ := http.NewRequest("GET", "/authors", nil)
-// 	rr := httptest.NewRecorder()
-// 	setupTestRouter(dbService).ServeHTTP(rr, req)
+	req, _ := http.NewRequest("GET", "/authors", nil)
+	rr := httptest.NewRecorder()
+	setupTestRouter(dbService).ServeHTTP(rr, req)
 
-// 	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code)
 
-// 	expectedAuthors := []Author{
-// 		{ID: 1, Lastname: "Creangă", Firstname: "Ion", Photo: "ion.jpg"},
-// 		{ID: 2, Lastname: "London", Firstname: "Jack", Photo: "jack.jpg"},
-// 	}
-// 	var actualAuthors []Author
-// 	err = json.NewDecoder(rr.Body).Decode(&actualAuthors)
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, expectedAuthors, actualAuthors)
+	expectedAuthors := []Author{
+		{ID: 1, Lastname: "Creangă", Firstname: "Ion", Photo: "ion.jpg"},
+		{ID: 2, Lastname: "London", Firstname: "Jack", Photo: "jack.jpg"},
+	}
+	var actualAuthors []Author
+	err = json.NewDecoder(rr.Body).Decode(&actualAuthors)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedAuthors, actualAuthors)
 
-// 	err = dbService.Mock.ExpectationsWereMet()
-// 	assert.NoError(t, err)
-// }
+	err = dbService.Mock.ExpectationsWereMet()
+	assert.NoError(t, err)
+}
 
 // Test for GetAuthorsAndBooks handler
 func TestGetAuthorsAndBooks(t *testing.T) {
@@ -614,3 +614,59 @@ func TestAddBookPhoto(t *testing.T) {
     })
 }
 
+// TestAddBook tests the AddBook handler function
+func TestAddBook(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	book := Book{
+		Title:      "Test Book",
+		AuthorID:   1,
+		Photo:      "testphoto.jpg", 
+		IsBorrowed: false,
+		Details:    "Details about test book",
+	}
+
+	bookJSON, err := json.Marshal(book)
+	if err != nil {
+		t.Fatalf("Failed to marshal book: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "/books", bytes.NewBuffer(bookJSON))
+	if err != nil {
+		t.Fatalf("Failed to create a new request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	mock.ExpectExec("INSERT INTO books").
+		WithArgs(book.Title, book.Details, book.AuthorID, book.IsBorrowed).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	rr := httptest.NewRecorder()
+
+	handler := AddBook(db)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusCreated {
+		t.Errorf("Expected status code %d, got %d", http.StatusCreated, status)
+	}
+
+	expected := `{"id":1}`
+	actual := strings.TrimSpace(rr.Body.String()) 
+
+	t.Logf("Expected response: '%s'", expected)
+	t.Logf("Actual response:   '%s'", actual)
+
+	if actual != expected {
+		t.Errorf("Expected response body %s, got %s", expected, actual)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unmet expectations: %v", err)
+	}
+}
