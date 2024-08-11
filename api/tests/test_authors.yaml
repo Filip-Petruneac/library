@@ -13,6 +13,7 @@ testcases:
       commands:
         - "SET FOREIGN_KEY_CHECKS = 0;"
         - "TRUNCATE authors_books;"
+        - "TRUNCATE books;"
         - "TRUNCATE authors;"
         - "SET FOREIGN_KEY_CHECKS = 1;"
 
@@ -24,6 +25,10 @@ testcases:
       commands:
         - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg')"
         - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg')"
+        - "INSERT INTO `books` (`title`, `photo`) VALUES ('Harry Potter', 'hp.jpg')"
+        - "INSERT INTO `books` (`title`, `photo`) VALUES ('The Hobbit', 'hobbit.jpg')"
+        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (1, 1)" # Rowling and Harry Potter
+        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (2, 2)" # Doe and The Hobbit
 
 
 - name: create author
@@ -64,14 +69,14 @@ testcases:
       assertions:
         - result.statuscode ShouldEqual 400
         - result.body ShouldContainSubstring "Invalid JSON data"
-- name: validate author with script
+
+- name: validate GetAuthors
   steps:
     - type: http
       method: GET
-      url: "{{.api.url}}/authors/1"
+      url: "{{.api.url}}/authors"
       assertions:
         - result.statuscode ShouldEqual 200
-        - result.bodyjson ShouldNotBeEmpty
 
     - type: exec
       command: /bin/bash
@@ -85,11 +90,6 @@ testcases:
 
         if [[ -z "$id" ]]; then
           echo "Field 'id' is missing or empty"
-          exit 1
-        fi
-
-        if ! [[ "$id" =~ ^[0-9]+$ ]]; then
-          echo "Field 'id' is not an integer"
           exit 1
         fi
 
@@ -107,5 +107,30 @@ testcases:
           echo "Field 'photo' is missing or empty"
           exit 1
         fi
-
         echo "Author validation passed."
+
+- name: search authors 
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/authors?query=John"
+      headers: 
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 200
+        - result.body ShouldContainSubstring id
+        - result.body ShouldContainSubstring lastname
+        - result.body ShouldContainSubstring firstname
+        - result.body ShouldContainSubstring photo
+        - result.body ShouldContainSubstring "John"
+        - result.body ShouldContainSubstring "Doe"
+        - result.bodyjson ShouldNotBeNil
+
+- name: search authors with missing query parameter
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/search_authors"
+      assertions:
+        - result.statuscode ShouldEqual 400
+        - result.body ShouldContainSubstring "Query parameter is required"
