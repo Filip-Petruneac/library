@@ -251,3 +251,4 @@ testcases:
       assertions:
         - result.statuscode ShouldEqual 400
         - result.body ShouldContainSubstring "Invalid JSON data"
+        
