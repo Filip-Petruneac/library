@@ -613,7 +613,6 @@ func TestAddBookPhoto(t *testing.T) {
 	})
 }
 
-
 // TestAddBook tests the AddBook handler function
 func TestAddBook(t *testing.T) {
 	db, mock, err := sqlmock.New()
@@ -625,7 +624,7 @@ func TestAddBook(t *testing.T) {
 	book := Book{
 		Title:      "Test Book",
 		AuthorID:   1,
-		Photo:      "testphoto.jpg", 
+		Photo:      "testphoto.jpg",
 		IsBorrowed: false,
 		Details:    "Details about test book",
 	}
@@ -657,7 +656,62 @@ func TestAddBook(t *testing.T) {
 	}
 
 	expected := `{"id":1}`
-	actual := strings.TrimSpace(rr.Body.String()) 
+	actual := strings.TrimSpace(rr.Body.String())
+
+	t.Logf("Expected response: '%s'", expected)
+	t.Logf("Actual response:   '%s'", actual)
+
+	if actual != expected {
+		t.Errorf("Expected response body %s, got %s", expected, actual)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unmet expectations: %v", err)
+	}
+}
+
+// TestAddSubscriber tests the AddSubscriber handler function
+func TestAddSubscriber(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	subscriber := Subscriber{
+		Firstname: "John",
+		Lastname:  "Doe",
+		Email:     "john.doe@example.com",
+	}
+
+	subscriberJSON, err := json.Marshal(subscriber)
+	if err != nil {
+		t.Fatalf("Failed to marshal subscriber: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "/subscribers", bytes.NewBuffer(subscriberJSON))
+	if err != nil {
+		t.Fatalf("Failed to create a new request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	mock.ExpectExec("INSERT INTO subscribers").
+		WithArgs(subscriber.Lastname, subscriber.Firstname, subscriber.Email).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	rr := httptest.NewRecorder()
+
+	handler := AddSubscriber(db)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, status)
+	}
+
+	expected := `{"id":1}`
+	actual := strings.TrimSpace(rr.Body.String()) // Trim any leading/trailing whitespace or newline characters
 
 	t.Logf("Expected response: '%s'", expected)
 	t.Logf("Actual response:   '%s'", actual)
