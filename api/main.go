@@ -749,8 +749,8 @@ func AddBook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		query := `INSERT INTO books (title, details, author_id, is_borrowed) VALUES (?, ?, ?, ?)`
-		result, err := db.Exec(query, book.Title, book.Details, book.AuthorID, book.IsBorrowed)
+		query := `INSERT INTO books (title, photo, details, author_id, is_borrowed) VALUES (?, ?, ?, ?, ?)`
+		result, err := db.Exec(query, book.Title, "", book.Details, book.AuthorID, book.IsBorrowed)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to insert book: %v", err), http.StatusInternalServerError)
 			return

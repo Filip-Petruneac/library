@@ -1,0 +1,253 @@
+version: "2"
+name: test books
+vars:
+  mysql.url: "filip:password@(localhost:4450)/db"
+  api.url: "http://localhost:8081"
+
+testcases:
+- name: clean db for books
+  steps:
+    - type: sql
+      driver: mysql
+      dsn: "{{.mysql.url}}"
+      commands:
+        - "SET FOREIGN_KEY_CHECKS = 0;"
+        - "TRUNCATE books;"
+        - "TRUNCATE authors;"
+        - "SET FOREIGN_KEY_CHECKS = 1;"
+
+- name: init db for books
+  steps:
+    - type: sql
+      driver: mysql
+      dsn: "{{.mysql.url}}"
+      commands:
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg')"
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg')"
+        - "INSERT INTO books (title, photo, author_id, is_borrowed, details) VALUES ('Harry Potter', 'hp.jpg', 1, 0, 'A young wizard')"
+        - "INSERT INTO books (title, photo, author_id, is_borrowed, details) VALUES ('The Hobbit', 'hobbit.jpg', 2, 0, 'A hobbit on an adventure')"
+
+- name: validate GetAllBooks
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        books='{{result.body}}'
+
+        # Check that the number of books returned is 2
+        if [[ $(echo "$books" | jq 'length') -ne 2 ]]; then
+          echo "Expected 2 books, got $(echo "$books" | jq 'length')"
+          exit 1
+        fi
+
+        # Validate the details of the first book
+        book1=$(echo "$books" | jq '.[0]')
+        if [[ $(echo "$book1" | jq -r '.book_title') != "Harry Potter" ]]; then
+          echo "First book title does not match expected 'Harry Potter'"
+          exit 1
+        fi
+        if [[ $(echo "$book1" | jq -r '.author_lastname') != "Rowling" ]]; then
+          echo "First book author_lastname does not match expected 'Rowling'"
+          exit 1
+        fi
+        if [[ $(echo "$book1" | jq -r '.author_firstname') != "J.K." ]]; then
+          echo "First book author_firstname does not match expected 'J.K.'"
+          exit 1
+        fi
+        if [[ $(echo "$book1" | jq -r '.is_borrowed') -ne 0 ]]; then
+          echo "First book is_borrowed does not match expected '0'"
+          exit 1
+        fi
+
+        # Validate the details of the second book
+        book2=$(echo "$books" | jq '.[1]')
+        if [[ $(echo "$book2" | jq -r '.book_title') != "The Hobbit" ]]; then
+          echo "Second book title does not match expected 'The Hobbit'"
+          exit 1
+        fi
+        if [[ $(echo "$book2" | jq -r '.author_lastname') != "Doe" ]]; then
+          echo "Second book author_lastname does not match expected 'Doe'"
+          exit 1
+        fi
+        if [[ $(echo "$book2" | jq -r '.author_firstname') != "John" ]]; then
+          echo "Second book author_firstname does not match expected 'John'"
+          exit 1
+        fi
+        if [[ $(echo "$book2" | jq -r '.is_borrowed') -ne 0 ]]; then
+          echo "Second book is_borrowed does not match expected '0'"
+          exit 1
+        fi
+
+        echo "GetAllBooks validation passed."
+
+- name: search books by title
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books?query=Harry"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        books='{{result.body}}'
+
+        if [[ $(echo "$books" | jq 'length') -ne 1 ]]; then
+          echo "Expected 1 book, got $(echo "$books" | jq 'length')"
+          exit 1
+        fi
+
+        book1=$(echo "$books" | jq '.[0]')
+        if [[ $(echo "$book1" | jq -r '.book_title') != "Harry Potter" ]]; then
+          echo "Book title does not match expected 'Harry Potter'"
+          exit 1
+        fi
+        echo "Search by title passed."
+
+- name: search books by author firstname
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books?query=J.K."
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        books='{{result.body}}'
+
+        if [[ $(echo "$books" | jq 'length') -ne 1 ]]; then
+          echo "Expected 1 book, got $(echo "$books" | jq 'length')"
+          exit 1
+        fi
+
+        book1=$(echo "$books" | jq '.[0]')
+        if [[ $(echo "$book1" | jq -r '.author_firstname') != "J.K." ]]; then
+          echo "Author firstname does not match expected 'J.K.'"
+          exit 1
+        fi
+        echo "Search by author firstname passed."
+
+- name: search books by author lastname
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books?query=Tolkien"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        books='{{result.body}}'
+
+        if [[ $(echo "$books" | jq 'length') -ne 1 ]]; then
+          echo "Expected 1 book, got $(echo "$books" | jq 'length')"
+          exit 1
+        fi
+
+        book1=$(echo "$books" | jq '.[0]')
+        if [[ $(echo "$book1" | jq -r '.author_lastname') != "Tolkien" ]]; then
+          echo "Author lastname does not match expected 'Tolkien'"
+          exit 1
+        fi
+        echo "Search by author lastname passed."
+
+- name: search books with no results
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books?query=NonExistingTitle"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        books='{{result.body}}'
+
+        if [[ $(echo "$books" | jq 'length') -ne 0 ]]; then
+          echo "Expected 0 books, got $(echo "$books" | jq 'length')"
+          exit 1
+        fi
+
+        echo "Search with no results passed."
+
+- name: validate GetBookByID with valid ID
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/books/1"  # Assuming 1 is a valid ID for Harry Potter
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        book='{{result.body}}'
+
+        # Check the book title
+        if [[ $(echo "$book" | jq -r '.book_title') != "Harry Potter" ]]; then
+          echo "Book title does not match expected 'Harry Potter'"
+          exit 1
+        fi
+
+        # Check the author's last name
+        if [[ $(echo "$book" | jq -r '.author_lastname') != "Rowling" ]]; then
+          echo "Author last name does not match expected 'Rowling'"
+          exit 1
+        fi
+
+        # Check the author's first name
+        if [[ $(echo "$book" | jq -r '.author_firstname') != "J.K." ]]; then
+          echo "Author first name does not match expected 'J.K.'"
+          exit 1
+        fi
+
+        echo "GetBookByID validation passed."
+
+- name: create book
+  steps:
+    - type: http
+      method: POST
+      url: "{{.api.url}}/books/new"
+      body: >
+        {"title": "New Book", "details": "A new book description", "author_id": 1, "is_borrowed": false}
+      headers:
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 201
+        - result.bodyjson ShouldContainKey id
+
+- name: create book missing fields
+  steps:
+    - type: http
+      method: POST
+      url: "{{.api.url}}/books/new"
+      body: >
+        {"title": "", "details": "", "author_id": 0, "is_borrowed": false}
+      headers:
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 400
+
+- name: create book invalid JSON
+  steps:
+    - type: http
+      method: POST
+      url: "{{.api.url}}/books/new"
+      body: >
+        {invalid-json}
+      headers:
+        Content-Type: application/json
+      assertions:
+        - result.statuscode ShouldEqual 400
+        - result.body ShouldContainSubstring "Invalid JSON data"

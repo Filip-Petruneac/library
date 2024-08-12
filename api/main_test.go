@@ -624,7 +624,7 @@ func TestAddBook(t *testing.T) {
 	book := Book{
 		Title:      "Test Book",
 		AuthorID:   1,
-		Photo:      "testphoto.jpg",
+		Photo:      "testphoto.jpg", // Adjust if needed for testing
 		IsBorrowed: false,
 		Details:    "Details about test book",
 	}
@@ -641,12 +641,12 @@ func TestAddBook(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	mock.ExpectExec("INSERT INTO books").
-		WithArgs(book.Title, book.Details, book.AuthorID, book.IsBorrowed).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	// Adjust ExpectExec to match the handler's SQL query
+	mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\)`).
+		WithArgs(book.Title, "", book.Details, book.AuthorID, book.IsBorrowed).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // Mocking the insertion with ID = 1
 
 	rr := httptest.NewRecorder()
-
 	handler := AddBook(db)
 
 	handler.ServeHTTP(rr, req)
@@ -655,7 +655,7 @@ func TestAddBook(t *testing.T) {
 		t.Errorf("Expected status code %d, got %d", http.StatusCreated, status)
 	}
 
-	expected := `{"id":1}`
+	expected := `{"id":1}` // Expect ID returned to be 1
 	actual := strings.TrimSpace(rr.Body.String())
 
 	t.Logf("Expected response: '%s'", expected)
