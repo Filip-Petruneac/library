@@ -1,0 +1,123 @@
+version: "2"
+name: test subscribers
+vars:
+  mysql.url: "filip:password@(localhost:4450)/db"
+  api.url: "http://localhost:8081"
+
+testcases:
+- name: clean db for subscribers
+  steps:
+    - type: sql
+      driver: mysql
+      dsn: "{{.mysql.url}}"
+      commands:
+        - "SET FOREIGN_KEY_CHECKS = 0;"
+        - "TRUNCATE subscribers;"
+        - "SET FOREIGN_KEY_CHECKS = 1;"
+
+- name: init db for subscribers
+  steps:
+    - type: sql
+      driver: mysql
+      dsn: "{{.mysql.url}}"
+      commands:
+        - "INSERT INTO `subscribers` (`Lastname`, `Firstname`, `Email`) VALUES ('Doe', 'John', 'john.doe@example.com')"
+        - "INSERT INTO `subscribers` (`Lastname`, `Firstname`, `Email`) VALUES ('Smith', 'Jane', 'jane.smith@example.com')"
+
+- name: validate GetAllSubscribers
+  steps:
+    - type: http
+      method: GET
+      url: "{{.api.url}}/subscribers"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+    - type: exec
+      command: /bin/bash
+      script: |
+        subscribers='{{result.body}}'
+
+        # Check that the number of subscribers returned is 2
+        if [[ $(echo "$subscribers" | jq 'length') -ne 2 ]]; then
+          echo "Expected 2 subscribers, got $(echo "$subscribers" | jq 'length')"
+          exit 1
+        fi
+
+        # Validate the details of the first subscriber
+        subscriber1=$(echo "$subscribers" | jq '.[0]')
+        if [[ $(echo "$subscriber1" | jq -r '.Lastname') != "Doe" ]]; then
+          echo "First subscriber Lastname does not match expected 'Doe'"
+          exit 1
+        fi
+        if [[ $(echo "$subscriber1" | jq -r '.Firstname') != "John" ]]; then
+          echo "First subscriber Firstname does not match expected 'John'"
+          exit 1
+        fi
+        if [[ $(echo "$subscriber1" | jq -r '.Email') != "john.doe@example.com" ]]; then
+          echo "First subscriber Email does not match expected 'john.doe@example.com'"
+          exit 1
+        fi
+
+        # Validate the details of the second subscriber
+        subscriber2=$(echo "$subscribers" | jq '.[1]')
+        if [[ $(echo "$subscriber2" | jq -r '.Lastname') != "Smith" ]]; then
+          echo "Second subscriber Lastname does not match expected 'Smith'"
+          exit 1
+        fi
+        if [[ $(echo "$subscriber2" | jq -r '.Firstname') != "Jane" ]]; then
+          echo "Second subscriber Firstname does not match expected 'Jane'"
+          exit 1
+        fi
+        if [[ $(echo "$subscriber2" | jq -r '.Email') != "jane.smith@example.com" ]]; then
+          echo "Second subscriber Email does not match expected 'jane.smith@example.com'"
+          exit 1
+        fi
+
+        echo "GetAllSubscribers validation passed."
+
+- name: test AddSubscriber
+  steps:
+    # Step 1: Add a new subscriber
+    - type: http
+      method: POST
+      url: "{{.api.url}}/subscribers/new"
+      body: '{"lastname": "Brown", "firstname": "Charlie", "email": "charlie.brown@example.com"}'
+      headers:
+        Content-Type: "application/json"
+      assertions:
+        - result.statuscode ShouldEqual 200
+
+     # Step 2: Check if a valid ID was returned
+    - type: exec
+      command: /bin/bash
+      script: |
+        id=$(echo '{{result.body}}' | jq -r '.id')
+        if [[ -z "$id" || "$id" == "null" ]]; then
+          echo "ID was not returned in the response."
+          exit 1
+        fi
+        echo "Subscriber added with ID: $id"
+
+- name: test AddSubscriber with missing fields
+  steps:
+    # Step 4: Attempt to add a subscriber with missing fields
+    - type: http
+      method: POST
+      url: "{{.api.url}}/subscribers/new"
+      body: '{"lastname": "Doe", "email": "doe.jane@example.com"}' # Missing firstname
+      headers:
+        Content-Type: "application/json"
+      assertions:
+        - result.statuscode ShouldEqual 400
+
+- name: test AddSubscriber with invalid JSON
+  steps:
+    # Step 5: Attempt to add a subscriber with invalid JSON
+    - type: http
+      method: POST
+      url: "{{.api.url}}/subscribers/new"
+      body: '{"lastname": "Doe", "firstname": "Jane", "email": "jane.doe@example.com"' # Invalid JSON (missing closing bracket)
+      headers:
+        Content-Type: "application/json"
+      assertions:
+        - result.statuscode ShouldEqual 400
