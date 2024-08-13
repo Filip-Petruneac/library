@@ -837,11 +837,16 @@ func BorrowBook(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		if requestBody.SubscriberID == 0 || requestBody.BookID == 0 {
+			http.Error(w, "Missing required fields", http.StatusBadRequest)
+			return
+		}
+
 		// Check if the book is already borrowed
 		var isBorrowed bool
 		err = db.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if isBorrowed {
@@ -852,19 +857,20 @@ func BorrowBook(db *sql.DB) http.HandlerFunc {
 		// Insert a new record in the borrowed_books table
 		_, err = db.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		// Update the is_borrowed status of the book
 		_, err = db.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintf(w, "Book borrowed successfully")
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"message": "Book borrowed successfully"}`)
 	}
 }
 

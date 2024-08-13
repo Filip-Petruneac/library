@@ -613,7 +613,7 @@ func TestAddBookPhoto(t *testing.T) {
 	})
 }
 
-// TestAddBook tests the AddBook handler function
+// Test for AddBook handler
 func TestAddBook(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -624,7 +624,7 @@ func TestAddBook(t *testing.T) {
 	book := Book{
 		Title:      "Test Book",
 		AuthorID:   1,
-		Photo:      "testphoto.jpg", // Adjust if needed for testing
+		Photo:      "testphoto.jpg",
 		IsBorrowed: false,
 		Details:    "Details about test book",
 	}
@@ -641,10 +641,9 @@ func TestAddBook(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	// Adjust ExpectExec to match the handler's SQL query
 	mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\)`).
 		WithArgs(book.Title, "", book.Details, book.AuthorID, book.IsBorrowed).
-		WillReturnResult(sqlmock.NewResult(1, 1)) // Mocking the insertion with ID = 1
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	rr := httptest.NewRecorder()
 	handler := AddBook(db)
@@ -655,7 +654,7 @@ func TestAddBook(t *testing.T) {
 		t.Errorf("Expected status code %d, got %d", http.StatusCreated, status)
 	}
 
-	expected := `{"id":1}` // Expect ID returned to be 1
+	expected := `{"id":1}`
 	actual := strings.TrimSpace(rr.Body.String())
 
 	t.Logf("Expected response: '%s'", expected)
@@ -670,7 +669,7 @@ func TestAddBook(t *testing.T) {
 	}
 }
 
-// TestAddSubscriber tests the AddSubscriber handler function
+// Test for AddSubscriber handler
 func TestAddSubscriber(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -723,4 +722,144 @@ func TestAddSubscriber(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unmet expectations: %v", err)
 	}
+}
+
+// Test for BorrowBook handler
+func TestBorrowBook(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("failed to create test db service: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	t.Run("Invalid request body", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader("{invalid_json"))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid request body", strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Missing Required Fields", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Missing required fields", strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Book Already Borrowed", func(t *testing.T) {
+		dbService.Mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+			WithArgs(1).
+			WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(true))
+
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1, "book_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusConflict, w.Code)
+		assert.Equal(t, "Book is already borrowed", strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Successful Borrow", func(t *testing.T) {
+		dbService.Mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+			WithArgs(1).
+			WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+		dbService.Mock.ExpectExec("INSERT INTO borrowed_books").
+			WithArgs(1, 1).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		dbService.Mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
+			WithArgs(1).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1, "book_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusCreated, w.Code)
+		assert.Equal(t, `{"message": "Book borrowed successfully"}`, strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Database Error on Book Check", func(t *testing.T) {
+		dbService.Mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+			WithArgs(1).
+			WillReturnError(fmt.Errorf("some database error"))
+
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1, "book_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "Database error: some database error", strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Database Error on Insert Borrowed Book", func(t *testing.T) {
+		dbService.Mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+			WithArgs(1).
+			WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+		dbService.Mock.ExpectExec("INSERT INTO borrowed_books").
+			WithArgs(1, 1).
+			WillReturnError(fmt.Errorf("insert error"))
+
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1, "book_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "Database error: insert error", strings.TrimSpace(w.Body.String()))
+	})
+
+	t.Run("Database Error on Update Book Status", func(t *testing.T) {
+		dbService.Mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+			WithArgs(1).
+			WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+		dbService.Mock.ExpectExec("INSERT INTO borrowed_books").
+			WithArgs(1, 1).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		dbService.Mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
+			WithArgs(1).
+			WillReturnError(fmt.Errorf("update error"))
+
+		req := httptest.NewRequest(http.MethodPost, "/borrow", strings.NewReader(`{"subscriber_id": 1, "book_id": 1}`))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		handler := BorrowBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "Database error: update error", strings.TrimSpace(w.Body.String()))
+	})
 }
