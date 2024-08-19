@@ -895,11 +895,20 @@ func ReturnBorrowedBook(db *sql.DB) http.HandlerFunc {
 
 		// Check if the book is actually borrowed by the subscriber
 		var isBorrowed bool
-		err = db.QueryRow("SELECT is_borrowed FROM books WHERE id = ? AND is_borrowed = TRUE", requestBody.BookID).Scan(&isBorrowed)
-		if err != nil {
-			http.Error(w, "Book is not borrowed", http.StatusNotFound)
-			return
-		}
+        err = db.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
+        if err != nil {
+            if err == sql.ErrNoRows {
+                http.Error(w, "Book not found", http.StatusNotFound)
+            } else {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+            }
+            return
+        }
+
+        if !isBorrowed {
+            http.Error(w, "Book is not borrowed", http.StatusBadRequest)
+            return
+        }
 
 		// Update borrowed_books table to mark book as returned
 		_, err = db.Exec("UPDATE borrowed_books SET return_date = NOW() WHERE subscriber_id = ? AND book_id = ?", requestBody.SubscriberID, requestBody.BookID)
