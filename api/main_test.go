@@ -865,7 +865,6 @@ func TestBorrowBook(t *testing.T) {
 }
 
 // Test for ReturnBorrowedBook handler
-
 func TestReturnBorrowedBook(t *testing.T) {
     dbService, err := NewTestDBService()
     if err != nil {
@@ -975,4 +974,117 @@ func TestReturnBorrowedBook(t *testing.T) {
         assert.Equal(t, http.StatusInternalServerError, w.Code)
         assert.Contains(t, w.Body.String(), "update books error")
     })
+}
+
+func createRequestWithVars(method, path string, body []byte, vars map[string]string) (*http.Request, *mux.Router) {
+	req := httptest.NewRequest(method, path, bytes.NewBuffer(body))
+	router := mux.NewRouter()
+	req = mux.SetURLVars(req, vars)
+	return req, router
+}
+
+// Test for UpdateAuthor handler
+func TestUpdateAuthor(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub database connection: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	t.Run("Invalid HTTP Method", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodGet, "/authors/1", nil, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+		assert.Equal(t, "Only PUT or POST methods are supported\n", w.Body.String())
+	})
+
+	t.Run("Invalid Author ID", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/invalid_id", nil, map[string]string{"id": "invalid_id"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid author ID\n", w.Body.String())
+	})
+
+	t.Run("Invalid JSON Data", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/1", []byte("invalid json"), map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid JSON data\n", w.Body.String())
+	})
+
+	t.Run("Missing Required Fields", func(t *testing.T) {
+		invalidAuthor := Author{Firstname: "", Lastname: ""}
+		body, _ := json.Marshal(invalidAuthor)
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+	
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Firstname and Lastname are required fields\n", w.Body.String())
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		validAuthor := Author{Firstname: "John", Lastname: "Doe", Photo: "photo_url"}
+		body, _ := json.Marshal(validAuthor)
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE authors").
+			WithArgs(validAuthor.Lastname, validAuthor.Firstname, validAuthor.Photo, 1).
+			WillReturnError(fmt.Errorf("some database error"))
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, w.Body.String(), "Failed to update author: some database error")
+	})
+
+	t.Run("Author Not Found", func(t *testing.T) {
+		validAuthor := Author{Firstname: "John", Lastname: "Doe", Photo: "photo_url"}
+		body, _ := json.Marshal(validAuthor)
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE authors").
+			WithArgs(validAuthor.Lastname, validAuthor.Firstname, validAuthor.Photo, 1).
+			WillReturnResult(sqlmock.NewResult(1, 0)) // 0 rows affected
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, "Author not found\n", w.Body.String())
+	})
+
+	t.Run("Successful Update", func(t *testing.T) {
+		validAuthor := Author{Firstname: "John", Lastname: "Doe", Photo: "photo_url"}
+		body, _ := json.Marshal(validAuthor)
+		req, _ := createRequestWithVars(http.MethodPut, "/authors/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE authors").
+			WithArgs(validAuthor.Lastname, validAuthor.Firstname, validAuthor.Photo, 1).
+			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+
+		handler := UpdateAuthor(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "Author updated successfully", w.Body.String())
+	})
 }
