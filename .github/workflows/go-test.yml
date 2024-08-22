@@ -38,7 +38,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('api/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -47,5 +47,5 @@ jobs:
         working-directory: ./api
 
       - name: Run unit tests
-        run: go test -v -cover ./api/main_test.go
+        run: go test -v -cover ./main_test.go
         working-directory: ./api
