@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"log"
+	"io"
 	
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
@@ -1086,5 +1088,158 @@ func TestUpdateAuthor(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "Author updated successfully", w.Body.String())
+	})
+}
+
+// Test for UpdateBook handler
+func TestUpdateBook(t *testing.T) {
+    dbService, err := NewTestDBService()
+    if err != nil {
+        t.Fatalf("Unexpected error when opening a stub database connection: %v", err)
+    }
+    defer dbService.DB.Close()
+
+    logger := log.New(io.Discard, "", log.LstdFlags)
+    originalLogger := log.Default()
+    log.SetOutput(logger.Writer())
+    defer log.SetOutput(originalLogger.Writer())
+    t.Run("Invalid HTTP Method", func(t *testing.T) {
+        req, _ := createRequestWithVars(http.MethodGet, "/books/1", nil, map[string]string{"id": "1"})
+        w := httptest.NewRecorder()
+
+        handler := UpdateBook(dbService.DB)
+        handler.ServeHTTP(w, req)
+
+        assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+        assert.Equal(t, "Only PUT or POST methods are supported\n", w.Body.String())
+    })
+
+
+	t.Run("Invalid Book ID", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/books/invalid_id", nil, map[string]string{"id": "invalid_id"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid book ID\n", w.Body.String())
+	})
+
+	t.Run("Invalid JSON Data", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/books/1", []byte("invalid json"), map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid JSON data\n", w.Body.String())
+	})
+
+	t.Run("Missing Required Fields", func(t *testing.T) {
+		invalidBook := struct {
+			Title    string `json:"title"`
+			AuthorID int    `json:"author_id"`
+		}{
+			Title:    "",
+			AuthorID: 0,
+		}
+		body, _ := json.Marshal(invalidBook)
+		req, _ := createRequestWithVars(http.MethodPut, "/books/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+	
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Title and AuthorID are required fields\n", w.Body.String())
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		validBook := struct {
+			Title      string `json:"title"`
+			AuthorID   int    `json:"author_id"`
+			Photo      string `json:"photo"`
+			Details    string `json:"details"`
+			IsBorrowed bool   `json:"is_borrowed"`
+		}{
+			Title:      "Valid Title",
+			AuthorID:   1,
+			Photo:      "photo_url",
+			Details:    "Some details",
+			IsBorrowed: false,
+		}
+		body, _ := json.Marshal(validBook)
+		req, _ := createRequestWithVars(http.MethodPut, "/books/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE books").
+			WithArgs(validBook.Title, validBook.AuthorID, validBook.Photo, validBook.Details, validBook.IsBorrowed, 1).
+			WillReturnError(fmt.Errorf("some database error"))
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, w.Body.String(), "Failed to update book: some database error")
+	})
+
+	t.Run("Book Not Found", func(t *testing.T) {
+		validBook := struct {
+			Title      string `json:"title"`
+			AuthorID   int    `json:"author_id"`
+			Photo      string `json:"photo"`
+			Details    string `json:"details"`
+			IsBorrowed bool   `json:"is_borrowed"`
+		}{
+			Title:      "Valid Title",
+			AuthorID:   1,
+			Photo:      "photo_url",
+			Details:    "Some details",
+			IsBorrowed: false,
+		}
+		body, _ := json.Marshal(validBook)
+		req, _ := createRequestWithVars(http.MethodPut, "/books/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE books").
+			WithArgs(validBook.Title, validBook.AuthorID, validBook.Photo, validBook.Details, validBook.IsBorrowed, 1).
+			WillReturnResult(sqlmock.NewResult(1, 0)) 
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, "Book not found\n", w.Body.String())
+	})
+
+	t.Run("Successful Update", func(t *testing.T) {
+		validBook := struct {
+			Title      string `json:"title"`
+			AuthorID   int    `json:"author_id"`
+			Photo      string `json:"photo"`
+			Details    string `json:"details"`
+			IsBorrowed bool   `json:"is_borrowed"`
+		}{
+			Title:      "Valid Title",
+			AuthorID:   1,
+			Photo:      "photo_url",
+			Details:    "Some details",
+			IsBorrowed: false,
+		}
+		body, _ := json.Marshal(validBook)
+		req, _ := createRequestWithVars(http.MethodPut, "/books/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE books").
+			WithArgs(validBook.Title, validBook.AuthorID, validBook.Photo, validBook.Details, validBook.IsBorrowed, 1).
+			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+
+		handler := UpdateBook(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "Book updated successfully", w.Body.String())
 	})
 }
