@@ -1243,3 +1243,146 @@ func TestUpdateBook(t *testing.T) {
 		assert.Equal(t, "Book updated successfully", w.Body.String())
 	})
 }
+
+func TestUpdateSubscriber(t *testing.T) {
+	dbService, err := NewTestDBService() // Folosim un serviciu de DB mock
+	if err != nil {
+		t.Fatalf("Unexpected error when opening a stub database connection: %v", err)
+	}
+	defer dbService.DB.Close()
+
+	// Setăm logger-ul pentru a nu polua output-ul testelor
+	logger := log.New(io.Discard, "", log.LstdFlags)
+	originalLogger := log.Default()
+	log.SetOutput(logger.Writer())
+	defer log.SetOutput(originalLogger.Writer())
+
+	t.Run("Invalid HTTP Method", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodGet, "/subscribers/1", nil, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+		assert.Equal(t, "Only PUT or POST methods are supported\n", w.Body.String())
+	})
+
+	t.Run("Invalid Subscriber ID", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/invalid_id", nil, map[string]string{"id": "invalid_id"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid subscriber ID\n", w.Body.String())
+	})
+
+	t.Run("Invalid JSON Data", func(t *testing.T) {
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/1", []byte("invalid json"), map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Invalid JSON data\n", w.Body.String())
+	})
+
+	t.Run("Missing Required Fields", func(t *testing.T) {
+		invalidSubscriber := struct {
+			Firstname string `json:"firstname"`
+			Lastname  string `json:"lastname"`
+			Email     string `json:"email"`
+		}{
+			Firstname: "",
+			Lastname:  "",
+			Email:     "",
+		}
+		body, _ := json.Marshal(invalidSubscriber)
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "Firstname, Lastname, and Email are required fields\n", w.Body.String())
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		validSubscriber := struct {
+			Firstname string `json:"firstname"`
+			Lastname  string `json:"lastname"`
+			Email     string `json:"email"`
+		}{
+			Firstname: "John",
+			Lastname:  "Doe",
+			Email:     "john.doe@example.com",
+		}
+		body, _ := json.Marshal(validSubscriber)
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE subscribers").
+			WithArgs(validSubscriber.Lastname, validSubscriber.Firstname, validSubscriber.Email, 1).
+			WillReturnError(fmt.Errorf("some database error"))
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, w.Body.String(), "Failed to update subscriber: some database error")
+	})
+
+	t.Run("Subscriber Not Found", func(t *testing.T) {
+		validSubscriber := struct {
+			Firstname string `json:"firstname"`
+			Lastname  string `json:"lastname"`
+			Email     string `json:"email"`
+		}{
+			Firstname: "John",
+			Lastname:  "Doe",
+			Email:     "john.doe@example.com",
+		}
+		body, _ := json.Marshal(validSubscriber)
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE subscribers").
+			WithArgs(validSubscriber.Lastname, validSubscriber.Firstname, validSubscriber.Email, 1).
+			WillReturnResult(sqlmock.NewResult(1, 0)) // 0 rows affected
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, "Subscriber not found\n", w.Body.String())
+	})
+
+	t.Run("Successful Update", func(t *testing.T) {
+		validSubscriber := struct {
+			Firstname string `json:"firstname"`
+			Lastname  string `json:"lastname"`
+			Email     string `json:"email"`
+		}{
+			Firstname: "John",
+			Lastname:  "Doe",
+			Email:     "john.doe@example.com",
+		}
+		body, _ := json.Marshal(validSubscriber)
+		req, _ := createRequestWithVars(http.MethodPut, "/subscribers/1", body, map[string]string{"id": "1"})
+		w := httptest.NewRecorder()
+
+		dbService.Mock.ExpectExec("UPDATE subscribers").
+			WithArgs(validSubscriber.Lastname, validSubscriber.Firstname, validSubscriber.Email, 1).
+			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+
+		handler := UpdateSubscriber(dbService.DB)
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "Subscriber updated successfully", w.Body.String())
+	})
+}
