@@ -11,9 +11,14 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"log"
 	"io"
+	"time"
+	"log"
 	
+	"database/sql"
+	"runtime/debug"
+	"io/ioutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +40,186 @@ func setupTestRouter(dbService *TestDBService) *mux.Router {
 	return r
 }
 
-// Test for GetAllBooks handler
+type DBInitializer interface {
+	InitDB(username, password, hostname, port, dbname string) (*sql.DB, error)
+}
+
+type RouterSetup interface {
+	SetupRouter(db *sql.DB) *mux.Router
+}
+
+type MockDBInitializer struct {
+	mock.Mock
+}
+
+func (m *MockDBInitializer) InitDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
+	args := m.Called(username, password, hostname, port, dbname)
+	return args.Get(0).(*sql.DB), args.Error(1)
+}
+
+type MockRouterSetup struct {
+	mock.Mock
+}
+
+func (m *MockRouterSetup) SetupRouter(db *sql.DB) *mux.Router {
+	args := m.Called(db)
+	return args.Get(0).(*mux.Router)
+}
+
+type Logger interface {
+	Println(v ...interface{})
+	Fatal(v ...interface{})
+}
+
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Println(v ...interface{}) {
+	m.Called(v...)
+}
+
+func (m *MockLogger) Fatal(v ...interface{}) {
+	m.Called(v...)
+}
+
+func loadTestEnv(filename string) error {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			os.Setenv(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+		}
+	}
+	
+	return nil
+}
+
+func TestMain(t *testing.T) {
+    os.Setenv("DB_USER", "testuser")
+    os.Setenv("DB_PASSWORD", "testpass")
+    os.Setenv("DB_HOSTNAME", "testhost")
+    os.Setenv("DB_PORT", "3306")
+    os.Setenv("DB_NAME", "testdb")
+
+    err := ioutil.WriteFile(".env.test", []byte(`
+DB_USER=testuser
+DB_PASSWORD=testpass
+DB_HOSTNAME=testhost
+DB_PORT=3306
+DB_NAME=testdb
+`), 0644)
+    assert.NoError(t, err)
+    defer os.Remove(".env.test")
+
+    mockDB := new(MockDBInitializer)
+    mockRouter := new(MockRouterSetup)
+    mockLogger := new(MockLogger)
+
+    db, err := sql.Open("mysql", "user:password@/dbname")
+    assert.NoError(t, err)
+    mockDB.On("InitDB", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(db, nil)
+
+    r := mux.NewRouter()
+    r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintln(w, "Server is running")
+    })
+    mockRouter.On("SetupRouter", mock.Anything).Return(r)
+
+    mockLogger.On("Println", mock.Anything, mock.Anything).Return().Run(func(args mock.Arguments) {
+        fmt.Printf("Println called with: %v, %v\n", args.Get(0), args.Get(1))
+    })
+    mockLogger.On("Fatal", mock.Anything, mock.Anything).Maybe().Run(func(args mock.Arguments) {
+        fmt.Printf("Fatal called with: %v, %v\n", args.Get(0), args.Get(1))
+    })
+
+    started := make(chan bool)
+    errChan := make(chan error)
+
+    go func() {
+        defer func() {
+            if r := recover(); r != nil {
+                errChan <- fmt.Errorf("Panic in main: %v\nStack trace:\n%s", r, debug.Stack())
+            }
+        }()
+
+        mainWithDependencies(mockDB, mockRouter, mockLogger, loadTestEnv, "8081")
+    }()
+
+    go func() {
+        for i := 0; i < 50; i++ { 
+            _, err := http.Get("http://localhost:8081")
+            if err == nil {
+                started <- true
+                return
+            }
+            time.Sleep(100 * time.Millisecond)
+        }
+        errChan <- fmt.Errorf("Server didn't start within the expected time")
+    }()
+
+    select {
+    case <-started:
+    case err := <-errChan:
+        t.Fatalf("Error starting server: %v", err)
+    case <-time.After(6 * time.Second):
+        t.Fatal("Test timed out")
+    }
+
+    resp, err := http.Get("http://localhost:8081")
+    assert.NoError(t, err)
+    assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+    mockDB.AssertExpectations(t)
+    mockRouter.AssertExpectations(t)
+    mockLogger.AssertExpectations(t)
+}
+
+func mainWithDependencies(dbInit DBInitializer, routerSetup RouterSetup, logger Logger, envLoader func(string) error, port string) {
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Printf("Recovered in mainWithDependencies: %v\nStack trace:\n%s", r, debug.Stack())
+        }
+    }()
+
+    err := envLoader(".env.test")
+    if err != nil {
+        logger.Println("No .env file found, continuing with environment variables or defaults")
+    }
+
+    dbUsername := getEnv("DB_USER", "root")
+    dbPassword := getEnv("DB_PASSWORD", "password")
+    dbHostname := getEnv("DB_HOSTNAME", "db")
+    dbPort := getEnv("DB_PORT", "3306")
+    dbName := getEnv("DB_NAME", "db")
+
+    db, err := dbInit.InitDB(dbUsername, dbPassword, dbHostname, dbPort, dbName)
+    if err != nil {
+        logger.Fatal("Error initializing database:", err)
+    }
+    if db == nil {
+        logger.Fatal("Database connection is nil")
+    }
+    defer db.Close()
+
+    logger.Println("Starting our server on port", port)
+    r := routerSetup.SetupRouter(db)
+    logger.Println("Started on port", port)
+    fmt.Println("To close connection CTRL+C :-)")
+
+    err = http.ListenAndServe(":"+port, r)
+    if err != nil {
+        logger.Fatal(err)
+    }
+}
+
+// Test for SearchBooks handler
 func TestSearchBooks(t *testing.T) {
 	dbService, err := NewTestDBService()
 	if err != nil {
@@ -452,7 +636,7 @@ func TestAddAuthorPhoto(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/authors/1/photo", &buf)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	expectedPhotoPath := "./upload/1/fullsize.jpg" // Ensure this matches your handler's path
+	expectedPhotoPath := "./upload/1/fullsize.jpg" 
 	dbService.Mock.ExpectExec(`^UPDATE authors SET photo = \? WHERE id = \?$`).
 		WithArgs(expectedPhotoPath, 1).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -712,7 +896,7 @@ func TestAddSubscriber(t *testing.T) {
 	}
 
 	expected := `{"id":1}`
-	actual := strings.TrimSpace(rr.Body.String()) // Trim any leading/trailing whitespace or newline characters
+	actual := strings.TrimSpace(rr.Body.String()) 
 
 	t.Logf("Expected response: '%s'", expected)
 	t.Logf("Actual response:   '%s'", actual)
@@ -1064,7 +1248,7 @@ func TestUpdateAuthor(t *testing.T) {
 
 		dbService.Mock.ExpectExec("UPDATE authors").
 			WithArgs(validAuthor.Lastname, validAuthor.Firstname, validAuthor.Photo, 1).
-			WillReturnResult(sqlmock.NewResult(1, 0)) // 0 rows affected
+			WillReturnResult(sqlmock.NewResult(1, 0)) 
 
 		handler := UpdateAuthor(dbService.DB)
 		handler.ServeHTTP(w, req)
@@ -1081,7 +1265,7 @@ func TestUpdateAuthor(t *testing.T) {
 
 		dbService.Mock.ExpectExec("UPDATE authors").
 			WithArgs(validAuthor.Lastname, validAuthor.Firstname, validAuthor.Photo, 1).
-			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+			WillReturnResult(sqlmock.NewResult(1, 1)) 
 
 		handler := UpdateAuthor(dbService.DB)
 		handler.ServeHTTP(w, req)
@@ -1234,7 +1418,7 @@ func TestUpdateBook(t *testing.T) {
 
 		dbService.Mock.ExpectExec("UPDATE books").
 			WithArgs(validBook.Title, validBook.AuthorID, validBook.Photo, validBook.Details, validBook.IsBorrowed, 1).
-			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+			WillReturnResult(sqlmock.NewResult(1, 1)) 
 
 		handler := UpdateBook(dbService.DB)
 		handler.ServeHTTP(w, req)
@@ -1244,14 +1428,14 @@ func TestUpdateBook(t *testing.T) {
 	})
 }
 
+// Test for UpdateSubscriber handler
 func TestUpdateSubscriber(t *testing.T) {
-	dbService, err := NewTestDBService() // Folosim un serviciu de DB mock
+	dbService, err := NewTestDBService() 
 	if err != nil {
 		t.Fatalf("Unexpected error when opening a stub database connection: %v", err)
 	}
 	defer dbService.DB.Close()
 
-	// Setăm logger-ul pentru a nu polua output-ul testelor
 	logger := log.New(io.Discard, "", log.LstdFlags)
 	originalLogger := log.Default()
 	log.SetOutput(logger.Writer())
@@ -1352,7 +1536,7 @@ func TestUpdateSubscriber(t *testing.T) {
 
 		dbService.Mock.ExpectExec("UPDATE subscribers").
 			WithArgs(validSubscriber.Lastname, validSubscriber.Firstname, validSubscriber.Email, 1).
-			WillReturnResult(sqlmock.NewResult(1, 0)) // 0 rows affected
+			WillReturnResult(sqlmock.NewResult(1, 0)) 
 
 		handler := UpdateSubscriber(dbService.DB)
 		handler.ServeHTTP(w, req)
@@ -1377,7 +1561,7 @@ func TestUpdateSubscriber(t *testing.T) {
 
 		dbService.Mock.ExpectExec("UPDATE subscribers").
 			WithArgs(validSubscriber.Lastname, validSubscriber.Firstname, validSubscriber.Email, 1).
-			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 row affected
+			WillReturnResult(sqlmock.NewResult(1, 1)) 
 
 		handler := UpdateSubscriber(dbService.DB)
 		handler.ServeHTTP(w, req)
