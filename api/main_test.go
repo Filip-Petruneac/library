@@ -219,6 +219,84 @@ func mainWithDependencies(dbInit DBInitializer, routerSetup RouterSetup, logger 
     }
 }
 
+// Test for GetAllBooks handler
+func TestGetAllBooks(t *testing.T) {
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Failed to create test DB service: %s", err)
+	}
+	defer dbService.DB.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
+	}).
+		AddRow(1, "Test Book", 1, "test_photo.jpg", false, "Test details", "Doe", "John").
+		AddRow(2, "Another Book", 2, "another_photo.jpg", true, "Another details", "Smith", "Jane")
+
+	dbService.Mock.ExpectQuery("SELECT (.+) FROM books JOIN authors ON books.author_id = authors.id").
+		WillReturnRows(rows)
+
+	req, err := http.NewRequest("GET", "/books", nil)
+	if err != nil {
+		t.Fatalf("Couldn't create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	handler := GetAllBooks(dbService.DB)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	expectedBooks := []BookAuthorInfo{
+		{BookID: 1, BookTitle: "Test Book", AuthorID: 1, BookPhoto: "test_photo.jpg", IsBorrowed: false, BookDetails: "Test details", AuthorLastname: "Doe", AuthorFirstname: "John"},
+		{BookID: 2, BookTitle: "Another Book", AuthorID: 2, BookPhoto: "another_photo.jpg", IsBorrowed: true, BookDetails: "Another details", AuthorLastname: "Smith", AuthorFirstname: "Jane"},
+	}
+
+	var actualBooks []BookAuthorInfo
+	if err := json.NewDecoder(rr.Body).Decode(&actualBooks); err != nil {
+		t.Fatalf("Couldn't decode response body: %v", err)
+	}
+
+	assert.Equal(t, expectedBooks, actualBooks)
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetAllBooksQueryError(t *testing.T) {
+
+	dbService, err := NewTestDBService()
+	if err != nil {
+		t.Fatalf("Failed to create test DB service: %s", err)
+	}
+	defer dbService.DB.Close()
+
+	dbService.Mock.ExpectQuery("SELECT (.+) FROM books JOIN authors ON books.author_id = authors.id").
+		WillReturnError(sql.ErrConnDone)
+
+	req, err := http.NewRequest("GET", "/books", nil)
+	if err != nil {
+		t.Fatalf("Couldn't create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+
+	handler := GetAllBooks(dbService.DB)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	expectedErrorMessage := sql.ErrConnDone.Error()
+	actualErrorMessage := strings.TrimSpace(rr.Body.String())
+	assert.Equal(t, expectedErrorMessage, actualErrorMessage)
+
+	if err := dbService.Mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
 // Test for SearchBooks handler
 func TestSearchBooks(t *testing.T) {
 	dbService, err := NewTestDBService()
