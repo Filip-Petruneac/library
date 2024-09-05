@@ -23,13 +23,14 @@ testcases:
       driver: mysql
       dsn: "{{.mysql.url}}"
       commands:
-        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg')"
-        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg')"
-        - "INSERT INTO `books` (`title`, `photo`) VALUES ('Harry Potter', 'hp.jpg')"
-        - "INSERT INTO `books` (`title`, `photo`) VALUES ('The Hobbit', 'hobbit.jpg')"
-        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (1, 1)" # Rowling and Harry Potter
-        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (2, 2)" # Doe and The Hobbit
-
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Rowling', 'J.K.', 'rowling.jpg');"
+        - "SET @rowling_id = LAST_INSERT_ID();"
+        - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg');"
+        - "SET @doe_id = LAST_INSERT_ID();"
+        - "INSERT INTO `books` (`title`, `photo`, `author_id`) VALUES ('Harry Potter', 'hp.jpg', @rowling_id);"
+        - "INSERT INTO `books` (`title`, `photo`, `author_id`) VALUES ('The Hobbit', 'hobbit.jpg', @doe_id);"
+        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (@rowling_id, 1);" 
+        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (@doe_id, 2);" 
 
 - name: create author
   steps:
