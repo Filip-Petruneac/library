@@ -27,10 +27,10 @@ testcases:
         - "SET @rowling_id = LAST_INSERT_ID();"
         - "INSERT INTO `authors` (`Lastname`, `Firstname`, `photo`) VALUES ('Doe', 'John', 'john.jpg');"
         - "SET @doe_id = LAST_INSERT_ID();"
-        - "INSERT INTO `books` (`title`, `photo`, `author_id`) VALUES ('Harry Potter', 'hp.jpg', @rowling_id);"
-        - "INSERT INTO `books` (`title`, `photo`, `author_id`) VALUES ('The Hobbit', 'hobbit.jpg', @doe_id);"
+        - "INSERT INTO `books` (`title`, `photo`, `author_id`, `details`) VALUES ('Harry Potter', 'hp.jpg', @rowling_id, 'A fantasy novel about a young wizard, Harry Potter.');"
+        - "INSERT INTO `books` (`title`, `photo`, `author_id`, `details`) VALUES ('The Hobbit', 'hobbit.jpg', @doe_id, 'A fantasy novel about the journey of a hobbit named Bilbo Baggins.');"
         - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (@rowling_id, 1);" 
-        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (@doe_id, 2);" 
+        - "INSERT INTO `authors_books` (`author_id`, `book_id`) VALUES (@doe_id, 2);"
 
 - name: create author
   steps:
