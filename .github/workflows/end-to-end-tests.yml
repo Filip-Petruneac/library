@@ -30,8 +30,6 @@ jobs:
           MYSQL_PASSWORD: password
         ports:
           - 4450:3306
-        # Omit health check for now
-        options: ""
 
     steps:
       - name: Checkout code
