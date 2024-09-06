@@ -30,11 +30,8 @@ jobs:
           MYSQL_PASSWORD: password
         ports:
           - 4450:3306
-        options: >
-          --health-cmd="mysqladmin ping -h localhost -p${MYSQL_PASSWORD}"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+        # Omit health check for now
+        options: ""
 
     steps:
       - name: Checkout code
