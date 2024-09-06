@@ -201,6 +201,7 @@ func (app *App) Info(w http.ResponseWriter, r *http.Request) {
 func (app *App) SearchAuthors(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	if query == "" {
+		app.Logger.Println("Query parameter is required") // Ensure this is correctly logging
 		http.Error(w, "Query parameter is required", http.StatusBadRequest)
 		return
 	}
