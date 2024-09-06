@@ -30,11 +30,11 @@ jobs:
           MYSQL_PASSWORD: password
         ports:
           - 4450:3306
-        options: > 
-          --health-cmd "mysqladmin ping -h localhost -p${MYSQL_PASSWORD}" 
-          --health-interval 10s 
-          --health-timeout 5s 
-          --health-retries 5
+        options: >
+          --health-cmd="mysqladmin ping -h localhost -p${MYSQL_PASSWORD}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -55,6 +55,15 @@ jobs:
             echo "Waiting for MySQL to be ready..."
             sleep 5
           done
+
+      - name: Create .env file
+        run: |
+          echo "MYSQL_URL=filip:password@(localhost:4450)/db" >> .env
+          echo "API_URL=http://localhost:8081" >> .env
+          echo "MYSQL_USER=filip" >> .env
+          echo "MYSQL_PASSWORD=password" >> .env
+          echo "MYSQL_DATABASE=db" >> .env
+          echo "MYSQL_ROOT_PASSWORD=rootpassword" >> .env
 
       - name: Run E2E tests with .env file
         run: go test -v ./end-to-end_tests --env-file=.env
