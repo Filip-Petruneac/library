@@ -1,0 +1,56 @@
+name: End-to-End Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18'
+
+      - name: Install dependencies
+        run: |
+          cd api
+          go mod download
+
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      - name: Set up Docker Compose
+        run: |
+          cd api
+          docker-compose up -d
+          docker-compose ps
+
+      - name: Wait for services to be ready
+        run: |
+          while ! docker-compose exec -T db mysqladmin ping -h "localhost" --silent; do
+            echo "Waiting for database connection..."
+            sleep 3
+          done
+
+      - name: Run Venom tests
+        run: |
+          cd api
+          venom run end-to-end_tests/*.yaml || { echo 'Venom tests failed'; exit 1; }
+
+      - name: Tear down
+        run: |
+          cd api
+          docker-compose down --volumes
