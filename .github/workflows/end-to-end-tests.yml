@@ -1,0 +1,61 @@
+name: E2E Tests for API Module
+
+on:
+  push:
+    paths:
+      - 'end-to-end_tests/**'
+      - '.github/workflows/**'
+    branches:
+      - main
+      - develop
+  pull_request:
+    paths:
+      - 'end-to-end_tests/**'
+      - '.github/workflows/**'
+    branches:
+      - main
+      - develop
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: db
+          MYSQL_USER: filip
+          MYSQL_PASSWORD: password
+        ports:
+          - 4450:3306
+        options: > 
+          --health-cmd "mysqladmin ping -h localhost -p${MYSQL_PASSWORD}" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.0'
+
+      - name: Install dependencies
+        run: go mod tidy
+        working-directory: ./api
+
+      - name: Wait for MySQL to be ready
+        run: |
+          until mysqladmin ping -h localhost -P 4450 -u${MYSQL_USER} -p${MYSQL_PASSWORD}; do
+            echo "Waiting for MySQL to be ready..."
+            sleep 5
+          done
+
+      - name: Run E2E tests with .env file
+        run: go test -v ./end-to-end_tests --env-file=.env
+        working-directory: ./api
