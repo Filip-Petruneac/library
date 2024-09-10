@@ -1,9 +1,9 @@
-version: '3.8'
 services:
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: api
     ports:
       - 8081:8081
     restart: always
@@ -11,12 +11,16 @@ services:
       - my-network
     env_file:
       - .env
-    command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "./main"]
+    depends_on:
+      db:
+        condition: service_healthy
 
   bff:
     build:
-      context: ./bff
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.bff
+    container_name: bff
+    profiles: [all]
     ports:
       - 5000:5000
     restart: always
@@ -24,18 +28,20 @@ services:
       - my-network
     env_file:
       - .env
-    command: ["dockerize", "-wait", "tcp://db:3306", "-timeout", "60s", "python", "main.py"]
+    depends_on:
+      db:
+        condition: service_healthy
     
   db:
     image: mysql:latest
     restart: always
+    container_name: mysql
     env_file:
       - .env
     ports:
       - 4450:3306
     volumes:
       - ./sql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
-      - mysql-data:/var/lib/mysql
     networks:
       - my-network
     healthcheck:
@@ -47,6 +53,3 @@ services:
 networks:
   my-network:
     driver: bridge
-
-volumes:
-  mysql-data:

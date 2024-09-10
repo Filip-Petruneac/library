@@ -30,27 +30,19 @@ jobs:
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
 
       - name: Set up Docker Compose
         run: |
-          cd api
-          docker-compose up -d
-          docker-compose ps
+          docker-compose -f ./api/docker-compose.yaml up -d
 
-      - name: Wait for services to be ready
+      - name: Install Venom
         run: |
-          while ! docker-compose exec -T db mysqladmin ping -h "localhost" --silent; do
-            echo "Waiting for database connection..."
-            sleep 3
-          done
+          curl https://github.com/ovh/venom/releases/download/v1.1.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
 
       - name: Run Venom tests
         run: |
-          cd api
-          venom run end-to-end_tests/*.yaml || { echo 'Venom tests failed'; exit 1; }
+          venom run api/end-to-end_tests/*.yaml
 
       - name: Tear down
         run: |
-          cd api
-          docker-compose down --volumes
+          docker-compose -f ./api/docker-compose.yaml down --volumes
