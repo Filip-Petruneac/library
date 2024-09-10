@@ -7,9 +7,13 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"os"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"fmt"
+	"database/sql"
+	
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
@@ -29,6 +33,99 @@ func createTestApp(t *testing.T) (*App, sqlmock.Sqlmock) {
 		DB:     db,
 		Logger: logger,
 	}, mock
+}
+// Test for getEnv function using Dependency Injection
+func TestGetEnv(t *testing.T) {
+	// Backup original environment variable
+	originalValue, isSet := os.LookupEnv("TEST_KEY")
+	defer func() {
+		if isSet {
+			os.Setenv("TEST_KEY", originalValue)
+		} else {
+			os.Unsetenv("TEST_KEY")
+		}
+	}()
+
+	// Case 1: Environment variable is set
+	os.Setenv("TEST_KEY", "expected_value")
+	actual := getEnv("TEST_KEY", "default_value")
+	assert.Equal(t, "expected_value", actual)
+
+	// Case 2: Environment variable is not set, should return default value
+	os.Unsetenv("TEST_KEY")
+	actual = getEnv("TEST_KEY", "default_value")
+	assert.Equal(t, "default_value", actual)
+}
+
+
+func TestInitDB(t *testing.T) {
+	// Create a mock DB and sqlmock with monitoring pings enabled
+	db, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err, "Error should be nil when creating sqlmock")
+	defer db.Close()
+
+	// Expected DSN (Data Source Name)
+	dsn := "user:password@tcp(localhost:3306)/testdb"
+
+	// Override sqlOpen with a mock
+	originalSQLOpen := sqlOpen  // Save the original function
+	sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
+		if dataSourceName == dsn {
+			return db, nil
+		}
+		return nil, fmt.Errorf("unexpected DSN: %s", dataSourceName)
+	}
+
+	// Restore the original sql.Open after the test
+	defer func() { sqlOpen = originalSQLOpen }()
+
+	t.Run("Successful Database Initialization", func(t *testing.T) {
+		// Set expectation for Ping method
+		mock.ExpectPing()
+
+		// Call the function to test
+		_, err = initDB("user", "password", "localhost", "3306", "testdb")
+		assert.NoError(t, err, "Error should be nil when initializing the DB")
+
+		// Ensure all expectations are met
+		err = mock.ExpectationsWereMet()
+		assert.NoError(t, err, "There should be no unmet expectations")
+	})
+
+	t.Run("Failed to Open Database Connection", func(t *testing.T) {
+		// Override sqlOpen to simulate a connection error
+		sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
+			return nil, fmt.Errorf("failed to connect to the database")
+		}
+
+		_, err = initDB("invalid_user", "invalid_password", "localhost", "3306", "testdb")
+		assert.Error(t, err, "Expected an error when failing to connect to the database")
+		assert.Contains(t, err.Error(), "failed to connect to the database")
+
+		// Restore sqlOpen to the original mock
+		sqlOpen = originalSQLOpen
+	})
+
+	t.Run("Failed to Ping Database", func(t *testing.T) {
+		// Set expectation for Ping method to fail
+		mock.ExpectPing().WillReturnError(fmt.Errorf("failed to ping"))
+
+		// Override sqlOpen to use mock db that has ping failure
+		sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
+			if dataSourceName == dsn {
+				return db, nil
+			}
+			return nil, fmt.Errorf("unexpected DSN: %s", dataSourceName)
+		}
+
+		_, err = initDB("user", "password", "localhost", "3306", "testdb")
+		assert.Error(t, err, "Expected an error when pinging the database")
+		assert.Contains(t, err.Error(), "failed to ping the database")
+
+		// Ensure all expectations are met
+		err = mock.ExpectationsWereMet()
+		assert.NoError(t, err, "There should be no unmet expectations")
+	})
 }
 
 // TestSetupRouter verifies that all routes are correctly set up in the router
