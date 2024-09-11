@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"mime/multipart"
-	// "database/sql"
 	"encoding/json"
 	"io"
 	"log"
@@ -14,7 +13,6 @@ import (
 	"fmt"
 	"database/sql"
 	
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -34,6 +32,7 @@ func createTestApp(t *testing.T) (*App, sqlmock.Sqlmock) {
 		Logger: logger,
 	}, mock
 }
+
 // Test for getEnv function using Dependency Injection
 func TestGetEnv(t *testing.T) {
 	// Backup original environment variable
@@ -56,7 +55,6 @@ func TestGetEnv(t *testing.T) {
 	actual = getEnv("TEST_KEY", "default_value")
 	assert.Equal(t, "default_value", actual)
 }
-
 
 func TestInitDB(t *testing.T) {
 	// Create a mock DB and sqlmock with monitoring pings enabled
@@ -126,6 +124,60 @@ func TestInitDB(t *testing.T) {
 		err = mock.ExpectationsWereMet()
 		assert.NoError(t, err, "There should be no unmet expectations")
 	})
+}
+
+// TestHome tests the Home handler
+func TestHome(t *testing.T) {
+	// Create a test app instance using the existing createTestApp function
+	app, _ := createTestApp(t) // We don't need the mock in this case
+	defer app.DB.Close()
+
+	// Create a new HTTP request for the Home handler
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf("Could not create request: %v", err)
+	}
+
+	// Create a ResponseRecorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Call the Home handler directly, passing the ResponseRecorder and the request
+	handler := http.HandlerFunc(app.Home)
+	handler.ServeHTTP(rr, req)
+
+	// Check that the status code is what we expect
+	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
+
+	// Check that the response body is what we expect
+	expectedBody := "Homepage"
+	assert.Equal(t, expectedBody, rr.Body.String(), "Expected response body 'Homepage'")
+}
+
+// TestInfo tests the Info handler
+func TestInfo(t *testing.T) {
+	// Create a test app instance using the existing createTestApp function
+	app, _ := createTestApp(t) // We don't need the mock in this case
+	defer app.DB.Close()
+
+	// Create a new HTTP request for the Info handler
+	req, err := http.NewRequest("GET", "/info", nil)
+	if err != nil {
+		t.Fatalf("Could not create request: %v", err)
+	}
+
+	// Create a ResponseRecorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Call the Info handler directly, passing the ResponseRecorder and the request
+	handler := http.HandlerFunc(app.Info)
+	handler.ServeHTTP(rr, req)
+
+	// Check that the status code is what we expect
+	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
+
+	// Check that the response body is what we expect
+	expectedBody := "Info page"
+	assert.Equal(t, expectedBody, rr.Body.String(), "Expected response body 'Info page'")
 }
 
 // TestSetupRouter verifies that all routes are correctly set up in the router

@@ -114,7 +114,6 @@ func (app *App) setupRouter() *mux.Router {
 	return r
 }
 
-
 func main() {
 	port := flag.String("port", "8081", "Server Port")
 	flag.Parse()
@@ -157,7 +156,6 @@ func main() {
 		app.Logger.Fatal(err)
 	}
 }
-
 
 // getEnv returns the value of an environment variable or a default value if it is not set
 func getEnv(key, defaultValue string) string {
@@ -204,7 +202,7 @@ func (app *App) Info(w http.ResponseWriter, r *http.Request) {
 func (app *App) SearchAuthors(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	if query == "" {
-		app.Logger.Println("Query parameter is required") // Ensure this is correctly logging
+		app.Logger.Println("Query parameter is required") 
 		http.Error(w, "Query parameter is required", http.StatusBadRequest)
 		return
 	}
