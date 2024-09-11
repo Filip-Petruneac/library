@@ -158,6 +158,7 @@ func main() {
 	}
 }
 
+
 // getEnv returns the value of an environment variable or a default value if it is not set
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
@@ -166,13 +167,15 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
+// Use a variable to allow overriding in tests
+var sqlOpen = sql.Open
+
 // initDB initializes the connection to the MySQL database
 func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) {
-	// Construct the DSN (Data Source Name)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname)
 
 	// Open a connection to the database
-	db, err := sql.Open("mysql", dsn)
+	db, err := sqlOpen("mysql", dsn)  // Use the sqlOpen variable here
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
