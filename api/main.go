@@ -125,11 +125,11 @@ func main() {
 	}
 
 	// Get the necessary environment variables for the database
-	dbUsername := getEnv("DB_USER", "root")
-	dbPassword := getEnv("DB_PASSWORD", "password")
+	dbUsername := getEnv("MYSQL_USER", "root")
+	dbPassword := getEnv("MYSQL_PASSWORD", "password")
 	dbHostname := getEnv("DB_HOSTNAME", "db")
-	dbPort := getEnv("DB_PORT", "3306")
-	dbName := getEnv("DB_NAME", "db")
+	dbPort := getEnv("MYSQL_PORT", "3306")
+	dbName := getEnv("MYSQL_DATABASE", "db")
 
 	// Initialize the database connection
 	db, err := initDB(dbUsername, dbPassword, dbHostname, dbPort, dbName)
