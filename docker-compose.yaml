@@ -10,7 +10,7 @@ services:
     networks:
       - my-network
     env_file:
-      - .env
+      - .env.docker
     depends_on:
       db:
         condition: service_healthy
@@ -27,7 +27,7 @@ services:
     networks:
       - my-network
     env_file:
-      - .env
+      - .env.docker
     depends_on:
       db:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
     restart: always
     container_name: mysql
     env_file:
-      - .env
+      - .env.docker
     ports:
       - 4450:3306
     volumes:
