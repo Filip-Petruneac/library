@@ -1,137 +1,141 @@
+
+---
+
+![received_1097514964147756.(jpg?1652351843](https://culturenl.co.uk/wp-content/uploads/2022/04/Cumbernauld-Library-Banner.jpg)
+
 # Library Management System API
 
-This is a Go-based REST API for a Library Management System. It provides endpoints for managing books, authors, and subscribers in a library.
+This is a Go-based REST API for managing a library, with features including CRUD operations for books, authors, and subscribers, book borrowing/returning functionality, and user authentication.
 
 ## Features
 
-- CRUD operations for books, authors, and subscribers
-- Book borrowing and returning functionality
-- Search functionality for books and authors
-- User authentication (signup and login)
-- Image upload for author photos
+- **CRUD operations**: Manage books, authors, and subscribers.
+- **Book borrowing and returning**: Keep track of borrowed books.
+- **Search functionality**: Search for books and authors.
+- **User authentication**: Signup and login for users.
+- **Image uploads**: Support for uploading author photos.
 
 ## Prerequisites
 
-- Go (version 1.15 or later)
-- MySQL database
-- Git (optional, for cloning the repository)
-- Docker and Docker Compose (for containerized deployment)
+Ensure the following are installed:
 
-## Environment Variables
+- **Go** (version 1.15 or later)
+- **MySQL database**
+- **Git** (optional, for cloning the repository)
+- **Docker and Docker Compose** (for containerized deployment)
 
-Create a `.env` file in the root of the project with the following specifications:
+## Environment Setup
 
-# Database connection variables
-- DB_HOSTNAME
-- DB_PORT
-- DB_NAME
-- DB_USER
-- DB_PASSWORD
+### Environment Variables
 
-# MySQL specific variables
-- MYSQL_ROOT_PASSWORD
-- MYSQL_DATABASE
-- MYSQL_USER
-- MYSQL_PASSWORD
+Create a `.env` file in the project root with these variables:
 
-# API configuration
-- API_URL
+#### Database configuration
 
-Make sure to set appropriate values for these variables according to your development or production environment. The Go application should be updated to use these environment variables for database connection and other configurations instead of hardcoded values.
+- `DB_HOSTNAME`: Database host
+- `DB_PORT`: Database port
+- `DB_NAME`: Database name
+- `DB_USER`: Database user
+- `DB_PASSWORD`: Database password
 
-## Dependencies
+#### MySQL-specific variables
 
-This project uses the following packages:
+- `MYSQL_ROOT_PASSWORD`: MySQL root password
+- `MYSQL_DATABASE`: Name of the MySQL database
+- `MYSQL_USER`: MySQL user
+- `MYSQL_PASSWORD`: MySQL user password
 
-- Standard library packages:
-  - "database/sql"
-  - "encoding/json"
-  - "flag"
-  - "fmt"
-  - "io"
-  - "log"
-  - "net/http"
-  - "os"
-  - "path/filepath"
-  - "strconv"
+#### API configuration
 
-- External packages:
-  - github.com/go-sql-driver/mysql
-  - github.com/gorilla/mux
-  - github.com/joho/godotenv
+- `API_URL`: Base URL for the API
 
-To install the external dependencies, run:
+These environment variables should replace any hardcoded values within the code, ensuring flexible configuration across development and production environments.
 
-  go get github.com/go-sql-driver/mysql
-  go get github.com/gorilla/mux
-  go get github.com/joho/godotenv
+## Installation & Setup
 
-Alternatively, you can use Go modules (if not already in use) by running:
+### Dependency Management
 
-  go mod init <your-module-name>
-  go mod tidy
+This project uses both standard library and external dependencies. Key external libraries include:
 
-This will automatically download and manage the required dependencies.
+- **MySQL driver**: `github.com/go-sql-driver/mysql`
+- **Router**: `github.com/gorilla/mux`
+- **Environment loader**: `github.com/joho/godotenv`
+
+#### Installing Dependencies
+
+To install external dependencies, run the following command:
+
+```bash
+go get github.com/go-sql-driver/mysql
+go get github.com/gorilla/mux
+go get github.com/joho/godotenv
+```
+
+Iniziate Go modules:
+
+```bash
+go mod init <module-name>
+go mod tidy
+```
+
+This will create the necessary `go.mod` and `go.sum` files to manage your dependencies.
 
 ## API Endpoints
 
-- `GET /books`: Get all books
-- `GET /authors`: Get all authors
-- `GET /authorsbooks`: Get all authors and their books
-- `GET /authors/{id}`: Get books by author ID
-- `GET /books/{id}`: Get book by ID
-- `GET /subscribers/{id}`: Get subscribers by book ID
-- `GET /subscribers`: Get all subscribers
-- `POST /book/borrow`: Borrow a book
-- `POST /book/return`: Return a borrowed book
-- `POST /authors/new`: Add a new author
-- `POST /author/photo/{id}`: Add author photo
-- `POST /books/new`: Add a new book
-- `POST /subscribers/new`: Add a new subscriber
-- `PUT /authors/{id}`: Update an author
-- `PUT /books/{id}`: Update a book
-- `PUT /subscribers/{id}`: Update a subscriber
-- `DELETE /authors/{id}`: Delete an author
-- `DELETE /books/{id}`: Delete a book
-- `DELETE /subscribers/{id}`: Delete a subscriber
-- `GET /search_books`: Search books
-- `GET /search_authors`: Search authors
-- `POST /signup`: User signup
-- `POST /login`: User login
+The API exposes the following endpoints:
 
-## Docker Compose Commands
+### Books
 
-To run the application using Docker Compose, follow these steps:
+- `GET /books`: Retrieve all books.
+- `GET /books/{id}`: Retrieve a book by ID.
+- `POST /books/new`: Add a new book.
+- `PUT /books/{id}`: Update a book by ID.
+- `DELETE /books/{id}`: Delete a book by ID.
 
-1. Make sure you have Docker and Docker Compose installed on your system.
+### Authors
 
-2. Clone the repository (if you haven't already):
-```
-git clone https://github.com/yourusername/library-management-system.git
-cd library-management-system
-```
-3. Build and start the containers:
-```
-docker-compose up --build
-```
-4. To stop the containers, use:
-```
-docker-compose down
-```
-6. To rebuild the application after making changes:
-```
-docker-compose up --build
-```
-7. To view logs of the running containers:
-```
-docker-compose logs
-```
-8. To access the application, open a web browser and go to:
-```
-http://localhost:8081
-```
-9. To stop the containers and remove the volumes:
-```
-docker-compose down -v
-```
-Note: Make sure to update your Go application to use the environment variables for database connection (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) instead of hardcoded values.
+- `GET /authors`: Retrieve all authors.
+- `GET /authors/{id}`: Retrieve books by a specific author.
+- `POST /authors/new`: Add a new author.
+- `PUT /authors/{id}`: Update an author by ID.
+- `DELETE /authors/{id}`: Delete an author by ID.
+- `POST /author/photo/{id}`: Upload a photo for an author.
+
+### Subscribers
+
+- `GET /subscribers`: Retrieve all subscribers.
+- `GET /subscribers/{id}`: Retrieve a subscriber by book ID.
+- `POST /subscribers/new`: Add a new subscriber.
+- `PUT /subscribers/{id}`: Update a subscriber by ID.
+- `DELETE /subscribers/{id}`: Delete a subscriber by ID.
+
+### Book Borrowing & Returning
+
+- `POST /book/borrow`: Borrow a book.
+- `POST /book/return`: Return a borrowed book.
+
+### Search
+
+- `GET /search_books`: Search for books.
+- `GET /search_authors`: Search for authors.
+
+### User Authentication
+
+- `POST /signup`: User signup.
+- `POST /login`: User login.
+
+## Running the Application with Docker Compose
+
+ Command/Instruction | Description |
+---------------------|-------------|
+ `git clone https://github.com/yourusername/library-management-system.git`<br>`cd library-management-system` | Clone the repository and  into the project directory. |
+ `docker-compose up-all --build` | Build and start the Docker containers. |
+ `docker-compose down` | Stop the running containers. |
+ `docker-compose up-all --build` | Rebuild and start the containers after making changes. |
+ Open in browser: `http://localhost:8081` | Access the API in your browser. |
+ `docker-compose logs` | View logs of the running containers. |
+ `docker-compose down -v` | Stop and remove containers, volumes, and networks. |
+
+**Note**:
+Ensure ou have in root project `.env` file for connecting to the database and other configurations
+---
