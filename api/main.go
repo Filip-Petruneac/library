@@ -119,7 +119,7 @@ func main() {
 	flag.Parse()
 
 	// Load environment variables from the .env file
-	err := godotenv.Load()
+	err := godotenv.Load("../.env.local")
 	if err != nil {
 		log.Println("No .env file found, continuing with environment variables or defaults")
 	}
