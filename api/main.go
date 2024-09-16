@@ -198,52 +198,126 @@ func (app *App) Info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Info page")
 }
 
+func RespondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
+    // Set Content-Type header to application/json
+    w.Header().Set("Content-Type", "application/json")
+    // Attempt to encode the payload
+    if err := json.NewEncoder(w).Encode(payload); err != nil {
+        log.Printf("Error encoding response: %v", err)
+        // Set Content-Type header again in case of error
+        w.Header().Set("Content-Type", "application/json")
+        // Set status to 500
+        w.WriteHeader(http.StatusInternalServerError)
+        // Write the error message, including a newline
+        w.Write([]byte("Error encoding response\n"))
+        return
+    }
+    // Set the status code
+    w.WriteHeader(status)
+}
+
+// HandleError handles errors by logging them and sending an appropriate HTTP response
+func HandleError(w http.ResponseWriter, logger *log.Logger, message string, err error, status int) {
+    // Log the error message with additional context
+    logger.Printf("%s: %v", message, err)
+    // Send an HTTP error response with the given status code
+    http.Error(w, message, status)
+}
+
+// GetIDFromRequest extracts and validates an ID parameter from the URL
+func GetIDFromRequest(r *http.Request, paramName string) (int, error) {
+    // Retrieve the parameter from the URL
+    vars := mux.Vars(r)
+    idStr := vars[paramName]
+    // Convert the string parameter to an integer
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        // Return an error if conversion fails, using a lowercase message
+        return 0, fmt.Errorf("invalid %s: %v", paramName, err) 
+    }
+    return id, nil
+}
+
+// ScanAuthors processes rows from the SQL query and returns a list of authors
+func ScanAuthors(rows *sql.Rows) ([]Author, error) {
+    var authors []Author
+    // Iterate through the result set
+    for rows.Next() {
+        var author Author
+        // Scan each row into the Author struct
+        if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
+            return nil, err // Return the error if scanning fails
+        }
+        // Append the author to the list
+        authors = append(authors, author)
+    }
+    // Check for any error during iteration
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+    return authors, nil
+}
+
+// ValidateAuthorData checks if the required fields for an author are present
+func ValidateAuthorData(author Author) error {
+    // Ensure Firstname and Lastname are not empty
+    if author.Firstname == "" || author.Lastname == "" {
+        return fmt.Errorf("firstname and lastname are required fields") // Lowercase error message
+    }
+    return nil
+}
+
+// ValidateBookData checks if the required fields for a book are present
+func ValidateBookData(book Book) error {
+    // Ensure Title and AuthorID are not empty or zero
+    if book.Title == "" || book.AuthorID == 0 {
+        return fmt.Errorf("title and authorID are required fields") // Lowercase error message
+    }
+    return nil
+}
+
 // SearchAuthors searches for authors based on a query parameter
 func (app *App) SearchAuthors(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-	if query == "" {
-		app.Logger.Println("Query parameter is required") 
-		http.Error(w, "Query parameter is required", http.StatusBadRequest)
-		return
-	}
+    // Log the entry to the handler for debugging purposes
+    app.Logger.Println("SearchAuthors handler called")
 
-	sqlQuery := `
-		SELECT id, Firstname, Lastname, photo 
-		FROM authors 
-		WHERE Firstname LIKE ? OR Lastname LIKE ?
-	`
+    // Get the "query" parameter from the URL
+    query := r.URL.Query().Get("query")
+    if query == "" {
+        // If the query parameter is missing, return a 400 Bad Request error
+        HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
+        return
+    }
 
-	rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
-	if err != nil {
-		app.Logger.Printf("Error executing query: %v", err)
-		http.Error(w, "Error executing query", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    // Prepare the SQL query with an ORDER BY clause to ensure consistent result order
+    sqlQuery := `
+        SELECT id, Firstname, Lastname, photo 
+        FROM authors 
+        WHERE Firstname LIKE ? OR Lastname LIKE ?
+        ORDER BY Lastname, Firstname
+    `
 
-	var authors []AuthorInfo
-	for rows.Next() {
-		var author AuthorInfo
-		if err := rows.Scan(&author.ID, &author.Firstname, &author.Lastname, &author.Photo); err != nil {
-			app.Logger.Printf("Error scanning row: %v", err)
-			http.Error(w, "Error scanning row", http.StatusInternalServerError)
-			return
-		}
-		authors = append(authors, author)
-	}
+    // Execute the SQL query to fetch authors based on the query parameter
+    rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
+    if err != nil {
+        // Log error executing the query and return a 500 Internal Server Error
+        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close() // Always close rows after use to release resources
 
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Row iteration error: %v", err)
-		http.Error(w, "Error fetching results", http.StatusInternalServerError)
-		return
-	}
+    // Use the utility function to scan and process the SQL rows
+    authors, err := ScanAuthors(rows)
+    if err != nil {
+        // Log error scanning the rows and return a 500 Internal Server Error
+        HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(authors); err != nil {
-		app.Logger.Printf("Error encoding response: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+    // Send the JSON response using the utility function
+    RespondWithJSON(w, http.StatusOK, authors)
 }
+
 
 // SearchBooks searches for books based on a query parameter
 func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {

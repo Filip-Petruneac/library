@@ -257,53 +257,279 @@ func TestSetupRouter(t *testing.T) {
 	}
 }
 
-// TestSearchAuthors tests the SearchAuthors handler
-func TestSearchAuthors(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+// TestRespondWithJSON tests the RespondWithJSON function
+func TestRespondWithJSON(t *testing.T) {
+    // Create a ResponseRecorder to capture the response
+    rr := httptest.NewRecorder()
 
-	// Setting up SQL mock expectations
-	queryParam := "John"
-	rows := sqlmock.NewRows([]string{"id", "Firstname", "Lastname", "photo"}).
-		AddRow(1, "John", "Doe", "photo1.jpg").
-		AddRow(2, "Johnny", "Smith", "photo2.jpg")
+    // Create a sample payload
+    payload := map[string]string{"message": "success"}
 
-	mock.ExpectQuery("SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE \\? OR Lastname LIKE \\?").
-		WithArgs("%"+queryParam+"%", "%"+queryParam+"%").
-		WillReturnRows(rows)
+    // Call the RespondWithJSON function
+    RespondWithJSON(rr, http.StatusOK, payload)
 
-	// Creating a new HTTP request
-	req, err := http.NewRequest("GET", "/search_authors?query=John", nil)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
+    // Check the Content-Type header
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Content-Type should be application/json")
 
-	// Capturing the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.SearchAuthors)
-	handler.ServeHTTP(rr, req)
+    // Check the status code
+    assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-	// Ensuring the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	// Checking the JSON response
-	var authors []AuthorInfo
-	err = json.NewDecoder(rr.Body).Decode(&authors)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
-
-	// Verifying the response data
-	assert.Equal(t, 2, len(authors))
-	assert.Equal(t, "John", authors[0].Firstname)
-	assert.Equal(t, "Doe", authors[0].Lastname)
-	assert.Equal(t, "Johnny", authors[1].Firstname)
-
-	// Ensuring all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    // Check the response body
+    expectedBody, _ := json.Marshal(payload)
+    assert.JSONEq(t, string(expectedBody), rr.Body.String(), "Response body should match the payload")
 }
+
+func TestRespondWithJSON_ErrorEncoding(t *testing.T) {
+    rr := httptest.NewRecorder()
+    payload := make(chan int) // A channel cannot be encoded into JSON, will cause an error
+
+    RespondWithJSON(rr, http.StatusOK, payload)
+
+    // Check that the Content-Type header was originally application/json
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Content-Type should initially be application/json")
+
+    // Check that the status code is now 500 due to JSON encoding error
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500 for encoding error")
+
+    // Check that the response body contains the error message
+    assert.Equal(t, "Error encoding response\n", rr.Body.String(), "Response body should contain the error message")
+}
+
+func TestRespondWithJSON_Success(t *testing.T) {
+    rr := httptest.NewRecorder()
+    payload := map[string]string{"message": "test"}
+
+    RespondWithJSON(rr, http.StatusOK, payload)
+
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Expected Content-Type application/json")
+    assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
+    assert.JSONEq(t, `{"message": "test"}`, rr.Body.String(), "Expected JSON response")
+}
+
+func TestRespondWithJSON_Error(t *testing.T) {
+    rr := httptest.NewRecorder()
+    payload := make(chan int) // Provocăm o eroare
+
+    RespondWithJSON(rr, http.StatusOK, payload)
+
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Expected Content-Type application/json")
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500 for encoding error")
+    assert.Equal(t, "Error encoding response\n", rr.Body.String(), "Expected error message in response")
+}
+
+// TestHandleError tests the HandleError function
+func TestHandleError(t *testing.T) {
+    rr := httptest.NewRecorder()
+    logger := log.New(io.Discard, "", log.LstdFlags) // Logger care nu afiseaza nimic
+    message := "test error"
+    err := fmt.Errorf("an example error")
+
+    HandleError(rr, logger, message, err, http.StatusInternalServerError)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Equal(t, "test error\n", rr.Body.String(), "Expected error message in response")
+}
+
+// TestGetIDFromRequest tests the GetIDFromRequest function
+func TestGetIDFromRequest(t *testing.T) {
+    // Case 1: Valid ID
+    req := httptest.NewRequest("GET", "/authors/1", nil)
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    id, err := GetIDFromRequest(req, "id")
+    assert.NoError(t, err, "Expected no error for a valid ID")
+    assert.Equal(t, 1, id, "Expected ID to be 1")
+
+    // Case 2: Invalid ID
+    req = httptest.NewRequest("GET", "/authors/abc", nil)
+    req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+
+    _, err = GetIDFromRequest(req, "id")
+    assert.Error(t, err, "Expected an error for an invalid ID")
+    assert.Contains(t, err.Error(), "invalid id", "Error message should mention 'invalid id'")
+}
+
+func TestGetIDFromRequest_ParamNotFound(t *testing.T) {
+    req := httptest.NewRequest("GET", "/authors", nil) 
+    req = mux.SetURLVars(req, map[string]string{}) 
+
+    _, err := GetIDFromRequest(req, "id")
+    assert.Error(t, err, "Expected an error when parameter is not found")
+    assert.Contains(t, err.Error(), "invalid id", "Error message should mention 'invalid id'")
+}
+
+func TestGetIDFromRequest_Success(t *testing.T) {
+    req := httptest.NewRequest("GET", "/authors/1", nil)
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    id, err := GetIDFromRequest(req, "id")
+    assert.NoError(t, err, "Expected no error when ID is valid")
+    assert.Equal(t, 1, id, "Expected ID to be 1")
+}
+
+func TestGetIDFromRequest_Error(t *testing.T) {
+    req := httptest.NewRequest("GET", "/authors/abc", nil)
+    req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+
+    _, err := GetIDFromRequest(req, "id")
+    assert.Error(t, err, "Expected an error when ID is not a number")
+    assert.Contains(t, err.Error(), "invalid id", "Error message should mention 'invalid id'")
+}
+
+// TestScanAuthors tests the ScanAuthors function
+func TestScanAuthors(t *testing.T) {
+    // Create a mock DB and sqlmock
+    db, mock, err := sqlmock.New()
+    assert.NoError(t, err, "Error should be nil when creating sqlmock")
+    defer db.Close()
+
+    // Create mock rows to be returned
+    rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
+        AddRow(1, "Doe", "John", "photo.jpg").
+        AddRow(2, "Smith", "Jane", "photo2.jpg")
+
+    mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+
+    // Execute the query
+    result, err := db.Query("SELECT id, lastname, firstname, photo FROM authors")
+    assert.NoError(t, err, "Query execution should not return an error")
+
+    // Call the ScanAuthors function
+    authors, err := ScanAuthors(result)
+    assert.NoError(t, err, "Expected no error while scanning authors")
+
+    // Check the number of authors returned
+    assert.Equal(t, 2, len(authors), "Expected 2 authors")
+
+    // Check details of the first author
+    assert.Equal(t, "John", authors[0].Firstname, "Expected Firstname to be John")
+    assert.Equal(t, "Doe", authors[0].Lastname, "Expected Lastname to be Doe")
+}
+
+func TestScanAuthors_ErrorAfterIteration(t *testing.T) {
+    // Create a mock database and sqlmock
+    db, mock, err := sqlmock.New()
+    assert.NoError(t, err, "Error should be nil when creating sqlmock")
+    defer db.Close()
+
+    // Simulate a set of rows and set an error after the first row
+    rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
+        AddRow(1, "Doe", "John", "photo.jpg").
+        RowError(0, fmt.Errorf("iteration error")) // Set the error after reading the first row
+
+    // Expect the SQL query and return the mock rows with an error
+    mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+
+    // Execute the query
+    result, err := db.Query("SELECT id, lastname, firstname, photo FROM authors")
+    assert.NoError(t, err, "Query execution should not return an error")
+
+    // Call the ScanAuthors function
+    authors, err := ScanAuthors(result)
+
+    // Check that an error is returned after the iteration
+    assert.Error(t, err, "Expected an error after iteration")
+    assert.Nil(t, authors, "Authors should be nil on error")
+}
+
+func TestScanAuthors_ErrorDuringScan(t *testing.T) {
+    // Create a mock database and sqlmock
+    db, mock, err := sqlmock.New()
+    assert.NoError(t, err, "Error should be nil when creating sqlmock")
+    defer db.Close()
+
+    // Simulate a set of rows that will trigger a scan error
+    rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
+        AddRow("invalid_id", "Doe", "John", "photo.jpg") // Intentionally use an invalid ID format to cause a scan error
+
+    // Expect the SQL query and return the mock rows
+    mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
+
+    // Execute the query
+    result, err := db.Query("SELECT id, lastname, firstname, photo FROM authors")
+    assert.NoError(t, err, "Query execution should not return an error")
+
+    // Call the ScanAuthors function
+    authors, err := ScanAuthors(result)
+
+    // Check that an error is returned during the scan
+    assert.Error(t, err, "Expected an error during scan")
+    assert.Nil(t, authors, "Authors should be nil on error")
+}
+
+// TestValidateAuthorData tests the ValidateAuthorData function
+func TestValidateAuthorData(t *testing.T) {
+    // Case 1: Valid data
+    author := Author{Firstname: "John", Lastname: "Doe"}
+    err := ValidateAuthorData(author)
+    assert.NoError(t, err, "Expected no error for valid author data")
+
+    // Case 2: Missing Firstname
+    author = Author{Firstname: "", Lastname: "Doe"}
+    err = ValidateAuthorData(author)
+    assert.Error(t, err, "Expected an error for missing Firstname")
+    assert.Contains(t, err.Error(), "firstname and lastname are required fields", "Error message should mention missing fields")
+
+    // Case 3: Missing Lastname
+    author = Author{Firstname: "John", Lastname: ""}
+    err = ValidateAuthorData(author)
+    assert.Error(t, err, "Expected an error for missing Lastname")
+    assert.Contains(t, err.Error(), "firstname and lastname are required fields", "Error message should mention missing fields")
+}
+
+// TestSearchAuthors_ErrorExecutingQuery tests the case where there is an error executing the SQL query
+func TestSearchAuthors_ErrorExecutingQuery(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors?query=John", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+
+    rr := httptest.NewRecorder()
+
+    // Simulate an error in query execution
+    mock.ExpectQuery(`SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE \? OR Lastname LIKE \?`).
+        WithArgs("%John%", "%John%").
+        WillReturnError(fmt.Errorf("query execution error"))
+
+    handler := http.HandlerFunc(app.SearchAuthors)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error executing query", "Expected error message for query execution error")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err, "There should be no unmet expectations")
+}
+
+// TestSearchAuthors_ErrorScanningAuthors tests the case where there is an error scanning the rows
+func TestSearchAuthors_ErrorScanningAuthors(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors?query=John", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+
+    rr := httptest.NewRecorder()
+
+    // Simulate successful query execution but with an error during scanning
+    mock.ExpectQuery(`SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE \? OR Lastname LIKE \?`).
+        WithArgs("%John%", "%John%").
+        WillReturnRows(sqlmock.NewRows([]string{"id", "Firstname", "Lastname", "photo"}).
+            AddRow("invalid_id", "John", "Doe", "photo.jpg")) // Invalid data type to simulate scan error
+
+    handler := http.HandlerFunc(app.SearchAuthors)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error scanning authors", "Expected error message for scan error")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err, "There should be no unmet expectations")
+}
+
+
+
 
 // TestSearchBooks tests the SearchBooks handler
 func TestSearchBooks(t *testing.T) {
