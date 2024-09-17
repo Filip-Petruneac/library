@@ -240,27 +240,27 @@ func GetIDFromRequest(r *http.Request, paramName string) (int, error) {
 
 // ScanAuthors processes rows from the SQL query and returns a list of authors
 func ScanAuthors(rows *sql.Rows) ([]Author, error) {
+    defer rows.Close()
+
     var authors []Author
-    // Iterate through the result set
+
     for rows.Next() {
         var author Author
-        // Scan each row into the Author struct
         if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
-            return nil, err // Return the error if scanning fails
+            return nil, err
         }
-        // Append the author to the list
         authors = append(authors, author)
     }
-    // Check for any error during iteration
+
     if err := rows.Err(); err != nil {
         return nil, err
     }
+
     return authors, nil
 }
 
 // ValidateAuthorData checks if the required fields for an author are present
 func ValidateAuthorData(author Author) error {
-    // Ensure Firstname and Lastname are not empty
     if author.Firstname == "" || author.Lastname == "" {
         return fmt.Errorf("firstname and lastname are required fields") // Lowercase error message
     }
@@ -318,61 +318,69 @@ func (app *App) SearchAuthors(w http.ResponseWriter, r *http.Request) {
     RespondWithJSON(w, http.StatusOK, authors)
 }
 
+// ScanBooks processes rows from the SQL query and returns a list of books with author information
+func ScanBooks(rows *sql.Rows) ([]BookAuthorInfo, error) {
+    defer rows.Close()
+
+    var books []BookAuthorInfo
+
+    for rows.Next() {
+        var book BookAuthorInfo
+        if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+            return nil, err
+        }
+        books = append(books, book)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return books, nil
+}
 
 // SearchBooks searches for books based on a query parameter
 func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-	if query == "" {
-		http.Error(w, "Query parameter is missing", http.StatusBadRequest)
-		return
-	}
+    app.Logger.Println("SearchBooks handler called")
 
-	sqlQuery := `
-		SELECT 
-			books.id AS book_id,
-			books.title AS book_title, 
-			books.author_id AS author_id, 
-			books.photo AS book_photo, 
-			books.is_borrowed AS is_borrowed, 
-			books.details AS book_details,
-			authors.Lastname AS author_lastname, 
-			authors.Firstname AS author_firstname
-		FROM books
-		JOIN authors ON books.author_id = authors.id
-		WHERE books.title LIKE ? OR authors.Firstname LIKE ? OR authors.Lastname LIKE ?
-	`
+    query := r.URL.Query().Get("query")
+    if query == "" {
+        HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
+        return
+    }
 
-	rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
-	if err != nil {
-		app.Logger.Printf("Error executing query: %v", err)
-		http.Error(w, "Error executing query", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    sqlQuery := `
+        SELECT 
+            books.id AS book_id,
+            books.title AS book_title, 
+            books.author_id AS author_id, 
+            books.photo AS book_photo, 
+            books.is_borrowed AS is_borrowed, 
+            books.details AS book_details,
+            authors.Lastname AS author_lastname, 
+            authors.Firstname AS author_firstname
+        FROM books
+        JOIN authors ON books.author_id = authors.id
+        WHERE books.title LIKE ? OR authors.Firstname LIKE ? OR authors.Lastname LIKE ?
+        ORDER BY books.title, authors.Lastname, authors.Firstname
+    `
 
-	var books []BookAuthorInfo
-	for rows.Next() {
-		var book BookAuthorInfo
-		if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-			app.Logger.Printf("Error scanning row: %v", err)
-			http.Error(w, "Error scanning row", http.StatusInternalServerError)
-			return
-		}
-		books = append(books, book)
-	}
+    rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
+    if err != nil {
+        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close() 
 
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Row iteration error: %v", err)
-		http.Error(w, "Error fetching results", http.StatusInternalServerError)
-		return
-	}
+    books, err := ScanBooks(rows)
+    if err != nil {
+        HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(books); err != nil {
-		app.Logger.Printf("Error encoding response: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+    RespondWithJSON(w, http.StatusOK, books)
 }
+
 
 // GetAuthors retrieves all authors from the database
 func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
