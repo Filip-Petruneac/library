@@ -384,85 +384,64 @@ func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {
 
 // GetAuthors retrieves all authors from the database
 func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
-	rows, err := app.DB.Query("SELECT id, lastname, firstname, photo FROM authors")
-	if err != nil {
-		app.Logger.Printf("Query error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    app.Logger.Println("GetAuthors handler called")
 
-	var authors []Author
-	for rows.Next() {
-		var author Author
-		if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
-			app.Logger.Printf("Scan error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		authors = append(authors, author)
-	}
+    sqlQuery := `
+        SELECT id, Lastname, Firstname, photo 
+        FROM authors
+        ORDER BY Lastname, Firstname
+    `
+    rows, err := app.DB.Query(sqlQuery)
+    if err != nil {
+        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Row iteration error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    authors, err := ScanAuthors(rows)
+    if err != nil {
+        HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(authors); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+    RespondWithJSON(w, http.StatusOK, authors)
 }
+
 
 // GetAllBooks retrieves all books from the database along with the author's first and last name
 func (app *App) GetAllBooks(w http.ResponseWriter, r *http.Request) {
-	query := `
-		SELECT 
-			books.id AS book_id,
-			books.title AS book_title, 
-			books.author_id AS author_id, 
-			books.photo AS book_photo, 
-			books.is_borrowed AS is_borrowed, 
-			books.details AS book_details,
-			authors.Lastname AS author_lastname, 
-			authors.Firstname AS author_firstname
-		FROM books
-		JOIN authors ON books.author_id = authors.id
-	`
+    app.Logger.Println("GetAllBooks handler called")
 
-	rows, err := app.DB.Query(query)
-	if err != nil {
-		app.Logger.Printf("Query error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    query := `
+        SELECT 
+            books.id AS book_id,
+            books.title AS book_title, 
+            books.author_id AS author_id, 
+            books.photo AS book_photo, 
+            books.is_borrowed AS is_borrowed, 
+            books.details AS book_details,
+            authors.Lastname AS author_lastname, 
+            authors.Firstname AS author_firstname
+        FROM books
+        JOIN authors ON books.author_id = authors.id
+        ORDER BY books.title, authors.Lastname, authors.Firstname
+    `
 
-	var books []BookAuthorInfo
-	for rows.Next() {
-		var book BookAuthorInfo
-		if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-			app.Logger.Printf("Scan error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		books = append(books, book)
-	}
+    rows, err := app.DB.Query(query)
+    if err != nil {
+        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+        return
+    }
 
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Row iteration error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+    books, err := ScanBooks(rows)
+    if err != nil {
+        HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(books); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+    RespondWithJSON(w, http.StatusOK, books)
 }
+
 
 // GetAuthorsAndBooks retrieves information about authors and their books
 func (app *App) GetAuthorsAndBooks(w http.ResponseWriter, r *http.Request) {

@@ -25,7 +25,7 @@ func createTestApp(t *testing.T) (*App, sqlmock.Sqlmock) {
 		t.Fatalf("Error creating sqlmock: %v", err)
 	}
 
-	logger := log.New(io.Discard, "", log.LstdFlags) // A logger that discards all output
+	logger := log.New(io.Discard, "", log.LstdFlags) 
 
 	return &App{
 		DB:     db,
@@ -35,7 +35,6 @@ func createTestApp(t *testing.T) (*App, sqlmock.Sqlmock) {
 
 // Test for getEnv function using Dependency Injection
 func TestGetEnv(t *testing.T) {
-	// Backup original environment variable
 	originalValue, isSet := os.LookupEnv("TEST_KEY")
 	defer func() {
 		if isSet {
@@ -45,28 +44,24 @@ func TestGetEnv(t *testing.T) {
 		}
 	}()
 
-	// Case 1: Environment variable is set
 	os.Setenv("TEST_KEY", "expected_value")
 	actual := getEnv("TEST_KEY", "default_value")
 	assert.Equal(t, "expected_value", actual)
 
-	// Case 2: Environment variable is not set, should return default value
 	os.Unsetenv("TEST_KEY")
 	actual = getEnv("TEST_KEY", "default_value")
 	assert.Equal(t, "default_value", actual)
 }
 
 func TestInitDB(t *testing.T) {
-	// Create a mock DB and sqlmock with monitoring pings enabled
 	db, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
 	assert.NoError(t, err, "Error should be nil when creating sqlmock")
 	defer db.Close()
 
-	// Expected DSN (Data Source Name)
 	dsn := "user:password@tcp(localhost:3306)/testdb"
 
-	// Override sqlOpen with a mock
-	originalSQLOpen := sqlOpen  // Save the original function
+
+	originalSQLOpen := sqlOpen  
 	sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
 		if dataSourceName == dsn {
 			return db, nil
@@ -74,24 +69,19 @@ func TestInitDB(t *testing.T) {
 		return nil, fmt.Errorf("unexpected DSN: %s", dataSourceName)
 	}
 
-	// Restore the original sql.Open after the test
 	defer func() { sqlOpen = originalSQLOpen }()
 
 	t.Run("Successful Database Initialization", func(t *testing.T) {
-		// Set expectation for Ping method
 		mock.ExpectPing()
 
-		// Call the function to test
 		_, err = initDB("user", "password", "localhost", "3306", "testdb")
 		assert.NoError(t, err, "Error should be nil when initializing the DB")
 
-		// Ensure all expectations are met
 		err = mock.ExpectationsWereMet()
 		assert.NoError(t, err, "There should be no unmet expectations")
 	})
 
 	t.Run("Failed to Open Database Connection", func(t *testing.T) {
-		// Override sqlOpen to simulate a connection error
 		sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
 			return nil, fmt.Errorf("failed to connect to the database")
 		}
@@ -100,15 +90,12 @@ func TestInitDB(t *testing.T) {
 		assert.Error(t, err, "Expected an error when failing to connect to the database")
 		assert.Contains(t, err.Error(), "failed to connect to the database")
 
-		// Restore sqlOpen to the original mock
 		sqlOpen = originalSQLOpen
 	})
 
 	t.Run("Failed to Ping Database", func(t *testing.T) {
-		// Set expectation for Ping method to fail
 		mock.ExpectPing().WillReturnError(fmt.Errorf("failed to ping"))
 
-		// Override sqlOpen to use mock db that has ping failure
 		sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
 			if dataSourceName == dsn {
 				return db, nil
@@ -120,7 +107,6 @@ func TestInitDB(t *testing.T) {
 		assert.Error(t, err, "Expected an error when pinging the database")
 		assert.Contains(t, err.Error(), "failed to ping the database")
 
-		// Ensure all expectations are met
 		err = mock.ExpectationsWereMet()
 		assert.NoError(t, err, "There should be no unmet expectations")
 	})
@@ -128,68 +114,53 @@ func TestInitDB(t *testing.T) {
 
 // TestHome tests the Home handler
 func TestHome(t *testing.T) {
-	// Create a test app instance using the existing createTestApp function
-	app, _ := createTestApp(t) // We don't need the mock in this case
+	app, _ := createTestApp(t) 
 	defer app.DB.Close()
 
-	// Create a new HTTP request for the Home handler
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
 	}
 
-	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the Home handler directly, passing the ResponseRecorder and the request
 	handler := http.HandlerFunc(app.Home)
 	handler.ServeHTTP(rr, req)
 
-	// Check that the status code is what we expect
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-	// Check that the response body is what we expect
 	expectedBody := "Homepage"
 	assert.Equal(t, expectedBody, rr.Body.String(), "Expected response body 'Homepage'")
 }
 
 // TestInfo tests the Info handler
 func TestInfo(t *testing.T) {
-	// Create a test app instance using the existing createTestApp function
-	app, _ := createTestApp(t) // We don't need the mock in this case
+	app, _ := createTestApp(t) 
 	defer app.DB.Close()
 
-	// Create a new HTTP request for the Info handler
 	req, err := http.NewRequest("GET", "/info", nil)
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
 	}
 
-	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the Info handler directly, passing the ResponseRecorder and the request
 	handler := http.HandlerFunc(app.Info)
 	handler.ServeHTTP(rr, req)
 
-	// Check that the status code is what we expect
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-	// Check that the response body is what we expect
 	expectedBody := "Info page"
 	assert.Equal(t, expectedBody, rr.Body.String(), "Expected response body 'Info page'")
 }
 
 // TestSetupRouter verifies that all routes are correctly set up in the router
 func TestSetupRouter(t *testing.T) {
-	// Create a test app instance using the existing createTestApp function
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	// Initialize the router
 	router := app.setupRouter()
 
-	// Define a list of test cases to check each route
 	tests := []struct {
 		name           string
 		method         string
@@ -203,12 +174,9 @@ func TestSetupRouter(t *testing.T) {
 			path:           "/subscribers",
 			expectedStatus: http.StatusOK,
 			mockSetup: func() {
-				// Mock database call for GetAllSubscribers
 				rows := sqlmock.NewRows([]string{"lastname", "firstname", "email"}).
 					AddRow("Doe", "John", "john.doe@example.com").
 					AddRow("Smith", "Jane", "jane.smith@example.com")
-
-				// Expect the correct SQL query that matches the handler's query
 				mock.ExpectQuery(`SELECT lastname, firstname, email FROM subscribers`).WillReturnRows(rows)
 			},
 		},
@@ -218,23 +186,20 @@ func TestSetupRouter(t *testing.T) {
 			path:           "/books",
 			expectedStatus: http.StatusOK,
 			mockSetup: func() {
-				// Mock database call for GetAllBooks
 				rows := sqlmock.NewRows([]string{
 					"book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
 				}).
 					AddRow(1, "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John").
 					AddRow(2, "Another Book", 2, "another.jpg", true, "Another sample book", "Smith", "Jane")
 
-				// Expect the correct SQL query that matches the handler's query
 				mock.ExpectQuery(`SELECT books.id AS book_id, books.title AS book_title, books.author_id AS author_id, books.photo AS book_photo, books.is_borrowed AS is_borrowed, books.details AS book_details, authors.Lastname AS author_lastname, authors.Firstname AS author_firstname FROM books JOIN authors ON books.author_id = authors.id`).WillReturnRows(rows)
 			},
 		},
 	}
 
-	// Iterate through each test case
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup the mock expectations for this specific test case
+			
 			tt.mockSetup()
 
 			req, err := http.NewRequest(tt.method, tt.path, nil)
@@ -243,13 +208,10 @@ func TestSetupRouter(t *testing.T) {
 			}
 			rr := httptest.NewRecorder()
 
-			// Serve the request using the router
 			router.ServeHTTP(rr, req)
 
-			// Assert that the response status matches the expected status
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-			// Ensure all mock expectations were met
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("Not all expectations were met: %v", err)
 			}
@@ -259,22 +221,16 @@ func TestSetupRouter(t *testing.T) {
 
 // TestRespondWithJSON tests the RespondWithJSON function
 func TestRespondWithJSON(t *testing.T) {
-    // Create a ResponseRecorder to capture the response
     rr := httptest.NewRecorder()
 
-    // Create a sample payload
     payload := map[string]string{"message": "success"}
 
-    // Call the RespondWithJSON function
     RespondWithJSON(rr, http.StatusOK, payload)
-
-    // Check the Content-Type header
+  
     assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Content-Type should be application/json")
 
-    // Check the status code
     assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-    // Check the response body
     expectedBody, _ := json.Marshal(payload)
     assert.JSONEq(t, string(expectedBody), rr.Body.String(), "Response body should match the payload")
 }
@@ -401,11 +357,10 @@ func TestScanAuthors_ErrorDuringScan(t *testing.T) {
     defer db.Close()
 
     rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
-        AddRow("invalid_id", "Doe", "John", "photo.jpg") // Intentionally use an invalid ID format to cause a scan error
+        AddRow("invalid_id", "Doe", "John", "photo.jpg") 
 
     mock.ExpectQuery(`SELECT id, lastname, firstname, photo FROM authors`).WillReturnRows(rows)
 
-    // Execute the query
     result, err := db.Query("SELECT id, lastname, firstname, photo FROM authors")
     assert.NoError(t, err, "Query execution should not return an error")
 
@@ -442,7 +397,6 @@ func TestSearchAuthors_ErrorExecutingQuery(t *testing.T) {
 
     rr := httptest.NewRecorder()
 
-    // Simulate an error in query execution
     mock.ExpectQuery(`SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE \? OR Lastname LIKE \?`).
         WithArgs("%John%", "%John%").
         WillReturnError(fmt.Errorf("query execution error"))
@@ -470,7 +424,7 @@ func TestSearchAuthors_ErrorScanningAuthors(t *testing.T) {
     mock.ExpectQuery(`SELECT id, Firstname, Lastname, photo FROM authors WHERE Firstname LIKE \? OR Lastname LIKE \?`).
         WithArgs("%John%", "%John%").
         WillReturnRows(sqlmock.NewRows([]string{"id", "Firstname", "Lastname", "photo"}).
-            AddRow("invalid_id", "John", "Doe", "photo.jpg")) // Invalid data type to simulate scan error
+            AddRow("invalid_id", "John", "Doe", "photo.jpg")) 
 
     handler := http.HandlerFunc(app.SearchAuthors)
     handler.ServeHTTP(rr, req)
@@ -654,7 +608,7 @@ func TestScanBooks_ErrorAfterIteration(t *testing.T) {
         "book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
     }).
         AddRow(1, "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John").
-        RowError(0, fmt.Errorf("iteration error")) // Setarea unei erori la primul rând
+        RowError(0, fmt.Errorf("iteration error")) 
 
     mock.ExpectQuery(`SELECT (.+) FROM books`).WillReturnRows(rows)
 
@@ -672,94 +626,172 @@ func TestScanBooks_ErrorAfterIteration(t *testing.T) {
 }
 
 
-// TestGetAuthors tests the GetAuthors handler
+/// TestGetAuthors tests the GetAuthors handler with Dependency Injection
 func TestGetAuthors(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	// Setting up SQL mock expectations
+	req, err := http.NewRequest("GET", "/authors", nil)
+	assert.NoError(t, err, "Error should be nil when creating a new request")
+
+	rr := httptest.NewRecorder()
+
 	rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
 		AddRow(1, "Doe", "John", "photo.jpg").
 		AddRow(2, "Smith", "Jane", "photo2.jpg")
 
-	mock.ExpectQuery("SELECT id, lastname, firstname, photo FROM authors").WillReturnRows(rows)
+	mock.ExpectQuery(`SELECT id, Lastname, Firstname, photo FROM authors ORDER BY Lastname, Firstname`).
+		WillReturnRows(rows)
 
-	// Creating a new HTTP request
-	req, err := http.NewRequest("GET", "/authors", nil)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	// Capturing the response
-	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(app.GetAuthors)
 	handler.ServeHTTP(rr, req)
 
-	// Ensuring the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-	// Checking the JSON response
-	var authors []Author
-	err = json.NewDecoder(rr.Body).Decode(&authors)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
+	expected := []map[string]interface{}{
+		{"id": float64(1), "lastname": "Doe", "firstname": "John", "photo": "photo.jpg"},
+		{"id": float64(2), "lastname": "Smith", "firstname": "Jane", "photo": "photo2.jpg"},
 	}
+	var actual []map[string]interface{}
+	err = json.Unmarshal(rr.Body.Bytes(), &actual)
+	assert.NoError(t, err, "Expected no error while unmarshaling JSON response")
 
-	// Verifying the response data
-	assert.Equal(t, 2, len(authors))
-	assert.Equal(t, "Doe", authors[0].Lastname)
-	assert.Equal(t, "Smith", authors[1].Lastname)
+	assert.Equal(t, expected, actual, "Expected JSON response")
 
-	// Ensuring all mock expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Not all expectations were met: %v", err)
 	}
 }
 
-// TestGetAllBooks tests the GetAllBooks handler
-func TestGetAllBooks(t *testing.T) {
+// TestGetAuthors_ErrorExecutingQuery tests the case where there is an error executing the SQL query in GetAuthors handler
+func TestGetAuthors_ErrorExecutingQuery(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	// Setting up SQL mock expectations
-	rows := sqlmock.NewRows([]string{
-		"book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
-	}).AddRow(1, "Book Title 1", 1, "book1.jpg", false, "Details 1", "Doe", "John").
-		AddRow(2, "Book Title 2", 2, "book2.jpg", true, "Details 2", "Smith", "Jane")
+	req, err := http.NewRequest("GET", "/authors", nil)
+	assert.NoError(t, err, "Error should be nil when creating a new request")
 
-	mock.ExpectQuery("SELECT books.id AS book_id,").WillReturnRows(rows)
-
-	// Creating a new HTTP request
-	req, err := http.NewRequest("GET", "/books", nil)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-
-	// Capturing the response
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.GetAllBooks)
+
+	mock.ExpectQuery(`SELECT id, Lastname, Firstname, photo FROM authors ORDER BY Lastname, Firstname`).
+		WillReturnError(fmt.Errorf("query execution error"))
+
+	handler := http.HandlerFunc(app.GetAuthors)
 	handler.ServeHTTP(rr, req)
 
-	// Ensuring the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+	assert.Contains(t, rr.Body.String(), "Error executing query", "Expected error message for query execution error")
 
-	// Checking the JSON response
-	var books []BookAuthorInfo
-	err = json.NewDecoder(rr.Body).Decode(&books)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
-
-	// Verifying the response data
-	assert.Equal(t, 2, len(books))
-	assert.Equal(t, "Book Title 1", books[0].BookTitle)
-	assert.Equal(t, "Book Title 2", books[1].BookTitle)
-
-	// Ensuring all mock expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Not all expectations were met: %v", err)
 	}
 }
+
+// TestGetAuthors_ErrorScanningRows tests the case where there is an error scanning the rows in GetAuthors handler
+func TestGetAuthors_ErrorScanningRows(t *testing.T) {
+	app, mock := createTestApp(t)
+	defer app.DB.Close()
+
+	req, err := http.NewRequest("GET", "/authors", nil)
+	assert.NoError(t, err, "Error should be nil when creating a new request")
+
+	rr := httptest.NewRecorder()
+
+	rows := sqlmock.NewRows([]string{"id", "lastname", "firstname", "photo"}).
+		AddRow("invalid_id", "Doe", "John", "photo.jpg") 
+
+	mock.ExpectQuery(`SELECT id, Lastname, Firstname, photo FROM authors ORDER BY Lastname, Firstname`).
+		WillReturnRows(rows)
+
+	handler := http.HandlerFunc(app.GetAuthors)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+	assert.Contains(t, rr.Body.String(), "Error scanning authors", "Expected error message for row scan error")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Not all expectations were met: %v", err)
+	}
+}
+
+
+// TestGetAllBooks tests the GetAllBooks handler
+func TestGetAllBooks_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/books", nil)
+    assert.NoError(t, err)
+
+    rr := httptest.NewRecorder()
+
+    rows := sqlmock.NewRows([]string{
+        "book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
+    }).
+        AddRow(1, "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John").
+        AddRow(2, "Another Book", 2, "another.jpg", true, "Another sample book", "Smith", "Jane")
+
+    mock.ExpectQuery(`SELECT (.+) FROM books JOIN authors ON books.author_id = authors.id`).
+        WillReturnRows(rows)
+
+    handler := http.HandlerFunc(app.GetAllBooks)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusOK, rr.Code)
+
+    var books []BookAuthorInfo
+    err = json.NewDecoder(rr.Body).Decode(&books)
+    assert.NoError(t, err)
+    assert.Equal(t, 2, len(books))
+    assert.Equal(t, "Sample Book", books[0].BookTitle)
+    assert.Equal(t, "Doe", books[0].AuthorLastname)
+    assert.Equal(t, "John", books[0].AuthorFirstname)
+}
+
+func TestGetAllBooks_ErrorQuery(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/books", nil)
+    assert.NoError(t, err)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT (.+) FROM books JOIN authors ON books.author_id = authors.id`).
+        WillReturnError(fmt.Errorf("database query error"))
+
+    handler := http.HandlerFunc(app.GetAllBooks)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error executing query", "Expected 'Error executing query' in response")
+}
+
+
+func TestGetAllBooks_ErrorScan(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/books", nil)
+    assert.NoError(t, err)
+
+    rr := httptest.NewRecorder()
+
+    rows := sqlmock.NewRows([]string{
+        "book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
+    }).
+        AddRow("invalid_id", "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John")
+
+    mock.ExpectQuery(`SELECT (.+) FROM books JOIN authors ON books.author_id = authors.id`).
+        WillReturnRows(rows)
+
+    handler := http.HandlerFunc(app.GetAllBooks)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error scanning books")
+}
+
 
 // TestGetAuthorsAndBooks tests the GetAuthorsAndBooks handler
 func TestGetAuthorsAndBooks(t *testing.T) {
