@@ -1,0 +1,76 @@
+version: "2"
+name: Test Borrow and Return Book Handlers
+
+vars:
+  api.url: "http://localhost:8081"
+
+steps:
+  # Step 1: Test BorrowBook with valid data
+  - name: Borrow a book with valid data
+    type: http
+    method: POST
+    url: "{{ api.url }}/borrow-book"
+    body: |
+      {
+        "subscriber_id": 1,
+        "book_id": 1
+      }
+    assertions:
+      - result.statuscode ShouldEqual 201
+      - result.bodyjson.message ShouldEqual "Book borrowed successfully"
+
+  # Step 2: Test BorrowBook with already borrowed book
+  - name: Try to borrow an already borrowed book
+    type: http
+    method: POST
+    url: "{{ api.url }}/borrow-book"
+    body: |
+      {
+        "subscriber_id": 1,
+        "book_id": 1
+      }
+    assertions:
+      - result.statuscode ShouldEqual 409
+      - result.body ShouldContain "Book is already borrowed"
+
+  # Step 3: Test BorrowBook with missing fields
+  - name: BorrowBook with missing fields
+    type: http
+    method: POST
+    url: "{{ api.url }}/borrow-book"
+    body: |
+      {
+        "subscriber_id": 0,
+        "book_id": 1
+      }
+    assertions:
+      - result.statuscode ShouldEqual 400
+      - result.body ShouldContain "Missing required fields"
+
+  # Step 4: Test ReturnBorrowedBook with valid data
+  - name: Return a borrowed book
+    type: http
+    method: POST
+    url: "{{ api.url }}/return-borrowed-book"
+    body: |
+      {
+        "subscriber_id": 1,
+        "book_id": 1
+      }
+    assertions:
+      - result.statuscode ShouldEqual 200
+      - result.body ShouldContain "Book returned successfully"
+
+  # Step 5: Test ReturnBorrowedBook for a book not borrowed
+  - name: Try to return a book that was not borrowed
+    type: http
+    method: POST
+    url: "{{ api.url }}/return-borrowed-book"
+    body: |
+      {
+        "subscriber_id": 1,
+        "book_id": 2
+      }
+    assertions:
+      - result.statuscode ShouldEqual 400
+      - result.body ShouldContain "Book is not borrowed"

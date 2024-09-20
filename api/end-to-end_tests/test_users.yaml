@@ -1,0 +1,63 @@
+name: User signup and login tests
+
+vars:
+  api.url: "http://localhost:8081"
+  mysql.url: "filip:password@(localhost:4450)/db"
+
+steps:
+  # Step 1: Test Signup with valid data
+  - name: Signup with valid data
+    type: http
+    method: POST
+    url: "{{ api.url }}/signup"
+    body: |
+      {
+        "email": "testuser@gmail.com",
+        "password": "password123"
+      }
+    assertions:
+      - result.statuscode ShouldEqual 201
+      - result.bodyjson.message ShouldEqual "User registered successfully"
+
+  # Step 2: Test Login with valid credentials
+  - name: Login with valid credentials
+    type: http
+    method: POST
+    url: "{{ api.url }}/login"
+    body: |
+      {
+        "email": "testuser@gmail.com",
+        "password": "password123"
+      }
+    assertions:
+      - result.statuscode ShouldEqual 200
+      - result.bodyjson.message ShouldEqual "User logged in successfully"
+      - result.bodyjson.existingUserID ShouldNotBeEmpty
+
+  # Step 3: Test Login with invalid credentials
+  - name: Login with invalid credentials
+    type: http
+    method: POST
+    url: "{{ api.url }}/login"
+    body: |
+      {
+        "email": "testuser@gmail.com",
+        "password": "wrongpassword"
+      }
+    assertions:
+      - result.statuscode ShouldEqual 400
+      - result.bodyjson.message ShouldEqual "Invalid email or password"
+
+  # Step 4: Test Signup with an already registered email
+  - name: Signup with existing email
+    type: http
+    method: POST
+    url: "{{ api.url }}/signup"
+    body: |
+      {
+        "email": "testuser@gmail.com",
+        "password": "anotherpassword"
+      }
+    assertions:
+      - result.statuscode ShouldEqual 409
+      - result.bodyjson.message ShouldEqual "Email already in use"
