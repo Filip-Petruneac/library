@@ -60,7 +60,6 @@ func TestInitDB(t *testing.T) {
 
 	dsn := "user:password@tcp(localhost:3306)/testdb"
 
-
 	originalSQLOpen := sqlOpen  
 	sqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
 		if dataSourceName == dsn {
@@ -228,7 +227,6 @@ func TestRespondWithJSON(t *testing.T) {
     RespondWithJSON(rr, http.StatusOK, payload)
   
     assert.Equal(t, "application/json", rr.Header().Get("Content-Type"), "Content-Type should be application/json")
-
     assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
     expectedBody, _ := json.Marshal(payload)
@@ -625,8 +623,7 @@ func TestScanBooks_ErrorAfterIteration(t *testing.T) {
     }
 }
 
-
-/// TestGetAuthors tests the GetAuthors handler with Dependency Injection
+// TestGetAuthors tests the GetAuthors handler with Dependency Injection
 func TestGetAuthors(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
@@ -714,7 +711,6 @@ func TestGetAuthors_ErrorScanningRows(t *testing.T) {
 	}
 }
 
-
 // TestGetAllBooks tests the GetAllBooks handler
 func TestGetAllBooks_Success(t *testing.T) {
     app, mock := createTestApp(t)
@@ -767,7 +763,6 @@ func TestGetAllBooks_ErrorQuery(t *testing.T) {
     assert.Contains(t, rr.Body.String(), "Error executing query", "Expected 'Error executing query' in response")
 }
 
-
 func TestGetAllBooks_ErrorScan(t *testing.T) {
     app, mock := createTestApp(t)
     defer app.DB.Close()
@@ -792,109 +787,172 @@ func TestGetAllBooks_ErrorScan(t *testing.T) {
     assert.Contains(t, rr.Body.String(), "Error scanning books")
 }
 
+// GetAuthorsAndBooks handler tests
+func TestGetAuthorsAndBooks_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-// TestGetAuthorsAndBooks tests the GetAuthorsAndBooks handler
-func TestGetAuthorsAndBooks(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+    req, err := http.NewRequest("GET", "/authorsbooks", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
 
-	// Setting up SQL mock expectations
-	rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "book_title", "book_photo"}).
-		AddRow("John", "Doe", "Book Title 1", "book1.jpg").
-		AddRow("Jane", "Smith", "Book Title 2", "book2.jpg")
+    rr := httptest.NewRecorder()
 
-	mock.ExpectQuery("SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo").
-		WillReturnRows(rows)
+    rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "book_title", "book_photo"}).
+        AddRow("John", "Doe", "Book 1", "book1.jpg").
+        AddRow("Jane", "Smith", "Book 2", "book2.jpg")
 
-	// Creating a new HTTP request
-	req, err := http.NewRequest("GET", "/authorsbooks", nil)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id`).
+        WillReturnRows(rows)
 
-	// Capturing the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.GetAuthorsAndBooks)
-	handler.ServeHTTP(rr, req)
+    handler := http.HandlerFunc(app.GetAuthorsAndBooks)
+    handler.ServeHTTP(rr, req)
 
-	// Ensuring the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
 
-	// Checking the JSON response
-	var authorsAndBooks []AuthorBook
-	err = json.NewDecoder(rr.Body).Decode(&authorsAndBooks)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
-
-	// Verifying the response data
-	assert.Equal(t, 2, len(authorsAndBooks))
-	assert.Equal(t, "John", authorsAndBooks[0].AuthorFirstname)
-	assert.Equal(t, "Doe", authorsAndBooks[0].AuthorLastname)
-	assert.Equal(t, "Book Title 1", authorsAndBooks[0].BookTitle)
-	assert.Equal(t, "book1.jpg", authorsAndBooks[0].BookPhoto)
-
-	// Ensuring all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    expected := []map[string]interface{}{
+        {"author_firstname": "John", "author_lastname": "Doe", "book_title": "Book 1", "book_photo": "book1.jpg"},
+        {"author_firstname": "Jane", "author_lastname": "Smith", "book_title": "Book 2", "book_photo": "book2.jpg"},
+    }
+    var actual []map[string]interface{}
+    err = json.Unmarshal(rr.Body.Bytes(), &actual)
+    assert.NoError(t, err, "Expected no error while unmarshaling JSON response")
+    assert.Equal(t, expected, actual, "Expected JSON response")
 }
 
-// TestGetAuthorBooksByID tests the GetAuthorBooksByID handler
-func TestGetAuthorBooksByID(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestGetAuthorsAndBooks_ErrorExecutingQuery(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	authorID := "1"
+    req, err := http.NewRequest("GET", "/authorsbooks", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
 
-	// Setting up SQL mock expectations
-	rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "author_photo", "book_title", "book_photo"}).
-		AddRow("John", "Doe", "john.jpg", "Book Title 1", "book1.jpg").
-		AddRow("John", "Doe", "john.jpg", "Book Title 2", "book2.jpg")
+    rr := httptest.NewRecorder()
 
-	mock.ExpectQuery("SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, a.Photo AS author_photo, b.title AS book_title, b.photo AS book_photo").
-		WithArgs(1).
-		WillReturnRows(rows)
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id`).
+        WillReturnError(fmt.Errorf("query execution error"))
 
-	// Creating a new HTTP request
-	req, err := http.NewRequest("GET", "/authors/1", nil)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
+    handler := http.HandlerFunc(app.GetAuthorsAndBooks)
+    handler.ServeHTTP(rr, req)
 
-	// Capturing the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.GetAuthorBooksByID)
-	// Using mux.Vars to mock the ID parameter
-	req = mux.SetURLVars(req, map[string]string{"id": authorID})
-	handler.ServeHTTP(rr, req)
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error executing query", "Expected error message for query execution error")
+}
 
-	// Ensuring the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+func TestGetAuthorsAndBooks_ErrorScanningRows(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Checking the JSON response
-	var authorAndBooks struct {
-		AuthorFirstname string       `json:"author_firstname"`
-		AuthorLastname  string       `json:"author_lastname"`
-		AuthorPhoto     string       `json:"author_photo"`
-		Books           []AuthorBook `json:"books"`
-	}
-	err = json.NewDecoder(rr.Body).Decode(&authorAndBooks)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
+    req, err := http.NewRequest("GET", "/authorsbooks", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
 
-	// Verifying the response data
-	assert.Equal(t, "John", authorAndBooks.AuthorFirstname)
-	assert.Equal(t, "Doe", authorAndBooks.AuthorLastname)
-	assert.Equal(t, "john.jpg", authorAndBooks.AuthorPhoto)
-	assert.Equal(t, 2, len(authorAndBooks.Books))
-	assert.Equal(t, "Book Title 1", authorAndBooks.Books[0].BookTitle)
+    rr := httptest.NewRecorder()
 
-	// Ensuring all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "book_title", "book_photo"}).
+        AddRow("invalid_data", "Doe", "Book 1", "book1.jpg").
+        RowError(0, fmt.Errorf("scan error")) 
+
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id`).
+        WillReturnRows(rows)
+
+    handler := http.HandlerFunc(app.GetAuthorsAndBooks)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error scanning authors and books", "Expected error message for scan error")
+}
+
+// GetAuthorsAndBooksByID tests
+func TestGetAuthorBooksByID_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors/1", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "book_title", "book_photo"}).
+        AddRow("John", "Doe", "Book 1", "book1.jpg").
+        AddRow("John", "Doe", "Book 2", "book2.jpg")
+
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id WHERE a.id = ?`).
+        WithArgs(1).WillReturnRows(rows)
+
+    handler := http.HandlerFunc(app.GetAuthorBooksByID)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusOK, rr.Code, "Expected status code 200")
+
+    expected := []map[string]interface{}{
+        {"author_firstname": "John", "author_lastname": "Doe", "book_title": "Book 1", "book_photo": "book1.jpg"},
+        {"author_firstname": "John", "author_lastname": "Doe", "book_title": "Book 2", "book_photo": "book2.jpg"},
+    }
+    var actual []map[string]interface{}
+    err = json.Unmarshal(rr.Body.Bytes(), &actual)
+    assert.NoError(t, err, "Expected no error while unmarshaling JSON response")
+    assert.Equal(t, expected, actual, "Expected JSON response")
+}
+
+func TestGetAuthorBooksByID_ErrorInvalidID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors/abc", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+    req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.GetAuthorBooksByID)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code, "Expected status code 400")
+    assert.Contains(t, rr.Body.String(), "Invalid author ID", "Expected 'Invalid author ID' in response")
+}
+
+func TestGetAuthorBooksByID_ErrorExecutingQuery(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors/1", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id WHERE a.id = ?`).
+        WithArgs(1).WillReturnError(fmt.Errorf("query execution error"))
+
+    handler := http.HandlerFunc(app.GetAuthorBooksByID)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error executing query", "Expected error message for query execution error")
+}
+
+func TestGetAuthorBooksByID_ErrorScanningRows(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req, err := http.NewRequest("GET", "/authors/1", nil)
+    assert.NoError(t, err, "Error should be nil when creating a new request")
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    rows := sqlmock.NewRows([]string{"author_firstname", "author_lastname", "book_title", "book_photo"}).
+        AddRow("invalid_data", "Doe", "Book 1", "book1.jpg").
+        RowError(0, fmt.Errorf("scan error")) 
+
+    mock.ExpectQuery(`SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo FROM authors_books ab JOIN authors a ON ab.author_id = a.id JOIN books b ON ab.book_id = b.id WHERE a.id = ?`).
+        WithArgs(1).WillReturnRows(rows)
+
+    handler := http.HandlerFunc(app.GetAuthorBooksByID)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code, "Expected status code 500")
+    assert.Contains(t, rr.Body.String(), "Error scanning results", "Expected error message for scan error")
 }
 
 // TestGetBookByID tests the GetBookByID handler
