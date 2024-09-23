@@ -532,60 +532,56 @@ func ScanAuthorAndBooks(rows *sql.Rows) ([]AuthorBook, error) {
 
 // GetBookByID retrieves information about a specific book based on its ID
 func (app *App) GetBookByID(w http.ResponseWriter, r *http.Request) {
-	bookID := mux.Vars(r)["id"]
-	intBookID, err := strconv.Atoi(bookID)
-	if err != nil {
-		http.Error(w, "Invalid book ID", http.StatusBadRequest)
-		return
-	}
+    app.Logger.Println("GetBookByID handler called")
 
-	query := `
-		SELECT 
-			books.title AS book_title, 
-			books.author_id AS author_id, 
-			books.photo AS book_photo, 
-			books.is_borrowed AS is_borrowed, 
-			books.id AS book_id,
-			books.details AS book_details,
-			authors.Lastname AS author_lastname, 
-			authors.Firstname AS author_firstname
-		FROM books
-		JOIN authors ON books.author_id = authors.id
-		WHERE books.id = ?
-	`
+    bookID, err := GetIDFromRequest(r, "id")
+    if err != nil {
+        HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
+        return
+    }
 
-	rows, err := app.DB.Query(query, intBookID)
-	if err != nil {
-		app.Logger.Printf("Query error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    query := `
+        SELECT 
+            books.title AS book_title, 
+            books.author_id AS author_id, 
+            books.photo AS book_photo, 
+            books.is_borrowed AS is_borrowed, 
+            books.id AS book_id,
+            books.details AS book_details,
+            authors.Lastname AS author_lastname, 
+            authors.Firstname AS author_firstname
+        FROM books
+        JOIN authors ON books.author_id = authors.id
+        WHERE books.id = ?
+    `
 
-	var book BookAuthorInfo
-	if rows.Next() {
-		if err := rows.Scan(&book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookID, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-			app.Logger.Printf("Scan error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		http.Error(w, "Book not found", http.StatusNotFound)
-		return
-	}
+    rows, err := app.DB.Query(query, bookID)
+    if err != nil {
+        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(book); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+    var book BookAuthorInfo
+    if rows.Next() {
+        if err := rows.Scan(&book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookID, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+            HandleError(w, app.Logger, "Error scanning book", err, http.StatusInternalServerError)
+            return
+        }
+    } else {
+        HandleError(w, app.Logger, "Book not found", nil, http.StatusNotFound)
+        return
+    }
+
+    RespondWithJSON(w, http.StatusOK, book)
 }
+
 
 // GetSubscribersByBookID retrieves the list of subscribers who have borrowed a specific book based on the book's ID
 func (app *App) GetSubscribersByBookID(w http.ResponseWriter, r *http.Request) {
-	bookID := mux.Vars(r)["id"]
-	if bookID == "" {
-		http.Error(w, "Missing book ID parameter", http.StatusBadRequest)
+	bookID, err := GetIDFromRequest(r, "id")
+	if err != nil {
+		HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
 		return
 	}
 
@@ -598,26 +594,14 @@ func (app *App) GetSubscribersByBookID(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := app.DB.Query(query, bookID)
 	if err != nil {
-		app.Logger.Printf("Error querying the database: %v", err)
-		http.Error(w, "Error querying the database: "+err.Error(), http.StatusInternalServerError)
+		HandleError(w, app.Logger, "Error querying the database", err, http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
 	var subscribers []Subscriber
-	for rows.Next() {
-		var subscriber Subscriber
-		if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-			app.Logger.Printf("Scan error: %v", err)
-			http.Error(w, "Error scanning row: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		subscribers = append(subscribers, subscriber)
-	}
-
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Row iteration error: %v", err)
-		http.Error(w, "Row error: "+err.Error(), http.StatusInternalServerError)
+	if err := ScanRows(rows, &subscribers); err != nil {
+		HandleError(w, app.Logger, "Error scanning subscribers", err, http.StatusInternalServerError)
 		return
 	}
 
@@ -626,46 +610,38 @@ func (app *App) GetSubscribersByBookID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(subscribers); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RespondWithJSON(w, http.StatusOK, subscribers)
+}
+
+func ScanRows(rows *sql.Rows, subscribers *[]Subscriber) error {
+    for rows.Next() {
+        var subscriber Subscriber
+        if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+            return err
+        }
+        *subscribers = append(*subscribers, subscriber)
+    }
+    return rows.Err()
 }
 
 // GetAllSubscribers retrieves all subscribers from the database
 func (app *App) GetAllSubscribers(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT lastname, firstname, email FROM subscribers"
+	
 	rows, err := app.DB.Query(query)
 	if err != nil {
-		app.Logger.Printf("Query error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		HandleError(w, app.Logger, "Error querying the database", err, http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
 	var subscribers []Subscriber
-	for rows.Next() {
-		var subscriber Subscriber
-		if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-			app.Logger.Printf("Scan error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		subscribers = append(subscribers, subscriber)
-	}
-
-	if err := rows.Err(); err != nil {
-		app.Logger.Printf("Rows error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := ScanRows(rows, &subscribers); err != nil {
+		HandleError(w, app.Logger, "Error scanning subscribers", err, http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(subscribers); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	RespondWithJSON(w, http.StatusOK, subscribers)
 }
 
 // AddAuthorPhoto handles the upload of an author's photo and updates the database
