@@ -1206,7 +1206,6 @@ func TestGetSubscribersByBookID_ScanError(t *testing.T) {
     assert.Contains(t, rr.Body.String(), "Error scanning subscribers")
 }
 
-
 // TestGetAllSubscribers tests the GetAllSubscribers handler
 func TestGetAllSubscribers_Success(t *testing.T) {
     app, mock := createTestApp(t)
@@ -1301,195 +1300,749 @@ func TestGetAllSubscribers_NoSubscribers(t *testing.T) {
     assert.Len(t, actual, 0) 
 }
 
+// Tests for AddAuthorPhoto handler
+func TestAddAuthorPhoto_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-// TestAddAuthorPhoto tests the AddAuthorPhoto handler
-func TestAddAuthorPhoto(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
 
-	authorID := "1"
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
 
-	// Set up the SQL mock expectations
-	mock.ExpectExec("^UPDATE authors SET photo = \\? WHERE id = \\?$").
-		WithArgs("./upload/1/fullsize.jpg", 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    writer.Close()
 
-	// Create a new HTTP request with a mocked file
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test.jpg")
-	if err != nil {
-		t.Fatalf("Could not create form file: %v", err)
-	}
-	part.Write([]byte("test image content"))
-	writer.Close()
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
 
-	req, err := http.NewRequest("POST", "/author/photo/1", body)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+    rr := httptest.NewRecorder()
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.AddAuthorPhoto)
-	// Use mux.Vars to mock the ID parameter
-	req = mux.SetURLVars(req, map[string]string{"id": authorID})
-	handler.ServeHTTP(rr, req)
+    mock.ExpectExec(`UPDATE authors SET photo = \? WHERE id = \?`).
+        WithArgs("./upload/1/fullsize.jpg", 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Ensure the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
 
-	// Check the response message
-	expected := "File uploaded successfully: ./upload/1/fullsize.jpg\n"
-	assert.Equal(t, expected, rr.Body.String())
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "File uploaded successfully")
+}
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+func TestAddAuthorPhoto_InvalidAuthorID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("POST", "/author/photo/abc", nil)  
+    req = mux.SetURLVars(req, map[string]string{"id": "abc"})  
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid author ID")
+}
+
+func TestAddAuthorPhoto_ErrorSavingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    originalCopy := ioCopy
+    ioCopy = func(dst io.Writer, src io.Reader) (int64, error) {
+        return 0, fmt.Errorf("Error saving file") 
+    }
+    defer func() { ioCopy = originalCopy }() 
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error saving file")
+}
+
+
+func TestAddAuthorPhoto_InvalidMethod(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/author/photo/1", nil) 
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)  
+    assert.Contains(t, rr.Body.String(), "Only POST method is supported")
+}
+
+func TestAddAuthorPhoto_ErrorGettingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    writer.Close()  
+
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error getting file from request")
+}
+
+func TestAddAuthorPhoto_ErrorCreatingDirectories(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    originalMkdirAll := mkdirAll
+    mkdirAll = func(path string, perm os.FileMode) error {
+        return fmt.Errorf("Error creating directories")
+    }
+    defer func() { mkdirAll = originalMkdirAll }()
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error creating directories")
+}
+
+func TestAddAuthorPhoto_ErrorCreatingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    originalCreate := osCreate
+    osCreate = func(name string) (*os.File, error) {
+        return nil, fmt.Errorf("Error creating file on disk")
+    }
+    defer func() { osCreate = originalCreate }() 
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error creating file on disk")
+}
+
+func TestAddAuthorPhoto_ErrorUpdatingAuthorPhotoInDB(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/author/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`UPDATE authors SET photo = ? WHERE id = ?`).
+        WithArgs("./upload/1/fullsize.jpg", 1).
+        WillReturnError(fmt.Errorf("Failed to update author photo"))
+
+    handler := http.HandlerFunc(app.AddAuthorPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to update author photo")
 }
 
 // TestAddAuthor tests the AddAuthor handler
-func TestAddAuthor(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestAddAuthor_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Setting up SQL mock expectations
-	mock.ExpectExec("INSERT INTO authors").
-		WithArgs("Doe", "John", "").
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    author := Author{Firstname: "John", Lastname: "Doe"}
+    body, err := json.Marshal(author)
+    assert.NoError(t, err)
 
-	// Creating a new HTTP request with JSON body
-	author := Author{Firstname: "John", Lastname: "Doe"}
-	body, err := json.Marshal(author)
-	if err != nil {
-		t.Fatalf("Could not marshal author: %v", err)
-	}
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	req, err := http.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+    rr := httptest.NewRecorder()
 
-	// Capturing the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.AddAuthor)
-	handler.ServeHTTP(rr, req)
+    mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
+        WithArgs("Doe", "John", "").
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Ensuring the response status is 201 Created
-	assert.Equal(t, http.StatusCreated, rr.Code)
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
 
-	// Checking the JSON response
-	var response map[string]int
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
+    assert.Equal(t, http.StatusCreated, rr.Code)
 
-	// Verifying the response data
-	assert.Equal(t, 1, response["id"])
+    var response map[string]int
+    err = json.NewDecoder(rr.Body).Decode(&response)
+    assert.NoError(t, err)
 
-	// Ensuring all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    assert.Equal(t, 1, response["id"], "Expected inserted author ID to be 1")
 }
 
-// TestAddBookPhoto tests the AddBookPhoto handler
-func TestAddBookPhoto(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestAddAuthor_InvalidJSON(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
 
-	bookID := "1"
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer([]byte("invalid json")))
+    req.Header.Set("Content-Type", "application/json")
 
-	// Set up the SQL mock expectations
-	mock.ExpectExec("^UPDATE books SET photo = \\? WHERE id = \\?$").
-		WithArgs("./upload/books/1/fullsize.jpg", 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    rr := httptest.NewRecorder()
 
-	// Create a new HTTP request with a mocked file
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test.jpg")
-	if err != nil {
-		t.Fatalf("Could not create form file: %v", err)
-	}
-	part.Write([]byte("test image content"))
-	writer.Close()
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
 
-	req, err := http.NewRequest("POST", "/books/photo/1", body)
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+}
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.AddBookPhoto)
-	// Use mux.Vars to mock the ID parameter
-	req = mux.SetURLVars(req, map[string]string{"id": bookID})
-	handler.ServeHTTP(rr, req)
+func TestAddAuthor_FailedToInsert(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Ensure the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+    author := Author{Firstname: "John", Lastname: "Doe"}
+    body, err := json.Marshal(author)
+    assert.NoError(t, err)
 
-	// Check the response message
-	expected := "File uploaded successfully: ./upload/books/1/fullsize.jpg\n"
-	assert.Equal(t, expected, rr.Body.String())
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
+        WillReturnError(fmt.Errorf("failed to insert author"))
+
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to insert author")
+}
+
+func TestAddAuthor_FailedToGetLastInsertID(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    author := Author{Firstname: "John", Lastname: "Doe"}
+    body, err := json.Marshal(author)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
+        WithArgs("Doe", "John", "").
+        WillReturnResult(sqlmock.NewResult(0, 1)) 
+
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to get last insert ID")
+}
+
+func TestAddAuthor_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/authors/new", nil)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only POST method is supported")
+}
+
+type errorWriter struct{}
+
+func (e *errorWriter) Header() http.Header {
+    return http.Header{}
+}
+
+func (e *errorWriter) Write([]byte) (int, error) {
+    return 0, fmt.Errorf("error encoding json")
+}
+
+func (e *errorWriter) WriteHeader(statusCode int) {}
+
+func TestAddAuthor_FailedToEncodeJSON(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    author := Author{Firstname: "John", Lastname: "Doe"}
+    body, err := json.Marshal(author)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := &errorWriter{}
+
+    mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
+        WithArgs("Doe", "John", "").
+        WillReturnResult(sqlmock.NewResult(1, 1))  
+
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
+
+}
+
+func TestAddAuthor_InvalidAuthorData(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    author := Author{Firstname: "", Lastname: ""}
+    body, err := json.Marshal(author)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "firstname and lastname are required fields")
 }
 
 // TestAddBook tests the AddBook handler
-func TestAddBook(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestAddBookPhoto_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Set up the SQL mock expectations
-	mock.ExpectExec("INSERT INTO books").
-		WithArgs("Test Book", "", "Some details", 1, false).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
 
-	// Create a new HTTP request with JSON body
-	book := Book{Title: "Test Book", AuthorID: 1, Details: "Some details", IsBorrowed: false}
-	body, err := json.Marshal(book)
-	if err != nil {
-		t.Fatalf("Could not marshal book: %v", err)
-	}
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
 
-	req, err := http.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+    writer.Close()
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.AddBook)
-	handler.ServeHTTP(rr, req)
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
 
-	// Ensure the response status is 201 Created
-	assert.Equal(t, http.StatusCreated, rr.Code)
+    rr := httptest.NewRecorder()
 
-	// Check the JSON response
-	var response map[string]int
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
+    mock.ExpectExec(`UPDATE books SET photo = \? WHERE id = \?`).
+        WithArgs("./upload/books/1/fullsize.jpg", 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Verify the response data
-	assert.Equal(t, 1, response["id"])
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "File uploaded successfully")
+}
+
+func TestAddBookPhoto_InvalidBookID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/abc", nil)
+    req = mux.SetURLVars(req, map[string]string{"id": "abc"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid book ID")
+}
+
+func TestAddBookPhoto_ErrorSavingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    originalIoCopy := ioCopy
+    ioCopy = func(dst io.Writer, src io.Reader) (int64, error) {
+        return 0, fmt.Errorf("mocked error saving file")
+    }
+    defer func() { ioCopy = originalIoCopy }() 
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error saving file")
+}
+
+func TestAddBookPhoto_InvalidMethod(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/book/photo/1", nil)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only POST method is supported")
+}
+
+func TestAddBookPhoto_ErrorGettingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error getting file from request")
+}
+
+func TestAddBookPhoto_ErrorCreatingDirectories(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    originalMkdirAll := osMkdirAll
+    osMkdirAll = func(path string, perm os.FileMode) error {
+        return fmt.Errorf("mocked error creating directories")
+    }
+    defer func() { osMkdirAll = originalMkdirAll }() 
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error creating directories")
+}
+
+func TestAddBookPhoto_ErrorCreatingFile(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    originalOsCreate := osCreate
+    osCreate = func(name string) (*os.File, error) {
+        return nil, fmt.Errorf("mocked error creating file")
+    }
+    defer func() { osCreate = originalOsCreate }() 
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Error creating file on disk")
+}
+
+func TestAddBookPhoto_ErrorUpdatingBookPhotoInDB(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    part, err := writer.CreateFormFile("file", "test.jpg")
+    assert.NoError(t, err)
+    _, err = part.Write([]byte("test data"))
+    assert.NoError(t, err)
+    writer.Close()
+
+    req := httptest.NewRequest("POST", "/book/photo/1", body)
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`UPDATE books SET photo = ? WHERE id = ?`).
+        WithArgs("./upload/books/1/fullsize.jpg", 1).
+        WillReturnError(fmt.Errorf("Failed to update book photo"))
+
+    handler := http.HandlerFunc(app.AddBookPhoto)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to update book photo")
+}
+
+// Tests for AddBook handler
+func TestAddBook_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    book := Book{
+        Title:      "Test Book",
+        Details:    "Test Details",
+        AuthorID:   1,
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(book)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    
+    mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\) VALUES \(\?, \?, \?, \?, \?\)`).
+        WithArgs("Test Book", "", "Test Details", 1, false).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusCreated, rr.Code)
+
+    var response map[string]int
+    err = json.NewDecoder(rr.Body).Decode(&response)
+    assert.NoError(t, err)
+    assert.Equal(t, 1, response["id"])
+}
+
+func TestAddBook_InvalidJSON(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer([]byte("invalid json")))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+}
+
+func TestAddBook_InvalidBookData(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    book := Book{Title: "", AuthorID: 0}
+    body, err := json.Marshal(book)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    
+    assert.Contains(t, rr.Body.String(), "title and authorID are required fields")
+}
+
+func TestAddBook_FailedToInsertBook(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    book := Book{
+        Title:      "Test Book",
+        Details:    "Test Details",
+        AuthorID:   1,
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(book)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\) VALUES \(\?, \?, \?, \?, \?\)`).
+        WithArgs("Test Book", "", "Test Details", 1, false).
+        WillReturnError(fmt.Errorf("SQL error"))
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to insert book")
+}
+
+func TestAddBook_FailedToGetLastInsertID(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    book := Book{
+        Title:      "Test Book",
+        Details:    "Test Details",
+        AuthorID:   1,
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(book)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\) VALUES \(\?, \?, \?, \?, \?\)`).
+        WithArgs("Test Book", "", "Test Details", 1, false).
+        WillReturnResult(sqlmock.NewResult(0, 1)) 
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to get last insert ID")
+}
+
+
+func TestAddBook_JSONEncodingError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    book := Book{
+        Title:      "Test Book",
+        Details:    "Test Details",
+        AuthorID:   1,
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(book)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/books/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := &errorWriter{}
+
+    mock.ExpectExec(`INSERT INTO books \(title, photo, details, author_id, is_borrowed\) VALUES \(\?, \?, \?, \?, \?\)`).
+        WithArgs("Test Book", "", "Test Details", 1, false).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    app.Logger.Printf("JSON encoding error")
+}
+
+func TestAddBook_InvalidMethod(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/books/new", nil) 
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only POST method is supported")
 }
 
 // TestAddSubscriber tests the AddSubscriber handler
