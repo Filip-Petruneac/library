@@ -56,7 +56,7 @@ testcases:
         Content-Type: application/json
       assertions:
         - result.statuscode ShouldEqual 400
-        - result.body ShouldContainSubstring "Firstname and Lastname are required fields"
+        - result.body ShouldContainSubstring "firstname and lastname are required fields"
 
 - name: create author invalid JSON
   steps:
