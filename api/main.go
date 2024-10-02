@@ -854,33 +854,26 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the JSON data received from the request
 	var subscriber Subscriber
-	err := json.NewDecoder(r.Body).Decode(&subscriber)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&subscriber); err != nil {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	// Check if all required fields are filled
 	if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
 		http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
 		return
 	}
 
-	// Query to add subscriber
 	query := `INSERT INTO subscribers (lastname, firstname, email) VALUES (?, ?, ?)`
-
-	// Execute the query
 	result, err := app.DB.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email)
 	if err != nil {
 		app.Logger.Printf("Failed to insert subscriber: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to insert subscriber: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to insert subscriber", http.StatusInternalServerError)
 		return
 	}
 
-	// Get the ID of the inserted subscriber
 	id, err := result.LastInsertId()
 	if err != nil {
 		app.Logger.Printf("Failed to get last insert ID: %v", err)
@@ -890,13 +883,9 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	// Return the response with the subscriber ID inserted
-	response := map[string]int{"id": int(id)}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(map[string]int{"id": int(id)})
 }
+
 
 // BorrowBook handles borrowing a book by a subscriber
 func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
