@@ -846,7 +846,6 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Error encoding response", http.StatusInternalServerError)
     }
 }
-
 // AddSubscriber adds a new subscriber to the database
 func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -875,7 +874,7 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id, err := result.LastInsertId()
-	if err != nil {
+	if err != nil || id == 0 {
 		app.Logger.Printf("Failed to get last insert ID: %v", err)
 		http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
 		return

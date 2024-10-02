@@ -2046,51 +2046,131 @@ func TestAddBook_InvalidMethod(t *testing.T) {
 }
 
 // TestAddSubscriber tests the AddSubscriber handler
-func TestAddSubscriber(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestAddSubscriber_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Set up the SQL mock expectations
-	mock.ExpectExec("INSERT INTO subscribers").
-		WithArgs("Doe", "John", "john.doe@example.com").
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    subscriber := Subscriber{Firstname: "John", Lastname: "Doe", Email: "john.doe@example.com"}
+    body, err := json.Marshal(subscriber)
+    assert.NoError(t, err)
 
-	// Create a new HTTP request with JSON body
-	subscriber := Subscriber{Firstname: "John", Lastname: "Doe", Email: "john.doe@example.com"}
-	body, err := json.Marshal(subscriber)
-	if err != nil {
-		t.Fatalf("Could not marshal subscriber: %v", err)
-	}
+    req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	req, err := http.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+    rr := httptest.NewRecorder()
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.AddSubscriber)
-	handler.ServeHTTP(rr, req)
+    mock.ExpectExec(`INSERT INTO subscribers \(lastname, firstname, email\) VALUES \(\?, \?, \?\)`).
+        WithArgs("Doe", "John", "john.doe@example.com").
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Ensure the response status is 201 Created
-	assert.Equal(t, http.StatusCreated, rr.Code)
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
 
-	// Check the JSON response
-	var response map[string]int
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	if err != nil {
-		t.Fatalf("Could not decode response: %v", err)
-	}
+    assert.Equal(t, http.StatusCreated, rr.Code)
 
-	// Verify the response data
-	assert.Equal(t, 1, response["id"])
-
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    var response map[string]int
+    err = json.NewDecoder(rr.Body).Decode(&response)
+    assert.NoError(t, err)
+    assert.Equal(t, 1, response["id"], "Expected inserted subscriber ID to be 1")
 }
+
+func TestAddSubscriber_InvalidJSON(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer([]byte("invalid json")))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+}
+
+func TestAddSubscriber_MissingFields(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    subscriber := Subscriber{Firstname: "", Lastname: "", Email: ""}
+    body, err := json.Marshal(subscriber)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Firstname, Lastname, and Email are required fields")
+}
+
+func TestAddSubscriber_FailedToInsert(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    subscriber := Subscriber{Firstname: "John", Lastname: "Doe", Email: "john.doe@example.com"}
+    body, err := json.Marshal(subscriber)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO subscribers \(lastname, firstname, email\) VALUES \(\?, \?, \?\)`).
+        WillReturnError(fmt.Errorf("failed to insert subscriber"))
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to insert subscriber")
+}
+
+func TestAddSubscriber_FailedToGetLastInsertID(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    subscriber := Subscriber{Firstname: "John", Lastname: "Doe", Email: "john.doe@example.com"}
+    body, err := json.Marshal(subscriber)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(`INSERT INTO subscribers \(lastname, firstname, email\) VALUES \(\?, \?, \?\)`).
+        WillReturnResult(sqlmock.NewResult(0, 1))
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to get last insert ID")
+}
+
+func TestAddSubscriber_InvalidMethod(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/subscribers/new", nil)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only POST method is supported")
+}
+
+
 
 // TestBorrowBook tests the BorrowBook handler
 func TestBorrowBook(t *testing.T) {
