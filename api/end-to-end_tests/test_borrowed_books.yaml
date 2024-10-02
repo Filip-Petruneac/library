@@ -2,7 +2,7 @@ version: "2"
 name: Test Borrow and Return Book Handlers
 
 vars:
-  api.url: "http://localhost:8081"
+  api.url: "http://localhost:8080"
 
 steps:
   # Step 1: Test BorrowBook with valid data

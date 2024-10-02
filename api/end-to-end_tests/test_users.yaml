@@ -1,7 +1,7 @@
 name: User signup and login tests
 
 vars:
-  api.url: "http://localhost:8081"
+  api.url: "http://localhost:8080"
   mysql.url: "filip:password@(localhost:4450)/db"
 
 steps:

@@ -73,43 +73,44 @@ type Book struct {
 // setupRouter configures the application's routes
 func (app *App) setupRouter() *mux.Router {
 	r := mux.NewRouter()
-	
+
+	// Attach the App's methods to each route
 	r.HandleFunc("/", app.Home).Methods("GET")
 	r.HandleFunc("/info", app.Info).Methods("GET")
-	
-	// Public routes (no authentication needed)
-	r.HandleFunc("/signup", app.SignupUser).Methods("POST")
-	r.HandleFunc("/login", app.LoginUser).Methods("POST")
+	r.HandleFunc("/books", app.GetAllBooks).Methods("GET")
+	r.HandleFunc("/authors", app.GetAuthors).Methods("GET")
+	r.HandleFunc("/authorsbooks", app.GetAuthorsAndBooks).Methods("GET")
+	r.HandleFunc("/authors/{id}", app.GetAuthorBooksByID).Methods("GET")
+	r.HandleFunc("/books/{id}", app.GetBookByID).Methods("GET")
+	r.HandleFunc("/subscribers/{id}", app.GetSubscribersByBookID).Methods("GET")
+	r.HandleFunc("/subscribers", app.GetAllSubscribers).Methods("GET")
 
-	// Protected routes (authentication required)
-	r.Handle("/books", app.VerifySessionToken(http.HandlerFunc(app.GetAllBooks))).Methods("GET")
-	r.Handle("/authors", app.VerifySessionToken(http.HandlerFunc(app.GetAuthors))).Methods("GET")
-	r.Handle("/authorsbooks", app.VerifySessionToken(http.HandlerFunc(app.GetAuthorsAndBooks))).Methods("GET")
-	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetAuthorBooksByID))).Methods("GET")
-	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetBookByID))).Methods("GET")
-	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetSubscribersByBookID))).Methods("GET")
-	r.Handle("/subscribers", app.VerifySessionToken(http.HandlerFunc(app.GetAllSubscribers))).Methods("GET")
+	// Routes for creating resources
+	r.HandleFunc("/authors/new", app.AddAuthor).Methods("POST")
+	r.HandleFunc("/books/new", app.AddBook).Methods("POST")
+	r.HandleFunc("/subscribers/new", app.AddSubscriber).Methods("POST")
+	r.HandleFunc("/book/borrow", app.BorrowBook).Methods("POST")
+	r.HandleFunc("/book/return", app.ReturnBorrowedBook).Methods("POST")
+	r.HandleFunc("/author/photo/{id}", app.AddAuthorPhoto).Methods("POST")
+	r.HandleFunc("/books/photo/{id}", app.AddBookPhoto).Methods("POST")
 
-	// Protected routes for creating resources
-	r.Handle("/authors/new", app.VerifySessionToken(http.HandlerFunc(app.AddAuthor))).Methods("POST")
-	r.Handle("/books/new", app.VerifySessionToken(http.HandlerFunc(app.AddBook))).Methods("POST")
-	r.Handle("/subscribers/new", app.VerifySessionToken(http.HandlerFunc(app.AddSubscriber))).Methods("POST")
-	r.Handle("/book/borrow", app.VerifySessionToken(http.HandlerFunc(app.BorrowBook))).Methods("POST")
-	r.Handle("/book/return", app.VerifySessionToken(http.HandlerFunc(app.ReturnBorrowedBook))).Methods("POST")
+	// Routes for updating resources
+	r.HandleFunc("/authors/{id}", app.UpdateAuthor).Methods("PUT", "POST")
+	r.HandleFunc("/books/{id}", app.UpdateBook).Methods("PUT", "POST")
+	r.HandleFunc("/subscribers/{id}", app.UpdateSubscriber).Methods("PUT", "POST")
 
-	// Other protected routes (e.g., for updating and deleting)
-	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateAuthor))).Methods("PUT", "POST")
-	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateBook))).Methods("PUT", "POST")
-	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateSubscriber))).Methods("PUT", "POST")
-
-	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteAuthor))).Methods("DELETE")
-	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteBook))).Methods("DELETE")
-	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteSubscriber))).Methods("DELETE")
+	// Routes for deleting resources
+	r.HandleFunc("/authors/{id}", app.DeleteAuthor).Methods("DELETE")
+	r.HandleFunc("/books/{id}", app.DeleteBook).Methods("DELETE")
+	r.HandleFunc("/subscribers/{id}", app.DeleteSubscriber).Methods("DELETE")
 
 	// Routes for searching
-	r.Handle("/search_books", app.VerifySessionToken(http.HandlerFunc(app.SearchBooks))).Methods("GET")
-	r.Handle("/search_authors", app.VerifySessionToken(http.HandlerFunc(app.SearchAuthors))).Methods("GET")
+	r.HandleFunc("/search_books", app.SearchBooks).Methods("GET")
+	r.HandleFunc("/search_authors", app.SearchAuthors).Methods("GET")
 
+	// Routes for login
+	r.HandleFunc("/signup", app.SignupUser).Methods("POST")
+	r.HandleFunc("/login", app.LoginUser).Methods("POST")
 	return r
 }
 
@@ -842,6 +843,7 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 }
+
 // AddSubscriber adds a new subscriber to the database
 func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -849,28 +851,35 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse the JSON data received from the request
 	var subscriber Subscriber
-	if err := json.NewDecoder(r.Body).Decode(&subscriber); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&subscriber)
+	if err != nil {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
+	// Check if all required fields are filled
 	if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
 		http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
 		return
 	}
 
+	// Query to add subscriber
 	query := `INSERT INTO subscribers (lastname, firstname, email) VALUES (?, ?, ?)`
+
+	// Execute the query
 	result, err := app.DB.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email)
 	if err != nil {
 		app.Logger.Printf("Failed to insert subscriber: %v", err)
-		http.Error(w, "Failed to insert subscriber", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to insert subscriber: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	// Get the ID of the inserted subscriber
 	id, err := result.LastInsertId()
-	if err != nil || id == 0 {
+	if err != nil {
 		app.Logger.Printf("Failed to get last insert ID: %v", err)
 		http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
 		return
@@ -878,9 +887,13 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]int{"id": int(id)})
+	// Return the response with the subscriber ID inserted
+	response := map[string]int{"id": int(id)}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		app.Logger.Printf("JSON encoding error: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 }
-
 
 // BorrowBook handles borrowing a book by a subscriber
 func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
@@ -889,6 +902,7 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse the request body to get subscriber ID and book ID
 	var requestBody struct {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
@@ -904,6 +918,7 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the book is already borrowed
 	var isBorrowed bool
 	err = app.DB.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
 	if err != nil {
@@ -916,6 +931,7 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Insert a new record in the borrowed_books table
 	_, err = app.DB.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
@@ -923,6 +939,7 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update the is_borrowed status of the book
 	_, err = app.DB.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
