@@ -998,7 +998,6 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	_, err = app.DB.Exec("UPDATE books SET is_borrowed = FALSE WHERE id = ?", requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
@@ -1010,7 +1009,6 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message": "Book returned successfully"}`)
 }
-
 
 // UpdateAuthor updates an existing author in the database
 func (app *App) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
