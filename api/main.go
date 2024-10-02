@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-	"io"
-	
-	
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -74,49 +73,48 @@ type Book struct {
 // setupRouter configures the application's routes
 func (app *App) setupRouter() *mux.Router {
 	r := mux.NewRouter()
-
-	// Attach the App's methods to each route
+	
 	r.HandleFunc("/", app.Home).Methods("GET")
 	r.HandleFunc("/info", app.Info).Methods("GET")
-	r.HandleFunc("/books", app.GetAllBooks).Methods("GET")
-	r.HandleFunc("/authors", app.GetAuthors).Methods("GET")
-	r.HandleFunc("/authorsbooks", app.GetAuthorsAndBooks).Methods("GET")
-	r.HandleFunc("/authors/{id}", app.GetAuthorBooksByID).Methods("GET")
-	r.HandleFunc("/books/{id}", app.GetBookByID).Methods("GET")
-	r.HandleFunc("/subscribers/{id}", app.GetSubscribersByBookID).Methods("GET")
-	r.HandleFunc("/subscribers", app.GetAllSubscribers).Methods("GET")
+	
+	// Public routes (no authentication needed)
+	r.HandleFunc("/signup", app.SignupUser).Methods("POST")
+	r.HandleFunc("/login", app.LoginUser).Methods("POST")
 
-	// Routes for creating resources
-	r.HandleFunc("/authors/new", app.AddAuthor).Methods("POST")
-	r.HandleFunc("/books/new", app.AddBook).Methods("POST")
-	r.HandleFunc("/subscribers/new", app.AddSubscriber).Methods("POST")
-	r.HandleFunc("/book/borrow", app.BorrowBook).Methods("POST")
-	r.HandleFunc("/book/return", app.ReturnBorrowedBook).Methods("POST")
-	r.HandleFunc("/author/photo/{id}", app.AddAuthorPhoto).Methods("POST")
-	r.HandleFunc("/books/photo/{id}", app.AddBookPhoto).Methods("POST")
+	// Protected routes (authentication required)
+	r.Handle("/books", app.VerifySessionToken(http.HandlerFunc(app.GetAllBooks))).Methods("GET")
+	r.Handle("/authors", app.VerifySessionToken(http.HandlerFunc(app.GetAuthors))).Methods("GET")
+	r.Handle("/authorsbooks", app.VerifySessionToken(http.HandlerFunc(app.GetAuthorsAndBooks))).Methods("GET")
+	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetAuthorBooksByID))).Methods("GET")
+	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetBookByID))).Methods("GET")
+	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.GetSubscribersByBookID))).Methods("GET")
+	r.Handle("/subscribers", app.VerifySessionToken(http.HandlerFunc(app.GetAllSubscribers))).Methods("GET")
 
-	// Routes for updating resources
-	r.HandleFunc("/authors/{id}", app.UpdateAuthor).Methods("PUT", "POST")
-	r.HandleFunc("/books/{id}", app.UpdateBook).Methods("PUT", "POST")
-	r.HandleFunc("/subscribers/{id}", app.UpdateSubscriber).Methods("PUT", "POST")
+	// Protected routes for creating resources
+	r.Handle("/authors/new", app.VerifySessionToken(http.HandlerFunc(app.AddAuthor))).Methods("POST")
+	r.Handle("/books/new", app.VerifySessionToken(http.HandlerFunc(app.AddBook))).Methods("POST")
+	r.Handle("/subscribers/new", app.VerifySessionToken(http.HandlerFunc(app.AddSubscriber))).Methods("POST")
+	r.Handle("/book/borrow", app.VerifySessionToken(http.HandlerFunc(app.BorrowBook))).Methods("POST")
+	r.Handle("/book/return", app.VerifySessionToken(http.HandlerFunc(app.ReturnBorrowedBook))).Methods("POST")
 
-	// Routes for deleting resources
-	r.HandleFunc("/authors/{id}", app.DeleteAuthor).Methods("DELETE")
-	r.HandleFunc("/books/{id}", app.DeleteBook).Methods("DELETE")
-	r.HandleFunc("/subscribers/{id}", app.DeleteSubscriber).Methods("DELETE")
+	// Other protected routes (e.g., for updating and deleting)
+	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateAuthor))).Methods("PUT", "POST")
+	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateBook))).Methods("PUT", "POST")
+	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.UpdateSubscriber))).Methods("PUT", "POST")
+
+	r.Handle("/authors/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteAuthor))).Methods("DELETE")
+	r.Handle("/books/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteBook))).Methods("DELETE")
+	r.Handle("/subscribers/{id}", app.VerifySessionToken(http.HandlerFunc(app.DeleteSubscriber))).Methods("DELETE")
 
 	// Routes for searching
-	r.HandleFunc("/search_books", app.SearchBooks).Methods("GET")
-	r.HandleFunc("/search_authors", app.SearchAuthors).Methods("GET")
+	r.Handle("/search_books", app.VerifySessionToken(http.HandlerFunc(app.SearchBooks))).Methods("GET")
+	r.Handle("/search_authors", app.VerifySessionToken(http.HandlerFunc(app.SearchAuthors))).Methods("GET")
 
-	// Routes for login
-	r.HandleFunc("/signup", app.SignupUser).Methods("POST") 
-    r.HandleFunc("/login", app.LoginUser).Methods("POST")
 	return r
 }
 
 func main() {
-	port := flag.String("port", "8081", "Server Port")
+	port := flag.String("port", "8080", "Server Port")
 	flag.Parse()
 
 	// Load environment variables from the .env file
@@ -174,7 +172,7 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname)
 
 	// Open a connection to the database
-	db, err := sqlOpen("mysql", dsn)  // Use the sqlOpen variable here
+	db, err := sqlOpen("mysql", dsn) // Use the sqlOpen variable here
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
@@ -201,162 +199,162 @@ func (app *App) Info(w http.ResponseWriter, r *http.Request) {
 
 // HandleError is a method of App that handles errors by logging them and sending an appropriate HTTP response
 func (app *App) HandleError(w http.ResponseWriter, message string, err error, status int) {
-    app.Logger.Printf("%s: %v", message, err)
-    http.Error(w, message, status)
+	app.Logger.Printf("%s: %v", message, err)
+	http.Error(w, message, status)
 }
 
 func RespondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
-    // Set Content-Type header to application/json
-    w.Header().Set("Content-Type", "application/json")
-    // Attempt to encode the payload
-    if err := json.NewEncoder(w).Encode(payload); err != nil {
-        log.Printf("Error encoding response: %v", err)
-        // Set Content-Type header again in case of error
-        w.Header().Set("Content-Type", "application/json")
-        // Set status to 500
-        w.WriteHeader(http.StatusInternalServerError)
-        // Write the error message, including a newline
-        w.Write([]byte("Error encoding response\n"))
-        return
-    }
-    // Set the status code
-    w.WriteHeader(status)
+	// Set Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+	// Attempt to encode the payload
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		// Set Content-Type header again in case of error
+		w.Header().Set("Content-Type", "application/json")
+		// Set status to 500
+		w.WriteHeader(http.StatusInternalServerError)
+		// Write the error message, including a newline
+		w.Write([]byte("Error encoding response\n"))
+		return
+	}
+	// Set the status code
+	w.WriteHeader(status)
 }
 
 // HandleError handles errors by logging them and sending an appropriate HTTP response
 func HandleError(w http.ResponseWriter, logger *log.Logger, message string, err error, status int) {
-    // Log the error message with additional context
-    logger.Printf("%s: %v", message, err)
-    // Send an HTTP error response with the given status code
-    http.Error(w, message, status)
+	// Log the error message with additional context
+	logger.Printf("%s: %v", message, err)
+	// Send an HTTP error response with the given status code
+	http.Error(w, message, status)
 }
 
 // GetIDFromRequest extracts and validates an ID parameter from the URL
 func GetIDFromRequest(r *http.Request, paramName string) (int, error) {
-    // Retrieve the parameter from the URL
-    vars := mux.Vars(r)
-    idStr := vars[paramName]
-    // Convert the string parameter to an integer
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        // Return an error if conversion fails, using a lowercase message
-        return 0, fmt.Errorf("invalid %s: %v", paramName, err) 
-    }
-    return id, nil
+	// Retrieve the parameter from the URL
+	vars := mux.Vars(r)
+	idStr := vars[paramName]
+	// Convert the string parameter to an integer
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		// Return an error if conversion fails, using a lowercase message
+		return 0, fmt.Errorf("invalid %s: %v", paramName, err)
+	}
+	return id, nil
 }
 
 // ScanAuthors processes rows from the SQL query and returns a list of authors
 func ScanAuthors(rows *sql.Rows) ([]Author, error) {
-    defer rows.Close()
+	defer rows.Close()
 
-    var authors []Author
+	var authors []Author
 
-    for rows.Next() {
-        var author Author
-        if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
-            return nil, err
-        }
-        authors = append(authors, author)
-    }
+	for rows.Next() {
+		var author Author
+		if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
+			return nil, err
+		}
+		authors = append(authors, author)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return authors, nil
+	return authors, nil
 }
 
 // ValidateAuthorData checks if the required fields for an author are present
 func ValidateAuthorData(author Author) error {
-    if author.Firstname == "" || author.Lastname == "" {
-        return fmt.Errorf("firstname and lastname are required fields") // Lowercase error message
-    }
-    return nil
+	if author.Firstname == "" || author.Lastname == "" {
+		return fmt.Errorf("firstname and lastname are required fields") // Lowercase error message
+	}
+	return nil
 }
 
 // ValidateBookData checks if the required fields for a book are present
 func ValidateBookData(book Book) error {
-    // Ensure Title and AuthorID are not empty or zero
-    if book.Title == "" || book.AuthorID == 0 {
-        return fmt.Errorf("title and authorID are required fields") // Lowercase error message
-    }
-    return nil
+	// Ensure Title and AuthorID are not empty or zero
+	if book.Title == "" || book.AuthorID == 0 {
+		return fmt.Errorf("title and authorID are required fields") // Lowercase error message
+	}
+	return nil
 }
 
 // SearchAuthors searches for authors based on a query parameter
 func (app *App) SearchAuthors(w http.ResponseWriter, r *http.Request) {
-    // Log the entry to the handler for debugging purposes
-    app.Logger.Println("SearchAuthors handler called")
+	// Log the entry to the handler for debugging purposes
+	app.Logger.Println("SearchAuthors handler called")
 
-    // Get the "query" parameter from the URL
-    query := r.URL.Query().Get("query")
-    if query == "" {
-        // If the query parameter is missing, return a 400 Bad Request error
-        HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
-        return
-    }
+	// Get the "query" parameter from the URL
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		// If the query parameter is missing, return a 400 Bad Request error
+		HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
+		return
+	}
 
-    // Prepare the SQL query with an ORDER BY clause to ensure consistent result order
-    sqlQuery := `
+	// Prepare the SQL query with an ORDER BY clause to ensure consistent result order
+	sqlQuery := `
         SELECT id, Firstname, Lastname, photo 
         FROM authors 
         WHERE Firstname LIKE ? OR Lastname LIKE ?
         ORDER BY Lastname, Firstname
     `
 
-    // Execute the SQL query to fetch authors based on the query parameter
-    rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
-    if err != nil {
-        // Log error executing the query and return a 500 Internal Server Error
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close() // Always close rows after use to release resources
+	// Execute the SQL query to fetch authors based on the query parameter
+	rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%")
+	if err != nil {
+		// Log error executing the query and return a 500 Internal Server Error
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close() // Always close rows after use to release resources
 
-    // Use the utility function to scan and process the SQL rows
-    authors, err := ScanAuthors(rows)
-    if err != nil {
-        // Log error scanning the rows and return a 500 Internal Server Error
-        HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
-        return
-    }
+	// Use the utility function to scan and process the SQL rows
+	authors, err := ScanAuthors(rows)
+	if err != nil {
+		// Log error scanning the rows and return a 500 Internal Server Error
+		HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
+		return
+	}
 
-    // Send the JSON response using the utility function
-    RespondWithJSON(w, http.StatusOK, authors)
+	// Send the JSON response using the utility function
+	RespondWithJSON(w, http.StatusOK, authors)
 }
 
 // ScanBooks processes rows from the SQL query and returns a list of books with author information
 func ScanBooks(rows *sql.Rows) ([]BookAuthorInfo, error) {
-    defer rows.Close()
+	defer rows.Close()
 
-    var books []BookAuthorInfo
+	var books []BookAuthorInfo
 
-    for rows.Next() {
-        var book BookAuthorInfo
-        if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-            return nil, err
-        }
-        books = append(books, book)
-    }
+	for rows.Next() {
+		var book BookAuthorInfo
+		if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return books, nil
+	return books, nil
 }
 
 // SearchBooks searches for books based on a query parameter
 func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("SearchBooks handler called")
+	app.Logger.Println("SearchBooks handler called")
 
-    query := r.URL.Query().Get("query")
-    if query == "" {
-        HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
-        return
-    }
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		HandleError(w, app.Logger, "Query parameter is required", nil, http.StatusBadRequest)
+		return
+	}
 
-    sqlQuery := `
+	sqlQuery := `
         SELECT 
             books.id AS book_id,
             books.title AS book_title, 
@@ -372,53 +370,52 @@ func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {
         ORDER BY books.title, authors.Lastname, authors.Firstname
     `
 
-    rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
-    if err != nil {
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close() 
+	rows, err := app.DB.Query(sqlQuery, "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	if err != nil {
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    books, err := ScanBooks(rows)
-    if err != nil {
-        HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
-        return
-    }
+	books, err := ScanBooks(rows)
+	if err != nil {
+		HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, books)
+	RespondWithJSON(w, http.StatusOK, books)
 }
-
 
 // GetAuthors retrieves all authors from the database
 func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("GetAuthors handler called")
+	app.Logger.Println("GetAuthors handler called")
 
-    sqlQuery := `
+	sqlQuery := `
         SELECT id, Lastname, Firstname, photo 
         FROM authors
         ORDER BY Lastname, Firstname
     `
-    rows, err := app.DB.Query(sqlQuery)
-    if err != nil {
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close()
+	rows, err := app.DB.Query(sqlQuery)
+	if err != nil {
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    authors, err := ScanAuthors(rows)
-    if err != nil {
-        HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
-        return
-    }
+	authors, err := ScanAuthors(rows)
+	if err != nil {
+		HandleError(w, app.Logger, "Error scanning authors", err, http.StatusInternalServerError)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, authors)
+	RespondWithJSON(w, http.StatusOK, authors)
 }
 
 // GetAllBooks retrieves all books from the database along with the author's first and last name
 func (app *App) GetAllBooks(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("GetAllBooks handler called")
+	app.Logger.Println("GetAllBooks handler called")
 
-    query := `
+	query := `
         SELECT 
             books.id AS book_id,
             books.title AS book_title, 
@@ -433,61 +430,61 @@ func (app *App) GetAllBooks(w http.ResponseWriter, r *http.Request) {
         ORDER BY books.title, authors.Lastname, authors.Firstname
     `
 
-    rows, err := app.DB.Query(query)
-    if err != nil {
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
+	rows, err := app.DB.Query(query)
+	if err != nil {
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
 
-    books, err := ScanBooks(rows)
-    if err != nil {
-        HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
-        return
-    }
+	books, err := ScanBooks(rows)
+	if err != nil {
+		HandleError(w, app.Logger, "Error scanning books", err, http.StatusInternalServerError)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, books)
+	RespondWithJSON(w, http.StatusOK, books)
 }
 
 // GetAuthorsAndBooks retrieves information about authors and their books
 func (app *App) GetAuthorsAndBooks(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("GetAuthorsAndBooks handler called")
+	app.Logger.Println("GetAuthorsAndBooks handler called")
 
-    query := `
+	query := `
         SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo
         FROM authors_books ab
         JOIN authors a ON ab.author_id = a.id
         JOIN books b ON ab.book_id = b.id
     `
 
-    rows, err := app.DB.Query(query)
-    if err != nil {
-        app.Logger.Printf("Query error: %v", err)
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close()
+	rows, err := app.DB.Query(query)
+	if err != nil {
+		app.Logger.Printf("Query error: %v", err)
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    authorsAndBooks, err := ScanAuthorAndBooks(rows)
-    if err != nil {
-        app.Logger.Printf("Scan error: %v", err)
-        HandleError(w, app.Logger, "Error scanning authors and books", err, http.StatusInternalServerError)
-        return
-    }
+	authorsAndBooks, err := ScanAuthorAndBooks(rows)
+	if err != nil {
+		app.Logger.Printf("Scan error: %v", err)
+		HandleError(w, app.Logger, "Error scanning authors and books", err, http.StatusInternalServerError)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, authorsAndBooks)
+	RespondWithJSON(w, http.StatusOK, authorsAndBooks)
 }
 
 // GetAuthorBooksByID retrieves information about an author and their books by the author's ID
 func (app *App) GetAuthorBooksByID(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("GetAuthorBooksByID handler called")
+	app.Logger.Println("GetAuthorBooksByID handler called")
 
-    authorID, err := GetIDFromRequest(r, "id")
-    if err != nil {
-        app.HandleError(w, "Invalid author ID", err, http.StatusBadRequest)
-        return
-    }
+	authorID, err := GetIDFromRequest(r, "id")
+	if err != nil {
+		app.HandleError(w, "Invalid author ID", err, http.StatusBadRequest)
+		return
+	}
 
-    query := `
+	query := `
         SELECT a.Firstname AS author_firstname, a.Lastname AS author_lastname, b.title AS book_title, b.photo AS book_photo
         FROM authors_books ab
         JOIN authors a ON ab.author_id = a.id
@@ -495,52 +492,52 @@ func (app *App) GetAuthorBooksByID(w http.ResponseWriter, r *http.Request) {
         WHERE a.id = ?
     `
 
-    rows, err := app.DB.Query(query, authorID)
-    if err != nil {
-        app.HandleError(w, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close()
+	rows, err := app.DB.Query(query, authorID)
+	if err != nil {
+		app.HandleError(w, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    authorAndBooks, err := ScanAuthorAndBooks(rows)
-    if err != nil {
-        app.HandleError(w, "Error scanning results", err, http.StatusInternalServerError)
-        return
-    }
+	authorAndBooks, err := ScanAuthorAndBooks(rows)
+	if err != nil {
+		app.HandleError(w, "Error scanning results", err, http.StatusInternalServerError)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, authorAndBooks)
+	RespondWithJSON(w, http.StatusOK, authorAndBooks)
 }
 
 // ScanAuthorAndBooks processes rows from the SQL query and returns a list of author and book information
 func ScanAuthorAndBooks(rows *sql.Rows) ([]AuthorBook, error) {
-    var authorsAndBooks []AuthorBook
+	var authorsAndBooks []AuthorBook
 
-    for rows.Next() {
-        var authorBook AuthorBook
-        if err := rows.Scan(&authorBook.AuthorFirstname, &authorBook.AuthorLastname, &authorBook.BookTitle, &authorBook.BookPhoto); err != nil {
-            return nil, err 
-        }
-        authorsAndBooks = append(authorsAndBooks, authorBook)
-    }
+	for rows.Next() {
+		var authorBook AuthorBook
+		if err := rows.Scan(&authorBook.AuthorFirstname, &authorBook.AuthorLastname, &authorBook.BookTitle, &authorBook.BookPhoto); err != nil {
+			return nil, err
+		}
+		authorsAndBooks = append(authorsAndBooks, authorBook)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err 
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return authorsAndBooks, nil
+	return authorsAndBooks, nil
 }
 
 // GetBookByID retrieves information about a specific book based on its ID
 func (app *App) GetBookByID(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("GetBookByID handler called")
+	app.Logger.Println("GetBookByID handler called")
 
-    bookID, err := GetIDFromRequest(r, "id")
-    if err != nil {
-        HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
-        return
-    }
+	bookID, err := GetIDFromRequest(r, "id")
+	if err != nil {
+		HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
+		return
+	}
 
-    query := `
+	query := `
         SELECT 
             books.title AS book_title, 
             books.author_id AS author_id, 
@@ -555,27 +552,26 @@ func (app *App) GetBookByID(w http.ResponseWriter, r *http.Request) {
         WHERE books.id = ?
     `
 
-    rows, err := app.DB.Query(query, bookID)
-    if err != nil {
-        HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close()
+	rows, err := app.DB.Query(query, bookID)
+	if err != nil {
+		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    var book BookAuthorInfo
-    if rows.Next() {
-        if err := rows.Scan(&book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookID, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-            HandleError(w, app.Logger, "Error scanning book", err, http.StatusInternalServerError)
-            return
-        }
-    } else {
-        HandleError(w, app.Logger, "Book not found", nil, http.StatusNotFound)
-        return
-    }
+	var book BookAuthorInfo
+	if rows.Next() {
+		if err := rows.Scan(&book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookID, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
+			HandleError(w, app.Logger, "Error scanning book", err, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		HandleError(w, app.Logger, "Book not found", nil, http.StatusNotFound)
+		return
+	}
 
-    RespondWithJSON(w, http.StatusOK, book)
+	RespondWithJSON(w, http.StatusOK, book)
 }
-
 
 // GetSubscribersByBookID retrieves the list of subscribers who have borrowed a specific book based on the book's ID
 func (app *App) GetSubscribersByBookID(w http.ResponseWriter, r *http.Request) {
@@ -614,20 +610,20 @@ func (app *App) GetSubscribersByBookID(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRows(rows *sql.Rows, subscribers *[]Subscriber) error {
-    for rows.Next() {
-        var subscriber Subscriber
-        if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-            return err
-        }
-        *subscribers = append(*subscribers, subscriber)
-    }
-    return rows.Err()
+	for rows.Next() {
+		var subscriber Subscriber
+		if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
+			return err
+		}
+		*subscribers = append(*subscribers, subscriber)
+	}
+	return rows.Err()
 }
 
 // GetAllSubscribers retrieves all subscribers from the database
 func (app *App) GetAllSubscribers(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT lastname, firstname, email FROM subscribers"
-	
+
 	rows, err := app.DB.Query(query)
 	if err != nil {
 		HandleError(w, app.Logger, "Error querying the database", err, http.StatusInternalServerError)
@@ -646,107 +642,107 @@ func (app *App) GetAllSubscribers(w http.ResponseWriter, r *http.Request) {
 
 var mkdirAll = os.MkdirAll
 var osCreate = os.Create
-var ioCopy = io.Copy 
+var ioCopy = io.Copy
 
 // AddAuthorPhoto handles the upload of an author's photo and updates the database
 func (app *App) AddAuthorPhoto(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("AddAuthorPhoto handler called")
+	app.Logger.Println("AddAuthorPhoto handler called")
 
-    if r.Method != http.MethodPost {
-        HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPost {
+		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
+		return
+	}
 
-    authorID, err := GetIDFromRequest(r, "id")
-    if err != nil {
-        HandleError(w, app.Logger, "Invalid author ID", err, http.StatusBadRequest)
-        return
-    }
+	authorID, err := GetIDFromRequest(r, "id")
+	if err != nil {
+		HandleError(w, app.Logger, "Invalid author ID", err, http.StatusBadRequest)
+		return
+	}
 
-    file, _, err := r.FormFile("file")
-    if err != nil {
-        HandleError(w, app.Logger, "Error getting file from request", err, http.StatusInternalServerError)
-        return
-    }
-    defer file.Close()
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		HandleError(w, app.Logger, "Error getting file from request", err, http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
 
-    filename := "fullsize.jpg"
-    ext := filepath.Ext(filename)
+	filename := "fullsize.jpg"
+	ext := filepath.Ext(filename)
 
-    photoDir := "./upload/" + strconv.Itoa(authorID)
-    photoPath := photoDir + "/fullsize" + ext
+	photoDir := "./upload/" + strconv.Itoa(authorID)
+	photoPath := photoDir + "/fullsize" + ext
 
-    if err := mkdirAll(photoDir, 0777); err != nil {
-        HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
-        return
-    }
+	if err := mkdirAll(photoDir, 0777); err != nil {
+		HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
+		return
+	}
 
-    out, err := osCreate(photoPath) 
-    if err != nil {
-        HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
-        return
-    }
-    defer out.Close()
+	out, err := osCreate(photoPath)
+	if err != nil {
+		HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
 
-    if _, err := ioCopy(out, file); err != nil {
-        HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
-        return
-    }
+	if _, err := ioCopy(out, file); err != nil {
+		HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
+		return
+	}
 
-    query := `UPDATE authors SET photo = ? WHERE id = ?`
-    if _, err := app.DB.Exec(query, photoPath, authorID); err != nil {
-        HandleError(w, app.Logger, "Failed to update author photo", err, http.StatusInternalServerError)
-        return
-    }
+	query := `UPDATE authors SET photo = ? WHERE id = ?`
+	if _, err := app.DB.Exec(query, photoPath, authorID); err != nil {
+		HandleError(w, app.Logger, "Failed to update author photo", err, http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
 }
 
 var jsonEncoder = json.NewEncoder
 
 // AddAuthor adds a new author to the database
 func (app *App) AddAuthor(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("AddAuthor handler called")
+	app.Logger.Println("AddAuthor handler called")
 
-    if r.Method != http.MethodPost {
-        HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPost {
+		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
+		return
+	}
 
-    var author Author
-    if err := json.NewDecoder(r.Body).Decode(&author); err != nil {
-        HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
-        return
-    }
-    defer r.Body.Close()
+	var author Author
+	if err := json.NewDecoder(r.Body).Decode(&author); err != nil {
+		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-    if err := ValidateAuthorData(author); err != nil {
-        HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
-        return
-    }
+	if err := ValidateAuthorData(author); err != nil {
+		HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
 
-    query := `INSERT INTO authors (lastname, firstname, photo) VALUES (?, ?, ?)`
-    result, err := app.DB.Exec(query, author.Lastname, author.Firstname, "")
-    if err != nil {
-        HandleError(w, app.Logger, "Failed to insert author", err, http.StatusInternalServerError)
-        return
-    }
+	query := `INSERT INTO authors (lastname, firstname, photo) VALUES (?, ?, ?)`
+	result, err := app.DB.Exec(query, author.Lastname, author.Firstname, "")
+	if err != nil {
+		HandleError(w, app.Logger, "Failed to insert author", err, http.StatusInternalServerError)
+		return
+	}
 
-    id, err := result.LastInsertId()
-    if err != nil || id == 0 {  
-        HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
-        return
-    }
+	id, err := result.LastInsertId()
+	if err != nil || id == 0 {
+		HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 
-    response := map[string]int{"id": int(id)}
-    if err := jsonEncoder(w).Encode(response); err != nil {
-        app.Logger.Printf("JSON encoding error: %v", err)
-        http.Error(w, "Error encoding response", http.StatusInternalServerError)
-    }
+	response := map[string]int{"id": int(id)}
+	if err := jsonEncoder(w).Encode(response); err != nil {
+		app.Logger.Printf("JSON encoding error: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 }
 
 // Define a global variable for os.MkdirAll to allow overriding in tests
@@ -754,97 +750,97 @@ var osMkdirAll = os.MkdirAll
 
 // AddBookPhoto handles the upload of a book's photo and updates the database
 func (app *App) AddBookPhoto(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("AddBookPhoto handler called")
+	app.Logger.Println("AddBookPhoto handler called")
 
-    if r.Method != http.MethodPost {
-        HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPost {
+		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
+		return
+	}
 
-    bookID, err := GetIDFromRequest(r, "id")
-    if err != nil {
-        HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
-        return
-    }
+	bookID, err := GetIDFromRequest(r, "id")
+	if err != nil {
+		HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
+		return
+	}
 
-    file, _, err := r.FormFile("file")
-    if err != nil {
-        HandleError(w, app.Logger, "Error getting file from request", err, http.StatusInternalServerError)
-        return
-    }
-    defer file.Close()
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		HandleError(w, app.Logger, "Error getting file from request", err, http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
 
-    photoDir := "./upload/books/" + strconv.Itoa(bookID)
-    photoPath := photoDir + "/fullsize.jpg"
+	photoDir := "./upload/books/" + strconv.Itoa(bookID)
+	photoPath := photoDir + "/fullsize.jpg"
 
-    if err := osMkdirAll(photoDir, 0777); err != nil {
-        HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
-        return
-    }
+	if err := osMkdirAll(photoDir, 0777); err != nil {
+		HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
+		return
+	}
 
-    out, err := osCreate(photoPath)
-    if err != nil {
-        HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
-        return
-    }
-    defer out.Close()
+	out, err := osCreate(photoPath)
+	if err != nil {
+		HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
 
-    if _, err := ioCopy(out, file); err != nil {
-        HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
-        return
-    }
+	if _, err := ioCopy(out, file); err != nil {
+		HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
+		return
+	}
 
-    query := `UPDATE books SET photo = ? WHERE id = ?`
-    if _, err := app.DB.Exec(query, photoPath, bookID); err != nil {
-        HandleError(w, app.Logger, "Failed to update book photo", err, http.StatusInternalServerError)
-        return
-    }
+	query := `UPDATE books SET photo = ? WHERE id = ?`
+	if _, err := app.DB.Exec(query, photoPath, bookID); err != nil {
+		HandleError(w, app.Logger, "Failed to update book photo", err, http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
 }
 
 // AddBook adds a new book to the database
 func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
-    app.Logger.Println("AddBook handler called")
+	app.Logger.Println("AddBook handler called")
 
-    if r.Method != http.MethodPost {
-        HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-        return
-    }
+	if r.Method != http.MethodPost {
+		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
+		return
+	}
 
-    var book Book
-    if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
-        HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
-        return
-    }
-    defer r.Body.Close()
+	var book Book
+	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-    if err := ValidateBookData(book); err != nil {
-        HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
-        return
-    }
+	if err := ValidateBookData(book); err != nil {
+		HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
+		return
+	}
 
-    query := `INSERT INTO books (title, photo, details, author_id, is_borrowed) VALUES (?, ?, ?, ?, ?)`
-    result, err := app.DB.Exec(query, book.Title, "", book.Details, book.AuthorID, book.IsBorrowed)
-    if err != nil {
-        HandleError(w, app.Logger, "Failed to insert book", err, http.StatusInternalServerError)
-        return
-    }
+	query := `INSERT INTO books (title, photo, details, author_id, is_borrowed) VALUES (?, ?, ?, ?, ?)`
+	result, err := app.DB.Exec(query, book.Title, "", book.Details, book.AuthorID, book.IsBorrowed)
+	if err != nil {
+		HandleError(w, app.Logger, "Failed to insert book", err, http.StatusInternalServerError)
+		return
+	}
 
-    id, err := result.LastInsertId()
-    if err != nil || id == 0 {
-        HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
-        return
-    }
+	id, err := result.LastInsertId()
+	if err != nil || id == 0 {
+		HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    response := map[string]int{"id": int(id)}
-    if err := json.NewEncoder(w).Encode(response); err != nil {
-        app.Logger.Printf("JSON encoding error: %v", err)
-        http.Error(w, "Error encoding response", http.StatusInternalServerError)
-    }
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	response := map[string]int{"id": int(id)}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		app.Logger.Printf("JSON encoding error: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+	}
 }
 
 // AddSubscriber adds a new subscriber to the database
