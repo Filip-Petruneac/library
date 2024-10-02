@@ -946,7 +946,6 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the request body to get subscriber ID and book ID
 	var requestBody struct {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
@@ -957,7 +956,11 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the book is actually borrowed by the subscriber
+	if requestBody.SubscriberID == 0 || requestBody.BookID == 0 {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
 	var isBorrowed bool
 	err = app.DB.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
 	if err != nil {
@@ -965,7 +968,7 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Book not found", http.StatusNotFound)
 		} else {
 			app.Logger.Printf("Database error: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -975,25 +978,26 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update borrowed_books table to mark book as returned
 	_, err = app.DB.Exec("UPDATE borrowed_books SET return_date = NOW() WHERE subscriber_id = ? AND book_id = ?", requestBody.SubscriberID, requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Update books table to mark book as not borrowed
+
 	_, err = app.DB.Exec("UPDATE books SET is_borrowed = FALSE WHERE id = ?", requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Book returned successfully")
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"message": "Book returned successfully"}`)
 }
+
 
 // UpdateAuthor updates an existing author in the database
 func (app *App) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
