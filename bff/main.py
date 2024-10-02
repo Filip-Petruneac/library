@@ -42,8 +42,19 @@ def validate_body_length(max_length, field_limits=None):
 @app.route('/')
 def index():
     try:
-        response = requests.get(f"{API_URL}/books")
+        session_token = request.cookies.get('token')
+
+        if not session_token:
+            return redirect('/login')
+
+        # Set up headers to include the session token cookie when sending the request to the API
+        headers = {
+            'Cookie': f'token={session_token}'
+        }
+
+        response = requests.get(f"{API_URL}/books", headers=headers)
         if response.status_code != 200:
+            print(response.status_code)
             return "You are unathorized!", 400
         books = response.json()
         return render_template('books.html', books=books)
@@ -112,7 +123,17 @@ def book_details(book_id):
 @app.route('/subscribers', methods=['GET'])
 def get_subscribers():
     try:
-        response = requests.get(f"{API_URL}/subscribers")
+        session_token = request.cookies.get('token')
+
+        if not session_token:
+            return redirect('/login')
+
+        # Set up headers to include the session token cookie when sending the request to the API
+        headers = {
+            'Cookie': f'token={session_token}'
+        }
+
+        response = requests.get(f"{API_URL}/subscribers", headers=headers)
         if response.status_code == 200:
             subscribers = response.json()
             return render_template('subscribers.html', subscribers=subscribers)
@@ -127,7 +148,17 @@ def get_subscribers():
 @app.route('/authors', methods=['GET'])
 def get_authors():
     try:
-        response = requests.get(f"{API_URL}/authors")
+        session_token = request.cookies.get('token')
+
+        if not session_token:
+            return redirect('/login')
+
+        # Set up headers to include the session token cookie when sending the request to the API
+        headers = {
+            'Cookie': f'token={session_token}'
+        }
+
+        response = requests.get(f"{API_URL}/authors", headers=headers)
         if response.status_code != 200:
             return "You are unathorized!", 400
         

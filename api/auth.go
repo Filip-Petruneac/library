@@ -191,23 +191,25 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Add the session to the session store
 	sessionStore.Add(token, Session{
-		UserID:    existingUserID, 
+		UserID:    existingUserID,
 		ExpiresAt: sessionExpiration,
 	})
 
 	// Respond to the client with the session token
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"token":           token,
-		"existingUserID":  existingUserID,
-		"message":         "User logged in successfully",
+		"token":          token,
+		"existingUserID": existingUserID,
+		"message":        "User logged in successfully",
 	})
 }
 
 func (app *App) VerifySessionToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("works")
 		// Get the session token from the cookie
-		cookie, err := r.Cookie("session_token")
+		cookie, err := r.Cookie("token")
+		fmt.Println("Cookie name", cookie)
 		if err != nil {
 			if err == http.ErrNoCookie {
 				// If the cookie is not set, return an unauthorized status
