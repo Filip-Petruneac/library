@@ -2,7 +2,7 @@ version: "2"
 name: test /authors
 vars:
   mysql.url: "filip:password@(localhost:4450)/db"
-  api.url: "http://localhost:8081"
+  api.url: "http://localhost:8080"
 
 testcases:
 - name: clean db

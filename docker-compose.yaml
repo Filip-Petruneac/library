@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.api
     container_name: api
     ports:
-      - 8081:8081
+      - 8080:8080
     restart: always
     networks:
       - my-network
