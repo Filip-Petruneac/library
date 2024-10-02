@@ -842,7 +842,6 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding response", http.StatusInternalServerError)
 	}
 }
-
 // AddSubscriber adds a new subscriber to the database
 func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -850,35 +849,28 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the JSON data received from the request
 	var subscriber Subscriber
-	err := json.NewDecoder(r.Body).Decode(&subscriber)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&subscriber); err != nil {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	// Check if all required fields are filled
 	if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
 		http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
 		return
 	}
 
-	// Query to add subscriber
 	query := `INSERT INTO subscribers (lastname, firstname, email) VALUES (?, ?, ?)`
-
-	// Execute the query
 	result, err := app.DB.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email)
 	if err != nil {
 		app.Logger.Printf("Failed to insert subscriber: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to insert subscriber: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to insert subscriber", http.StatusInternalServerError)
 		return
 	}
 
-	// Get the ID of the inserted subscriber
 	id, err := result.LastInsertId()
-	if err != nil {
+	if err != nil || id == 0 {
 		app.Logger.Printf("Failed to get last insert ID: %v", err)
 		http.Error(w, "Failed to get last insert ID", http.StatusInternalServerError)
 		return
@@ -886,13 +878,9 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	// Return the response with the subscriber ID inserted
-	response := map[string]int{"id": int(id)}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(map[string]int{"id": int(id)})
 }
+
 
 // BorrowBook handles borrowing a book by a subscriber
 func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
@@ -901,7 +889,6 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the request body to get subscriber ID and book ID
 	var requestBody struct {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
@@ -917,7 +904,6 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the book is already borrowed
 	var isBorrowed bool
 	err = app.DB.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
 	if err != nil {
@@ -930,7 +916,6 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert a new record in the borrowed_books table
 	_, err = app.DB.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
@@ -938,7 +923,6 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the is_borrowed status of the book
 	_, err = app.DB.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID)
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
