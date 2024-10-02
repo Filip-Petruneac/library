@@ -1101,62 +1101,62 @@ func (app *App) UpdateBook(w http.ResponseWriter, r *http.Request) {
 
 // UpdateSubscriber updates an existing subscriber in the database
 func (app *App) UpdateSubscriber(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut && r.Method != http.MethodPost {
-		http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPut && r.Method != http.MethodPost {
+        HandleError(w, app.Logger, "Only PUT or POST methods are supported", nil, http.StatusMethodNotAllowed)
+        return
+    }
 
-	// Extract the subscriber ID from the URL path
-	vars := mux.Vars(r)
-	subscriberID, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
-		return
-	}
+    subscriberID, err := GetIDFromRequest(r, "id")
+    if err != nil {
+        HandleError(w, app.Logger, "Invalid subscriber ID", err, http.StatusBadRequest)
+        return
+    }
 
-	// Parse the JSON data received from the request
-	var subscriber Subscriber
-	err = json.NewDecoder(r.Body).Decode(&subscriber)
-	if err != nil {
-		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
+    var subscriber Subscriber
+    if err := json.NewDecoder(r.Body).Decode(&subscriber); err != nil {
+        HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
+        return
+    }
+    defer r.Body.Close()
 
-	// Log the subscriber ID and received data for update
-	app.Logger.Printf("Updating subscriber with ID: %d", subscriberID)
-	app.Logger.Printf("Received data: %+v", subscriber)
+    if err := ValidateSubscriberData(subscriber); err != nil {
+        HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
+        return
+    }
 
-	// Check if all required fields are filled
-	if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
-		http.Error(w, "Firstname, Lastname, and Email are required fields", http.StatusBadRequest)
-		return
-	}
-
-	// Query to update the subscriber
-	query := `
+    query := `
         UPDATE subscribers 
-        SET lastname = ?, firstname = ?, email = ? 
+        SET lastname = ?, firstname = ?, email = ?
         WHERE id = ?
     `
 
-	// Execute the query
-	result, err := app.DB.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email, subscriberID)
-	if err != nil {
-		app.Logger.Printf("Failed to update subscriber: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to update subscriber: %v", err), http.StatusInternalServerError)
-		return
-	}
+    result, err := app.DB.Exec(query, subscriber.Lastname, subscriber.Firstname, subscriber.Email, subscriberID)
+    if err != nil {
+        HandleError(w, app.Logger, "Failed to update subscriber", err, http.StatusInternalServerError)
+        return
+    }
 
-	// Check if any row was actually updated
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
-		http.Error(w, "Subscriber not found", http.StatusNotFound)
-		return
-	}
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        HandleError(w, app.Logger, "Failed to retrieve affected rows", err, http.StatusInternalServerError)
+        return
+    }
+    if rowsAffected == 0 {
+        HandleError(w, app.Logger, "Subscriber not found", nil, http.StatusNotFound)
+        return
+    }
 
-	fmt.Fprintf(w, "Subscriber updated successfully")
+    RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Subscriber updated successfully"})
 }
+
+// ValidateSubscriberData checks if the required fields for a subscriber are present
+func ValidateSubscriberData(subscriber Subscriber) error {
+    if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
+        return fmt.Errorf("firstname, lastname, and email are required fields")
+    }
+    return nil
+}
+
 
 // DeleteAuthor deletes an existing author from the database
 func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
