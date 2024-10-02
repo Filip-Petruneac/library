@@ -2170,63 +2170,263 @@ func TestAddSubscriber_InvalidMethod(t *testing.T) {
     assert.Contains(t, rr.Body.String(), "Only POST method is supported")
 }
 
+// TestBorrowBook_Success tests the BorrowBook handler when borrowing is successful
+func TestBorrowBook_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
 
-// TestBorrowBook tests the BorrowBook handler
-func TestBorrowBook(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	// Set up SQL mock expectations for checking if the book is borrowed
-	mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
-		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+    rr := httptest.NewRecorder()
 
-	// Set up SQL mock expectations for inserting into borrowed_books
-	mock.ExpectExec("INSERT INTO borrowed_books").
-		WithArgs(1, 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
 
-	// Set up SQL mock expectations for updating the books table
-	mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
-		WithArgs(1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    mock.ExpectExec("INSERT INTO borrowed_books").
+        WithArgs(1, 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Create a new HTTP request with JSON body
-	requestBody := struct {
-		SubscriberID int `json:"subscriber_id"`
-		BookID       int `json:"book_id"`
-	}{
-		SubscriberID: 1,
-		BookID:       1,
-	}
-	body, err := json.Marshal(requestBody)
-	if err != nil {
-		t.Fatalf("Could not marshal request body: %v", err)
-	}
+    mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	req, err := http.NewRequest("POST", "/book/borrow", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.BorrowBook)
-	handler.ServeHTTP(rr, req)
+    assert.Equal(t, http.StatusCreated, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Book borrowed successfully")
 
-	// Ensure the response status is 201 Created
-	assert.Equal(t, http.StatusCreated, rr.Code)
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
 
-	// Check the response message
-	expected := `{"message": "Book borrowed successfully"}`
-	assert.JSONEq(t, expected, rr.Body.String())
+func TestBorrowBook_BookAlreadyBorrowed(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(true))
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusConflict, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Book is already borrowed")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestBorrowBook_InvalidRequestBody(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer([]byte("invalid body")))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid request body")
+}
+
+func TestBorrowBook_MissingFields(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := map[string]int{
+        "subscriber_id": 0,
+        "book_id":       0,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Missing required fields")
+}
+
+func TestBorrowBook_DBError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Database error")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestBorrowBook_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/borrow", nil)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Method not allowed")
+}
+
+func TestBorrowBook_DBInsertError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+    mock.ExpectExec("INSERT INTO borrowed_books").
+        WithArgs(1, 1).
+        WillReturnError(fmt.Errorf("insert error"))
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Database error")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestBorrowBook_DBUpdateError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+    mock.ExpectExec("INSERT INTO borrowed_books").
+        WithArgs(1, 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
+        WithArgs(1).
+        WillReturnError(fmt.Errorf("update error"))
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Database error")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestBorrowBook_ContentTypeHeader(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := map[string]int{
+        "subscriber_id": 1,
+        "book_id":       1,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("POST", "/borrow", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery("SELECT is_borrowed FROM books WHERE id = ?").
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"is_borrowed"}).AddRow(false))
+
+    mock.ExpectExec("INSERT INTO borrowed_books").
+        WithArgs(1, 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    mock.ExpectExec("UPDATE books SET is_borrowed = TRUE WHERE id = ?").
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    handler := http.HandlerFunc(app.BorrowBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusCreated, rr.Code)
+    assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 }
 
 // TestReturnBorrowedBook tests the ReturnBorrowedBook handler

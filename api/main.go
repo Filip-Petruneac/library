@@ -889,7 +889,7 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 // BorrowBook handles borrowing a book by a subscriber
 func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		HandleError(w, app.Logger, "Method not allowed", nil, http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -897,39 +897,47 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		HandleError(w, app.Logger, "Invalid request body", err, http.StatusBadRequest)
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if requestBody.SubscriberID == 0 || requestBody.BookID == 0 {
-		HandleError(w, app.Logger, "Missing required fields", nil, http.StatusBadRequest)
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
 	var isBorrowed bool
-	if err := app.DB.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed); err != nil {
-		HandleError(w, app.Logger, "Database error", err, http.StatusInternalServerError)
+	err = app.DB.QueryRow("SELECT is_borrowed FROM books WHERE id = ?", requestBody.BookID).Scan(&isBorrowed)
+	if err != nil {
+		app.Logger.Printf("Database error: %v", err)
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if isBorrowed {
-		HandleError(w, app.Logger, "Book is already borrowed", nil, http.StatusConflict)
+		http.Error(w, "Book is already borrowed", http.StatusConflict)
 		return
 	}
 
-	if _, err := app.DB.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID); err != nil {
-		HandleError(w, app.Logger, "Database error", err, http.StatusInternalServerError)
+	_, err = app.DB.Exec("INSERT INTO borrowed_books (subscriber_id, book_id, date_of_borrow) VALUES (?, ?, NOW())", requestBody.SubscriberID, requestBody.BookID)
+	if err != nil {
+		app.Logger.Printf("Database error: %v", err)
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if _, err := app.DB.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID); err != nil {
-		HandleError(w, app.Logger, "Database error", err, http.StatusInternalServerError)
+	_, err = app.DB.Exec("UPDATE books SET is_borrowed = TRUE WHERE id = ?", requestBody.BookID)
+	if err != nil {
+		app.Logger.Printf("Database error: %v", err)
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, map[string]string{"message": "Book borrowed successfully"})
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"message": "Book borrowed successfully"}`)
 }
-
 
 // ReturnBorrowedBook handles returning a borrowed book by a subscriber
 func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
