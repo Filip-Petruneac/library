@@ -3439,3 +3439,8 @@ func TestUpdateSubscriber_FailedToRetrieveAffectedRows(t *testing.T) {
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
 }
+
+
+
+
+

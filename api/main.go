@@ -1157,7 +1157,6 @@ func ValidateSubscriberData(subscriber Subscriber) error {
     return nil
 }
 
-
 // DeleteAuthor deletes an existing author from the database
 func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
@@ -1197,7 +1196,6 @@ func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Author deleted successfully")
 }
 
-
 // DeleteBook deletes an existing book from the database
 func (app *App) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
@@ -1205,84 +1203,51 @@ func (app *App) DeleteBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract the book ID from the URL path
-	vars := mux.Vars(r)
-	bookID, err := strconv.Atoi(vars["id"])
+	bookID, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid book ID", http.StatusBadRequest)
 		return
 	}
 
-	// Query to get the author ID of the book
-	authorIDQuery := `
-        SELECT author_id
-        FROM books
-        WHERE id = ?
-    `
-
-	// Execute the query
 	var authorID int
-	err = app.DB.QueryRow(authorIDQuery, bookID).Scan(&authorID)
+	err = app.DB.QueryRow(`SELECT author_id FROM books WHERE id = ?`, bookID).Scan(&authorID)
 	if err != nil {
 		app.Logger.Printf("Failed to retrieve author ID: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to retrieve author ID: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to retrieve author ID", http.StatusInternalServerError)
 		return
 	}
 
-	// Query to check if the author has any other books
-	otherBooksQuery := `
-        SELECT COUNT(*)
-        FROM books
-        WHERE author_id = ? AND id != ?
-    `
-
-	// Execute the query
 	var numOtherBooks int
-	err = app.DB.QueryRow(otherBooksQuery, authorID, bookID).Scan(&numOtherBooks)
+	err = app.DB.QueryRow(`SELECT COUNT(*) FROM books WHERE author_id = ? AND id != ?`, authorID, bookID).Scan(&numOtherBooks)
 	if err != nil {
 		app.Logger.Printf("Failed to check for other books: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to check for other books: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to check for other books", http.StatusInternalServerError)
 		return
 	}
 
-	// Query to delete the book
-	deleteBookQuery := `
-        DELETE FROM books
-        WHERE id = ?
-    `
-
-	// Execute the query to delete the book
-	result, err := app.DB.Exec(deleteBookQuery, bookID)
+	result, err := app.DB.Exec(`DELETE FROM books WHERE id = ?`, bookID)
 	if err != nil {
 		app.Logger.Printf("Failed to delete book: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to delete book: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to delete book", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if any row was actually deleted
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
 		http.Error(w, "Book not found", http.StatusNotFound)
 		return
 	}
 
-	// If the author has no other books, delete the author as well
 	if numOtherBooks == 0 {
-		deleteAuthorQuery := `
-            DELETE FROM authors
-            WHERE id = ?
-        `
-
-		// Execute the query to delete the author
-		_, err = app.DB.Exec(deleteAuthorQuery, authorID)
+		_, err = app.DB.Exec(`DELETE FROM authors WHERE id = ?`, authorID)
 		if err != nil {
 			app.Logger.Printf("Failed to delete author: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+			http.Error(w, "Failed to delete author", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	fmt.Fprintf(w, "Book deleted successfully")
+	fmt.Fprintln(w, "Book deleted successfully")
 }
 
 // DeleteSubscriber deletes an existing subscriber from the database
