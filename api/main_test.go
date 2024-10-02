@@ -2679,48 +2679,255 @@ func TestReturnBorrowedBook_MissingFields(t *testing.T) {
 }
 
 // TestUpdateAuthor tests the UpdateAuthor handler
-func TestUpdateAuthor(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+func TestUpdateAuthor_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	authorID := "1"
+    requestBody := Author{
+        Firstname: "John",
+        Lastname:  "Doe",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
 
-	// Set up SQL mock expectations for updating the author
-	mock.ExpectExec("^UPDATE authors SET lastname = \\?, firstname = \\?, photo = \\? WHERE id = \\?$").
-		WithArgs("Doe", "John", "john.jpg", 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	// Create a new HTTP request with JSON body
-	author := Author{Firstname: "John", Lastname: "Doe", Photo: "john.jpg"}
-	body, err := json.Marshal(author)
-	if err != nil {
-		t.Fatalf("Could not marshal author: %v", err)
-	}
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
 
-	req, err := http.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req = mux.SetURLVars(req, map[string]string{"id": authorID})
+    rr := httptest.NewRecorder()
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.UpdateAuthor)
-	handler.ServeHTTP(rr, req)
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE authors 
+        SET lastname = ?, firstname = ?, photo = ? 
+        WHERE id = ?`)).
+        WithArgs("Doe", "John", "updated_photo.jpg", 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Ensure the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
 
-	// Check the response message
-	expected := "Author updated successfully"
-	assert.Equal(t, expected, rr.Body.String())
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Author updated successfully")
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
 }
+
+func TestUpdateAuthor_InvalidJSON(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer([]byte("invalid json body")))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+}
+
+func TestUpdateAuthor_InvalidAuthorID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Author{
+        Firstname: "John",
+        Lastname:  "Doe",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/authors/invalid", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid author ID")
+}
+
+func TestUpdateAuthor_ValidationError(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Author{
+        Firstname: "",
+        Lastname:  "",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Firstname and Lastname are required fields")
+}
+
+func TestUpdateAuthor_AuthorNotFound(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Author{
+        Firstname: "John",
+        Lastname:  "Doe",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE authors 
+        SET lastname = ?, firstname = ?, photo = ? 
+        WHERE id = ?`)).
+        WithArgs("Doe", "John", "updated_photo.jpg", 1).
+        WillReturnResult(sqlmock.NewResult(1, 0))
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusNotFound, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Author not found")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestUpdateAuthor_DBError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Author{
+        Firstname: "John",
+        Lastname:  "Doe",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE authors 
+        SET lastname = ?, firstname = ?, photo = ? 
+        WHERE id = ?`)).
+        WithArgs("Doe", "John", "updated_photo.jpg", 1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to update author")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestUpdateAuthor_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/authors/1", nil)
+    rr := httptest.NewRecorder()
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only PUT or POST methods are supported")
+}
+
+func TestUpdateAuthor_FailedToRetrieveAffectedRows(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Author{
+        Firstname: "John",
+        Lastname:  "Doe",
+        Photo:     "updated_photo.jpg",
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/authors/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE authors 
+        SET lastname = ?, firstname = ?, photo = ? 
+        WHERE id = ?`)).
+        WithArgs("Doe", "John", "updated_photo.jpg", 1).
+        WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("RowsAffected error")))
+
+    handler := http.HandlerFunc(app.UpdateAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to retrieve affected rows")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
 
 // Tests for UpdateBook handler
 func TestUpdateBook_Success(t *testing.T) {
