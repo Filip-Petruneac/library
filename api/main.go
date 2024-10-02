@@ -1165,59 +1165,38 @@ func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract the author ID from the URL path
-	vars := mux.Vars(r)
-	authorID, err := strconv.Atoi(vars["id"])
+	authorID, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid author ID", http.StatusBadRequest)
 		return
 	}
 
-	// Query to check if the author has books
-	booksQuery := `
-        SELECT COUNT(*)
-        FROM books
-        WHERE author_id = ?
-    `
-
-	// Execute the query
 	var numBooks int
-	err = app.DB.QueryRow(booksQuery, authorID).Scan(&numBooks)
+	err = app.DB.QueryRow(`SELECT COUNT(*) FROM books WHERE author_id = ?`, authorID).Scan(&numBooks)
 	if err != nil {
-		app.Logger.Printf("Failed to check for books: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to check for books: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to check for books", http.StatusInternalServerError)
 		return
 	}
 
-	// If author has books, respond with a bad request
 	if numBooks > 0 {
 		http.Error(w, "Author has associated books, delete books first", http.StatusBadRequest)
 		return
 	}
 
-	// Query to delete the author
-	deleteQuery := `
-        DELETE FROM authors
-        WHERE id = ?
-    `
-
-	// Execute the query to delete the author
-	result, err := app.DB.Exec(deleteQuery, authorID)
+	result, err := app.DB.Exec(`DELETE FROM authors WHERE id = ?`, authorID)
 	if err != nil {
-		app.Logger.Printf("Failed to delete author: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to delete author: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to delete author", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if any row was actually deleted
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
 		http.Error(w, "Author not found", http.StatusNotFound)
 		return
 	}
 
-	fmt.Fprintf(w, "Author deleted successfully")
+	fmt.Fprintln(w, "Author deleted successfully")
 }
+
 
 // DeleteBook deletes an existing book from the database
 func (app *App) DeleteBook(w http.ResponseWriter, r *http.Request) {
