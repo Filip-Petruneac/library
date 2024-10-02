@@ -1257,34 +1257,24 @@ func (app *App) DeleteSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract the subscriber ID from the URL path
-	vars := mux.Vars(r)
-	subscriberID, err := strconv.Atoi(vars["id"])
+	subscriberID, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.Error(w, "Invalid subscriber ID", http.StatusBadRequest)
 		return
 	}
 
-	// Query to delete the subscriber
-	deleteQuery := `
-        DELETE FROM subscribers
-        WHERE id = ?
-    `
-
-	// Execute the query to delete the subscriber
-	result, err := app.DB.Exec(deleteQuery, subscriberID)
+	result, err := app.DB.Exec(`DELETE FROM subscribers WHERE id = ?`, subscriberID)
 	if err != nil {
-		app.Logger.Printf("Failed to delete subscriber: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to delete subscriber: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to delete subscriber", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if any row was actually deleted
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
 		http.Error(w, "Subscriber not found", http.StatusNotFound)
 		return
 	}
 
-	fmt.Fprintf(w, "Subscriber deleted successfully")
+	fmt.Fprintln(w, "Subscriber deleted successfully")
 }
+
