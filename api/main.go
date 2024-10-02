@@ -116,7 +116,7 @@ func (app *App) setupRouter() *mux.Router {
 }
 
 func main() {
-	port := flag.String("port", "8081", "Server Port")
+	port := flag.String("port", "8080", "Server Port")
 	flag.Parse()
 
 	// Load environment variables from the .env file
@@ -1048,66 +1048,56 @@ func (app *App) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Author updated successfully")
 }
 
-// UpdateBook updates an existing book in the database
+// UpdateBook handles the updating of an existing book in the database
 func (app *App) UpdateBook(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut && r.Method != http.MethodPost {
-		http.Error(w, "Only PUT or POST methods are supported", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPut && r.Method != http.MethodPost {
+        HandleError(w, app.Logger, "Only PUT or POST methods are supported", nil, http.StatusMethodNotAllowed)
+        return
+    }
 
-	// Extract the book ID from the URL path
-	vars := mux.Vars(r)
-	bookID, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid book ID", http.StatusBadRequest)
-		return
-	}
+    bookID, err := GetIDFromRequest(r, "id")
+    if err != nil {
+        HandleError(w, app.Logger, "Invalid book ID", err, http.StatusBadRequest)
+        return
+    }
 
-	// Parse the JSON data received from the request
-	var book struct {
-		Title      string `json:"title"`
-		AuthorID   int    `json:"author_id"`
-		Photo      string `json:"photo"`
-		Details    string `json:"details"`
-		IsBorrowed bool   `json:"is_borrowed"`
-	}
-	err = json.NewDecoder(r.Body).Decode(&book)
-	if err != nil {
-		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
+    var book Book
+    if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+        HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
+        return
+    }
+    defer r.Body.Close()
 
-	// Check if all required fields are filled
-	if book.Title == "" || book.AuthorID == 0 {
-		http.Error(w, "Title and AuthorID are required fields", http.StatusBadRequest)
-		return
-	}
+    if err := ValidateBookData(book); err != nil {
+        HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
+        return
+    }
 
-	// Query to update the book
-	query := `
-		UPDATE books 
-		SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ? 
-		WHERE id = ?
-	`
+    query := `
+        UPDATE books 
+        SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ?
+        WHERE id = ?
+    `
 
-	// Execute the query
-	result, err := app.DB.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details, book.IsBorrowed, bookID)
-	if err != nil {
-		app.Logger.Printf("Failed to update book: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to update book: %v", err), http.StatusInternalServerError)
-		return
-	}
+    result, err := app.DB.Exec(query, book.Title, book.AuthorID, book.Photo, book.Details, book.IsBorrowed, bookID)
+    if err != nil {
+        HandleError(w, app.Logger, "Failed to update book", err, http.StatusInternalServerError)
+        return
+    }
 
-	// Check if any row was actually updated
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
-		http.Error(w, "Book not found", http.StatusNotFound)
-		return
-	}
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        HandleError(w, app.Logger, "Failed to retrieve affected rows", err, http.StatusInternalServerError)
+        return
+    }
+    if rowsAffected == 0 {
+        HandleError(w, app.Logger, "Book not found", nil, http.StatusNotFound)
+        return
+    }
 
-	fmt.Fprintf(w, "Book updated successfully")
+    RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Book updated successfully"})
 }
+
 
 // UpdateSubscriber updates an existing subscriber in the database
 func (app *App) UpdateSubscriber(w http.ResponseWriter, r *http.Request) {
