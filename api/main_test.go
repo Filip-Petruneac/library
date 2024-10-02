@@ -2728,60 +2728,266 @@ func TestUpdateAuthor(t *testing.T) {
 	}
 }
 
-// TestUpdateBook tests the UpdateBook handler
-func TestUpdateBook(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+// Tests for UpdateBook handler
+func TestUpdateBook_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
-	bookID := "1"
+    requestBody := Book{
+        Title:      "Updated Book Title",
+        AuthorID:   1,
+        Photo:      "updated_photo.jpg",
+        Details:    "Updated details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
 
-	// Set up SQL mock expectations for updating the book
-	mock.ExpectExec("^UPDATE books SET title = \\?, author_id = \\?, photo = \\?, details = \\?, is_borrowed = \\? WHERE id = \\?$").
-		WithArgs("New Title", 1, "newphoto.jpg", "Some details", false, 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
 
-	// Create a new HTTP request with JSON body
-	book := struct {
-		Title      string `json:"title"`
-		AuthorID   int    `json:"author_id"`
-		Photo      string `json:"photo"`
-		Details    string `json:"details"`
-		IsBorrowed bool   `json:"is_borrowed"`
-	}{
-		Title:      "New Title",
-		AuthorID:   1,
-		Photo:      "newphoto.jpg",
-		Details:    "Some details",
-		IsBorrowed: false,
-	}
-	body, err := json.Marshal(book)
-	if err != nil {
-		t.Fatalf("Could not marshal book: %v", err)
-	}
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
 
-	req, err := http.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req = mux.SetURLVars(req, map[string]string{"id": bookID})
+    rr := httptest.NewRecorder()
 
-	// Capture the response
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.UpdateBook)
-	handler.ServeHTTP(rr, req)
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE books 
+        SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ?
+        WHERE id = ?`)).
+        WithArgs("Updated Book Title", 1, "updated_photo.jpg", "Updated details", false, 1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// Ensure the response status is 200 OK
-	assert.Equal(t, http.StatusOK, rr.Code)
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
 
-	// Check the response message
-	expected := "Book updated successfully"
-	assert.Equal(t, expected, rr.Body.String())
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Book updated successfully")
 
-	// Ensure all mock expectations were met
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("Not all expectations were met: %v", err)
-	}
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestUpdateBook_InvalidJSON(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer([]byte("invalid json body")))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+}
+
+func TestUpdateBook_InvalidBookID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Book{
+        Title:      "Updated Book Title",
+        AuthorID:   1,
+        Photo:      "updated_photo.jpg",
+        Details:    "Updated details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/books/invalid", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid book ID")
+}
+
+func TestUpdateBook_ValidationError(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Book{
+        Title:      "",
+        AuthorID:   0,
+        Photo:      "",
+        Details:    "Invalid details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "title and authorID are required fields")
+}
+
+func TestUpdateBook_BookNotFound(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Book{
+        Title:      "Updated Book Title",
+        AuthorID:   1,
+        Photo:      "updated_photo.jpg",
+        Details:    "Updated details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE books 
+        SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ?
+        WHERE id = ?`)).
+        WithArgs("Updated Book Title", 1, "updated_photo.jpg", "Updated details", false, 1).
+        WillReturnResult(sqlmock.NewResult(1, 0))
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusNotFound, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Book not found")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestUpdateBook_DBError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Book{
+        Title:      "Updated Book Title",
+        AuthorID:   1,
+        Photo:      "updated_photo.jpg",
+        Details:    "Updated details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE books 
+        SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ?
+        WHERE id = ?`)).
+        WithArgs("Updated Book Title", 1, "updated_photo.jpg", "Updated details", false, 1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to update book")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestUpdateBook_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/books/1", nil)
+    rr := httptest.NewRecorder()
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only PUT or POST methods are supported")
+}
+
+func TestUpdateBook_FailedToRetrieveAffectedRows(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    requestBody := Book{
+        Title:      "Updated Book Title",
+        AuthorID:   1,
+        Photo:      "updated_photo.jpg",
+        Details:    "Updated details",
+        IsBorrowed: false,
+    }
+    body, err := json.Marshal(requestBody)
+    assert.NoError(t, err)
+
+    req := httptest.NewRequest("PUT", "/books/1", bytes.NewBuffer(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    vars := map[string]string{
+        "id": "1",
+    }
+    req = mux.SetURLVars(req, vars)
+
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE books 
+        SET title = ?, author_id = ?, photo = ?, details = ?, is_borrowed = ?
+        WHERE id = ?`)).
+        WithArgs("Updated Book Title", 1, "updated_photo.jpg", "Updated details", false, 1).
+        WillReturnResult(sqlmock.NewErrorResult(fmt.Errorf("RowsAffected error")))
+
+    handler := http.HandlerFunc(app.UpdateBook)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to retrieve affected rows")
+
+    err = mock.ExpectationsWereMet()
+    assert.NoError(t, err)
 }
 
 
