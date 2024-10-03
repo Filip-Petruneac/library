@@ -259,7 +259,7 @@ func TestRespondWithJSON_Error(t *testing.T) {
 // TestHandleError tests the HandleError function
 func TestHandleError(t *testing.T) {
 	rr := httptest.NewRecorder()
-	logger := log.New(io.Discard, "", log.LstdFlags) // Logger care nu afiseaza nimic
+	logger := log.New(io.Discard, "", log.LstdFlags) 
 	message := "test error"
 	err := fmt.Errorf("an example error")
 
@@ -554,7 +554,7 @@ func TestSearchBooks_ErrorScanningRows(t *testing.T) {
 		WithArgs("%Sample%", "%Sample%", "%Sample%").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"book_id", "book_title", "author_id", "book_photo", "is_borrowed", "book_details", "author_lastname", "author_firstname",
-		}).AddRow("invalid_id", "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John")) // Valoare invalidă pentru a provoca o eroare
+		}).AddRow("invalid_id", "Sample Book", 1, "book.jpg", false, "A sample book", "Doe", "John")) 
 
 	handler := http.HandlerFunc(app.SearchBooks)
 	handler.ServeHTTP(rr, req)
@@ -3440,7 +3440,165 @@ func TestUpdateSubscriber_FailedToRetrieveAffectedRows(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// Tests for DeleteAuthor handler
+func TestDeleteAuthor_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
 
+    req := httptest.NewRequest("DELETE", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT COUNT\(\*\) FROM books WHERE author_id = ?`).
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+
+    mock.ExpectExec(`DELETE FROM authors WHERE id = ?`).
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Author deleted successfully")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteAuthor_InvalidAuthorID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/authors/invalid", nil)
+    vars := map[string]string{"id": "invalid"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid author ID")
+}
+
+func TestDeleteAuthor_HasAssociatedBooks(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT COUNT\(\*\) FROM books WHERE author_id = ?`).
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(5))
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Author has associated books, delete books first")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteAuthor_DBErrorCheckingBooks(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT COUNT\(\*\) FROM books WHERE author_id = ?`).
+        WithArgs(1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to check for books")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteAuthor_NotFound(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT COUNT\(\*\) FROM books WHERE author_id = ?`).
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+
+    mock.ExpectExec(`DELETE FROM authors WHERE id = ?`).
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 0))
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusNotFound, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Author not found")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteAuthor_DBErrorDeletingAuthor(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectQuery(`SELECT COUNT\(\*\) FROM books WHERE author_id = ?`).
+        WithArgs(1).
+        WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+
+    mock.ExpectExec(`DELETE FROM authors WHERE id = ?`).
+        WithArgs(1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to delete author")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteAuthor_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/authors/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.DeleteAuthor)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only DELETE method is supported")
+}
 
 
 
