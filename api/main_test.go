@@ -3846,6 +3846,107 @@ func TestDeleteBook_FailedToDeleteAuthor(t *testing.T) {
     assert.NoError(t, err)
 }
 
+// Tests for DeleteSubscriber handler
+func TestDeleteSubscriber_Success(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/subscribers/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM subscribers WHERE id = ?`)).
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 1))
+
+    handler := http.HandlerFunc(app.DeleteSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusOK, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Subscriber deleted successfully")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteSubscriber_InvalidSubscriberID(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/subscribers/invalid", nil)
+    vars := map[string]string{"id": "invalid"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.DeleteSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusBadRequest, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Invalid subscriber ID")
+}
+
+func TestDeleteSubscriber_NotFound(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/subscribers/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM subscribers WHERE id = ?`)).
+        WithArgs(1).
+        WillReturnResult(sqlmock.NewResult(1, 0))
+
+    handler := http.HandlerFunc(app.DeleteSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusNotFound, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Subscriber not found")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteSubscriber_DBError(t *testing.T) {
+    app, mock := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("DELETE", "/subscribers/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM subscribers WHERE id = ?`)).
+        WithArgs(1).
+        WillReturnError(fmt.Errorf("DB error"))
+
+    handler := http.HandlerFunc(app.DeleteSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusInternalServerError, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Failed to delete subscriber")
+
+    err := mock.ExpectationsWereMet()
+    assert.NoError(t, err)
+}
+
+func TestDeleteSubscriber_MethodNotAllowed(t *testing.T) {
+    app, _ := createTestApp(t)
+    defer app.DB.Close()
+
+    req := httptest.NewRequest("GET", "/subscribers/1", nil)
+    vars := map[string]string{"id": "1"}
+    req = mux.SetURLVars(req, vars)
+    rr := httptest.NewRecorder()
+
+    handler := http.HandlerFunc(app.DeleteSubscriber)
+    handler.ServeHTTP(rr, req)
+
+    assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+    assert.Contains(t, rr.Body.String(), "Only DELETE method is supported")
+}
 
 
 
