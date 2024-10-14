@@ -232,54 +232,53 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (app *App) VerifySessionToken(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Get the session token from the cookie
-        cookie, err := r.Cookie("token")
-        if err != nil {
-            if err == http.ErrNoCookie {
-                // If the cookie is not set, return an unauthorized status
-                w.WriteHeader(http.StatusUnauthorized)
-                if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Unauthorized access"}); encodeErr != nil {
-                    app.Logger.Printf("Error encoding JSON: %v", encodeErr)
-                }
-                return
-            }
-            // For any other type of error, return a bad request status
-            w.WriteHeader(http.StatusBadRequest)
-            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Bad request"}); encodeErr != nil {
-                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
-            }
-            return
-        }
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the session token from the cookie
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				// If the cookie is not set, return an unauthorized status
+				w.WriteHeader(http.StatusUnauthorized)
+				if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Unauthorized access"}); encodeErr != nil {
+					app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+				}
+				return
+			}
+			// For any other type of error, return a bad request status
+			w.WriteHeader(http.StatusBadRequest)
+			if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Bad request"}); encodeErr != nil {
+				app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+			}
+			return
+		}
 
-        // Retrieve the session token from the cookie
-        sessionToken := cookie.Value
+		// Retrieve the session token from the cookie
+		sessionToken := cookie.Value
 
-        // Get the session from the store
-        session, exists := sessionStore.Get(sessionToken)
-        if !exists {
-            // If the session token is not valid, return unauthorized
-            w.WriteHeader(http.StatusUnauthorized)
-            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid session token"}); encodeErr != nil {
-                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
-            }
-            return
-        }
+		// Get the session from the store
+		session, exists := sessionStore.Get(sessionToken)
+		if !exists {
+			// If the session token is not valid, return unauthorized
+			w.WriteHeader(http.StatusUnauthorized)
+			if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid session token"}); encodeErr != nil {
+				app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+			}
+			return
+		}
 
-        // Check if the session has expired
-        if session.ExpiresAt.Before(time.Now()) {
-            // If the session is expired, return unauthorized
-            w.WriteHeader(http.StatusUnauthorized)
-            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Session expired"}); encodeErr != nil {
-                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
-            }
-            return
-        }
+		// Check if the session has expired
+		if session.ExpiresAt.Before(time.Now()) {
+			// If the session is expired, return unauthorized
+			w.WriteHeader(http.StatusUnauthorized)
+			if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Session expired"}); encodeErr != nil {
+				app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+			}
+			return
+		}
 
-        next.ServeHTTP(w, r)
-    })
+		next.ServeHTTP(w, r)
+	})
 }
 
 func generateSessionToken() (string, error) {

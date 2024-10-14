@@ -1,0 +1,28 @@
+linters:
+  enable:
+    - errcheck        
+    - govet           
+    - staticcheck     
+    - gofmt           
+    - goimports       
+
+run:
+  timeout: 5m         
+  tests: true         
+
+issues:
+  exclude-use-default: false
+  exclude:
+    - "Error return value of"
+    - "SA4006"        
+
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - fmt.Println
+      - bytes.Buffer.WriteString  
+  gofmt:
+    simplify: true    
+  staticcheck:
+    checks:           
+      - all           
