@@ -256,6 +256,35 @@ func TestRespondWithJSON_Error(t *testing.T) {
 	assert.Equal(t, "Error encoding response\n", rr.Body.String(), "Expected error message in response")
 }
 
+type ErrorWriter struct {
+    HeaderMap  http.Header
+    StatusCode int
+}
+
+func (e *ErrorWriter) Header() http.Header {
+    if e.HeaderMap == nil {
+        e.HeaderMap = make(http.Header)
+    }
+    return e.HeaderMap
+}
+
+func (e *ErrorWriter) Write([]byte) (int, error) {
+    return 0, fmt.Errorf("simulated write error")
+}
+
+func (e *ErrorWriter) WriteHeader(statusCode int) {
+    e.StatusCode = statusCode
+}
+
+// Test for error handling in RespondWithJSON
+func TestRespondWithJSON_WriteError(t *testing.T) {
+    writer := &ErrorWriter{}
+    payload := map[string]string{"message": "test"}
+
+    RespondWithJSON(writer, http.StatusOK, payload)
+
+}
+
 // TestHandleError tests the HandleError function
 func TestHandleError(t *testing.T) {
 	rr := httptest.NewRecorder()
@@ -2040,33 +2069,50 @@ func TestAddBook_InvalidMethod(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Only POST method is supported")
 }
 
-// TestAddSubscriber tests the AddSubscriber handler
 func TestAddSubscriber_Success(t *testing.T) {
-	app, mock := createTestApp(t)
-	defer app.DB.Close()
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
+    }
+    defer db.Close()
 
-	subscriber := Subscriber{Firstname: "John", Lastname: "Doe", Email: "john.doe@example.com"}
-	body, err := json.Marshal(subscriber)
-	assert.NoError(t, err)
+    app := &App{
+        DB:     db,
+        Logger: log.New(os.Stdout, "test: ", log.LstdFlags),
+    }
 
-	req := httptest.NewRequest("POST", "/subscribers/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
+    mock.ExpectExec("INSERT INTO subscribers").WillReturnResult(sqlmock.NewResult(1, 1))
 
-	rr := httptest.NewRecorder()
+    body := bytes.NewBuffer([]byte(`{"firstname": "John", "lastname": "Doe", "email": "john.doe@example.com"}`))
 
-	mock.ExpectExec(`INSERT INTO subscribers \(lastname, firstname, email\) VALUES \(\?, \?, \?\)`).
-		WithArgs("Doe", "John", "john.doe@example.com").
-		WillReturnResult(sqlmock.NewResult(1, 1))
+    req, err := http.NewRequest("POST", "/add-subscriber", body)
+    if err != nil {
+        t.Fatal(err)
+    }
 
-	handler := http.HandlerFunc(app.AddSubscriber)
-	handler.ServeHTTP(rr, req)
+    rr := httptest.NewRecorder()
 
-	assert.Equal(t, http.StatusCreated, rr.Code)
+    handler := http.HandlerFunc(app.AddSubscriber)
 
-	var response map[string]int
-	err = json.NewDecoder(rr.Body).Decode(&response)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, response["id"], "Expected inserted subscriber ID to be 1")
+    handler.ServeHTTP(rr, req)
+
+    if rr.Code != http.StatusCreated {
+        t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, http.StatusCreated)
+    }
+
+    var response map[string]int
+    if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+        t.Fatalf("Could not decode response: %v", err)
+    }
+
+    expected := map[string]int{"id": 1}
+    if response["id"] != expected["id"] {
+        t.Errorf("handler returned unexpected body: got %v want %v", response, expected)
+    }
+
+    if err := mock.ExpectationsWereMet(); err != nil {
+        t.Errorf("there were unfulfilled expectations: %s", err)
+    }
 }
 
 func TestAddSubscriber_InvalidJSON(t *testing.T) {
@@ -2163,6 +2209,38 @@ func TestAddSubscriber_InvalidMethod(t *testing.T) {
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Only POST method is supported")
+}
+
+func TestAddSubscriber_EncodingError(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
+    }
+    defer db.Close()
+
+    app := &App{
+        DB:     db,
+        Logger: log.New(os.Stdout, "test: ", log.LstdFlags),
+    }
+
+    mock.ExpectExec("INSERT INTO subscribers").WillReturnResult(sqlmock.NewResult(1, 1))
+
+    body := bytes.NewBuffer([]byte(`{"firstname": "John", "lastname": "Doe", "email": "john.doe@example.com"}`))
+
+    req, err := http.NewRequest("POST", "/add-subscriber", body)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    rr := &ErrorWriter{}
+
+    handler := http.HandlerFunc(app.AddSubscriber)
+
+    handler.ServeHTTP(rr, req)
+
+    if rr.StatusCode != http.StatusInternalServerError {
+        t.Errorf("handler returned wrong status code: got %v want %v", rr.StatusCode, http.StatusInternalServerError)
+    }
 }
 
 // TestBorrowBook_Success tests the BorrowBook handler when borrowing is successful

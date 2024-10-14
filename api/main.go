@@ -216,12 +216,15 @@ func RespondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
         // Set status to 500
         w.WriteHeader(http.StatusInternalServerError)
         // Write the error message, including a newline
-        w.Write([]byte("Error encoding response\n"))
+        if _, writeErr := w.Write([]byte("Error encoding response\n")); writeErr != nil {
+            log.Printf("Error writing response: %v", writeErr)
+        }
         return
     }
     // Set the status code
     w.WriteHeader(status)
 }
+
 
 // HandleError handles errors by logging them and sending an appropriate HTTP response
 func HandleError(w http.ResponseWriter, logger *log.Logger, message string, err error, status int) {
@@ -846,6 +849,7 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Error encoding response", http.StatusInternalServerError)
     }
 }
+
 // AddSubscriber adds a new subscriber to the database
 func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -880,11 +884,15 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]int{"id": int(id)})
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)  
+    if err := json.NewEncoder(w).Encode(map[string]int{"id": int(id)}); err != nil {
+        app.Logger.Printf("Error encoding JSON response: %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+    
 }
-
 
 // BorrowBook handles borrowing a book by a subscriber
 func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {

@@ -72,7 +72,9 @@ func (app *App) SignupUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.Logger.Printf("Error decoding JSON: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid JSON format"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid JSON format"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -84,24 +86,30 @@ func (app *App) SignupUser(w http.ResponseWriter, r *http.Request) {
 	if !matches || !domainMatches || u.Password == "" || u.Email == "" {
 		app.Logger.Println("Validation failed: Invalid email or password")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
 	// Check if the user already exists
 	var existingUserID int
 	query := `SELECT id FROM users WHERE email = ?`
-	err = app.DB.QueryRow(query, u.Email).Scan(&existingUserID) // Use `=` instead of `:=`
+	err = app.DB.QueryRow(query, u.Email).Scan(&existingUserID)
 	if err != nil && err != sql.ErrNoRows {
 		app.Logger.Printf("Database error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
 	if existingUserID != 0 {
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Email already in use"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Email already in use"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -110,7 +118,9 @@ func (app *App) SignupUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.Logger.Printf("Error hashing password: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Error hashing password"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Error hashing password"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -120,12 +130,16 @@ func (app *App) SignupUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.Logger.Printf("Failed to insert user: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: fmt.Sprintf("Failed to insert user: %v", err)})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: fmt.Sprintf("Failed to insert user: %v", err)}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+	if encodeErr := json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"}); encodeErr != nil {
+		app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+	}
 }
 
 func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +150,9 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.Logger.Printf("Error decoding JSON: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid JSON format"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid JSON format"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -148,7 +164,9 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if !matches || !domainMatches || u.Password == "" || u.Email == "" {
 		app.Logger.Println("Validation failed: Invalid email or password")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -159,14 +177,18 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = app.DB.QueryRow(query, u.Email).Scan(&existingUserID, &hashedPassword)
 	if err == sql.ErrNoRows {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "User doesn't exist!"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "User doesn't exist!"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
 	if err != nil {
 		app.Logger.Printf("Database error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Database error"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -174,7 +196,9 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(u.Password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid email or password"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -183,7 +207,9 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.Logger.Printf("Error generating session token: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ErrorResponse{Message: "Error generating session token"})
+		if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Error generating session token"}); encodeErr != nil {
+			app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+		}
 		return
 	}
 
@@ -197,54 +223,63 @@ func (app *App) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Respond to the client with the session token
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 		"token":          token,
 		"existingUserID": existingUserID,
 		"message":        "User logged in successfully",
-	})
+	}); encodeErr != nil {
+		app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+	}
 }
 
+
 func (app *App) VerifySessionToken(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("works")
-		// Get the session token from the cookie
-		cookie, err := r.Cookie("token")
-		fmt.Println("Cookie name", cookie)
-		if err != nil {
-			if err == http.ErrNoCookie {
-				// If the cookie is not set, return an unauthorized status
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(ErrorResponse{Message: "Unauthorized access"})
-				return
-			}
-			// For any other type of error, return a bad request status
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(ErrorResponse{Message: "Bad request"})
-			return
-		}
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Get the session token from the cookie
+        cookie, err := r.Cookie("token")
+        if err != nil {
+            if err == http.ErrNoCookie {
+                // If the cookie is not set, return an unauthorized status
+                w.WriteHeader(http.StatusUnauthorized)
+                if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Unauthorized access"}); encodeErr != nil {
+                    app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+                }
+                return
+            }
+            // For any other type of error, return a bad request status
+            w.WriteHeader(http.StatusBadRequest)
+            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Bad request"}); encodeErr != nil {
+                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+            }
+            return
+        }
 
-		// Retrieve the session token from the cookie
-		sessionToken := cookie.Value
+        // Retrieve the session token from the cookie
+        sessionToken := cookie.Value
 
-		// Get the session from the store
-		session, exists := sessionStore.Get(sessionToken)
-		if !exists {
-			// If the session token is not valid, return unauthorized
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid session token"})
-			return
-		}
+        // Get the session from the store
+        session, exists := sessionStore.Get(sessionToken)
+        if !exists {
+            // If the session token is not valid, return unauthorized
+            w.WriteHeader(http.StatusUnauthorized)
+            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Invalid session token"}); encodeErr != nil {
+                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+            }
+            return
+        }
 
-		// Check if the session has expired
-		if session.ExpiresAt.Before(time.Now()) {
-			// If the session is expired, return unauthorized
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(ErrorResponse{Message: "Session expired"})
-			return
-		}
+        // Check if the session has expired
+        if session.ExpiresAt.Before(time.Now()) {
+            // If the session is expired, return unauthorized
+            w.WriteHeader(http.StatusUnauthorized)
+            if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Message: "Session expired"}); encodeErr != nil {
+                app.Logger.Printf("Error encoding JSON: %v", encodeErr)
+            }
+            return
+        }
 
-		next.ServeHTTP(w, r)
-	})
+        next.ServeHTTP(w, r)
+    })
 }
 
 func generateSessionToken() (string, error) {
