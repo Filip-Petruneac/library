@@ -15,7 +15,7 @@ type TestDBService struct {
 func NewTestDBService() (*TestDBService, error) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		return nil, fmt.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+		return nil, fmt.Errorf("an error occurred when opening a stub database connection: %w", err)
 	}
 
 	return &TestDBService{

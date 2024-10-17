@@ -182,18 +182,20 @@ func initDB(username, password, hostname, port, dbname string) (*sql.DB, error) 
 	if err = db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping the database: %w", err)
 	}
+
 	log.Println("Successfully connected to the MySQL database!")
+
 	return db, nil
 }
 
 // Home handles requests to the homepage
-func (app *App) Home(w http.ResponseWriter, r *http.Request) {
+func (app *App) Home(w http.ResponseWriter, _ *http.Request) {
 	app.Logger.Println("Homepage handler called")
 	fmt.Fprintf(w, "Homepage")
 }
 
 // Info handles requests to the info page
-func (app *App) Info(w http.ResponseWriter, r *http.Request) {
+func (app *App) Info(w http.ResponseWriter, _ *http.Request) {
 	app.Logger.Println("Info handler called")
 	fmt.Fprintf(w, "Info page")
 }
@@ -241,7 +243,7 @@ func GetIDFromRequest(r *http.Request, paramName string) (int, error) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		// Return an error if conversion fails, using a lowercase message
-		return 0, fmt.Errorf("invalid %s: %v", paramName, err)
+		return 0, fmt.Errorf("invalid %s: %w", paramName, err)
 	}
 	return id, nil
 }
@@ -255,13 +257,14 @@ func ScanAuthors(rows *sql.Rows) ([]Author, error) {
 	for rows.Next() {
 		var author Author
 		if err := rows.Scan(&author.ID, &author.Lastname, &author.Firstname, &author.Photo); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan author row: %w", err)
 		}
+
 		authors = append(authors, author)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 
 	return authors, nil
@@ -335,13 +338,14 @@ func ScanBooks(rows *sql.Rows) ([]BookAuthorInfo, error) {
 	for rows.Next() {
 		var book BookAuthorInfo
 		if err := rows.Scan(&book.BookID, &book.BookTitle, &book.AuthorID, &book.BookPhoto, &book.IsBorrowed, &book.BookDetails, &book.AuthorLastname, &book.AuthorFirstname); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan book author info: %w", err)
 		}
+
 		books = append(books, book)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error occurred during rows iteration: %w", err)
 	}
 
 	return books, nil
@@ -390,7 +394,7 @@ func (app *App) SearchBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAuthors retrieves all authors from the database
-func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetAuthors(w http.ResponseWriter, _ *http.Request) {
 	app.Logger.Println("GetAuthors handler called")
 
 	sqlQuery := `
@@ -403,6 +407,7 @@ func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Error executing query", err, http.StatusInternalServerError)
 		return
 	}
+
 	defer rows.Close()
 
 	authors, err := ScanAuthors(rows)
@@ -415,7 +420,7 @@ func (app *App) GetAuthors(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllBooks retrieves all books from the database along with the author's first and last name
-func (app *App) GetAllBooks(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetAllBooks(w http.ResponseWriter, _ *http.Request) {
 	app.Logger.Println("GetAllBooks handler called")
 
 	query := `
@@ -449,7 +454,7 @@ func (app *App) GetAllBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAuthorsAndBooks retrieves information about authors and their books
-func (app *App) GetAuthorsAndBooks(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetAuthorsAndBooks(w http.ResponseWriter, _ *http.Request) {
 	app.Logger.Println("GetAuthorsAndBooks handler called")
 
 	query := `
@@ -518,13 +523,14 @@ func ScanAuthorAndBooks(rows *sql.Rows) ([]AuthorBook, error) {
 	for rows.Next() {
 		var authorBook AuthorBook
 		if err := rows.Scan(&authorBook.AuthorFirstname, &authorBook.AuthorLastname, &authorBook.BookTitle, &authorBook.BookPhoto); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan author book info: %w", err)
 		}
+
 		authorsAndBooks = append(authorsAndBooks, authorBook)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error occurred during rows iteration: %w", err) 
 	}
 
 	return authorsAndBooks, nil
@@ -573,6 +579,12 @@ func (app *App) GetBookByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for any errors that may have occurred during row iteration
+	if err = rows.Err(); err != nil {
+		HandleError(w, app.Logger, "Error occurred while processing rows", err, http.StatusInternalServerError)
+		return
+	}
+
 	RespondWithJSON(w, http.StatusOK, book)
 }
 
@@ -616,15 +628,21 @@ func ScanRows(rows *sql.Rows, subscribers *[]Subscriber) error {
 	for rows.Next() {
 		var subscriber Subscriber
 		if err := rows.Scan(&subscriber.Lastname, &subscriber.Firstname, &subscriber.Email); err != nil {
-			return err
+			return fmt.Errorf("failed to scan subscriber: %w", err)
 		}
+
 		*subscribers = append(*subscribers, subscriber)
 	}
-	return rows.Err()
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error occurred during rows iteration: %w", err)
+	}
+
+	return nil
 }
 
 // GetAllSubscribers retrieves all subscribers from the database
-func (app *App) GetAllSubscribers(w http.ResponseWriter, r *http.Request) {
+func (app *App) GetAllSubscribers(w http.ResponseWriter, _ *http.Request) {
 	query := "SELECT lastname, firstname, email FROM subscribers"
 
 	rows, err := app.DB.Query(query)
@@ -718,6 +736,7 @@ func (app *App) AddAuthor(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if err := ValidateAuthorData(author); err != nil {
@@ -817,6 +836,7 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if err := ValidateBookData(book); err != nil {
@@ -839,6 +859,7 @@ func (app *App) AddBook(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	
 	response := map[string]int{"id": int(id)}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		app.Logger.Printf("JSON encoding error: %v", err)
@@ -858,6 +879,7 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if subscriber.Firstname == "" || subscriber.Lastname == "" || subscriber.Email == "" {
@@ -887,7 +909,6 @@ func (app *App) AddSubscriber(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // BorrowBook handles borrowing a book by a subscriber
@@ -901,6 +922,7 @@ func (app *App) BorrowBook(w http.ResponseWriter, r *http.Request) {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -954,6 +976,7 @@ func (app *App) ReturnBorrowedBook(w http.ResponseWriter, r *http.Request) {
 		SubscriberID int `json:"subscriber_id"`
 		BookID       int `json:"book_id"`
 	}
+	
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -1019,6 +1042,7 @@ func (app *App) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if author.Firstname == "" || author.Lastname == "" {
@@ -1069,6 +1093,7 @@ func (app *App) UpdateBook(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if err := ValidateBookData(book); err != nil {
@@ -1119,6 +1144,7 @@ func (app *App) UpdateSubscriber(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	if err := ValidateSubscriberData(subscriber); err != nil {
