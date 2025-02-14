@@ -1,0 +1,13 @@
+FROM node:lts-buster-slim
+
+WORKDIR /web
+
+COPY web/package*.json ./
+
+RUN npm install
+
+COPY web/ .
+
+EXPOSE 5173
+
+CMD [ "npm", "start" ]

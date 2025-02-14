@@ -31,6 +31,24 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # web:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.web
+  #   container_name: web
+  #   ports:
+  #     - 5173:5173
+  #   restart: always
+  #   networks:
+  #     - my-network
+  #   env_file:
+  #     - .env.docker
+  #     - ./web/.env.web
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
     
   db:
     image: mysql:latest

@@ -15,6 +15,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 )
 
 // App struct holds all the dependencies for the application
@@ -150,9 +151,20 @@ func main() {
 	// Configure the router
 	r := app.setupRouter()
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"}, // Allow your frontend origin
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
+        AllowCredentials: true,
+        Debug:            true, // Enable debug logging for CORS
+	})
+
+	// Wrap the router with the CORS middleware
+    handler := c.Handler(r)
+
 	// Start the HTTP server
 	log.Println("Starting server on port", *port)
-	if err := http.ListenAndServe(":"+*port, r); err != nil {
+	if err := http.ListenAndServe(":"+*port, handler); err != nil {
 		app.Logger.Fatal(err)
 	}
 }
