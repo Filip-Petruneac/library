@@ -1199,8 +1199,11 @@ func ValidateSubscriberData(subscriber Subscriber) error {
 
 // DeleteAuthor deletes an existing author from the database
 func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Only DELETE method is supported", http.StatusMethodNotAllowed)
+		 w.WriteHeader(http.StatusMethodNotAllowed)
+        fmt.Fprint(w, `{"error": "Only DELETE method is supported"}`)
 		return
 	}
 
@@ -1218,7 +1221,8 @@ func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if numBooks > 0 {
-		http.Error(w, "Author has associated books, delete books first", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprint(w, `{"error": "Author has associated books, delete books first"}`)
 		return
 	}
 
@@ -1229,7 +1233,8 @@ func (app *App) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		http.Error(w, "Author not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+        fmt.Fprint(w, `{"error": "Author not found"}`)
 		return
 	}
 

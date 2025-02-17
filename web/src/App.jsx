@@ -1,10 +1,9 @@
 import React,{ useState } from 'react'
 import GetAuthors from './components/GetAuthors'
-import './App.css'
 
 function App() {
   return (
-    <div>
+    <div className='App'>
       <GetAuthors />
     </div>
   )

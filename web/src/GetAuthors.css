@@ -1,0 +1,103 @@
+/* Reset some default browser styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Set background image on the entire page */
+body {
+  background: url("/matthew-feeney-Nwkh-n6l25w-unsplash.jpg") no-repeat center center fixed;
+  background-size: cover;
+  font-family: Arial, sans-serif;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* A container to center our content and add top/bottom spacing */
+.page-container {
+  max-width: 1200px;   /* or whatever width you like */
+  margin: 0 auto;      /* center horizontally */
+  padding: 40px 20px;  /* some space around the edges */
+}
+
+/* Title styling */
+.page-title {
+  text-align: center;
+  color: #c4baf3;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+/* Container for the table itself */
+.table-container {
+  background-color: rgba(214, 209, 209, 0.9); /* a white overlay */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Table styling */
+.authors-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.authors-table thead {
+  background-color: #8f8585;
+}
+
+.authors-table th,
+.authors-table td {
+  border: 1px solid #0e0c0c;
+  padding: 12px 8px;
+  text-align: left;
+  vertical-align: middle; /* keeps content centered vertically */
+}
+
+.authors-table th {
+  font-weight: bold;
+}
+
+/* Make sure the images are sized consistently */
+.author-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Buttons in the Actions column */
+.authors-table button {
+  margin-right: 5px;
+  padding: 6px 12px;
+  background-color: #3dbd4e;
+  color: #3229ad;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.authors-table button:hover {
+  background-color: #375470;
+}
+
+/* Simple pagination placeholder */
+.pagination {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  margin: 0 2px;
+  background-color: #4caf50;
+  color: #201616;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-btn:hover {
+  background-color: #3c8840;
+}
