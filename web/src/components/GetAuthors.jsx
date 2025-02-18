@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import DeleteAuthor from "./DeleteAuthor";
+import UpdateAuthor from "./UpdateAuthor";
 import "../GetAuthors.css";
 
 const baseURL = import.meta.env.VITE_API_URL;
@@ -31,12 +32,16 @@ function useAuthors() {
 
 function GetAuthors() {
     const { data, setData, error, loading } = useAuthors();
+    const [editingAuthor, setEditingAuthor] = useState(null);
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-    const handleUpdate = (id) => console.log("Update ID:", id);
     const handleAdd = (id) => console.log("Add ID:", id);
+    const handleUpdateSuccess = (updatedAuthor) => {
+      setData((prevData) => prevData.map((author) => author.id === updatedAuthor.id ? updatedAuthor : author));
+      setEditingAuthor(null);
+    }
 
     // Update the state after a successful deletion.
     const handleDeleteUpdate = (deletedId) => {
@@ -46,6 +51,15 @@ function GetAuthors() {
     return (
         <div className="page-container">
         <h1 className="page-title">Authors</h1>
+
+        {editingAuthor && (
+          <UpdateAuthor
+            author={editingAuthor}
+            onUpdateSuccess={handleUpdateSuccess}
+            onCancel={() => setEditingAuthor(null)}
+          />
+        )}
+
         <div className="table-container">
           <table className="authors-table">
             <thead>
@@ -69,7 +83,9 @@ function GetAuthors() {
                     />
                   </td>
                   <td>
-                    <button onClick={() => handleUpdate(author.id)}>UPDATE</button>
+                    <button onClick={() => setEditingAuthor(author)} className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md">
+                        UPDATE
+                    </button>
                     <DeleteAuthor id={author.id} onDeleted={handleDeleteUpdate} />
                     <button onClick={() => handleAdd(author.id)}>ADD</button>
                   </td>
