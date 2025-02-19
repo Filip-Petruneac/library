@@ -3,6 +3,7 @@ import axios from "axios";
 import DeleteAuthor from "./DeleteAuthor";
 import UpdateAuthor from "./UpdateAuthor";
 import "../GetAuthors.css";
+import "../UpdateAuthor.css"
 
 const baseURL = import.meta.env.VITE_API_URL;
 
