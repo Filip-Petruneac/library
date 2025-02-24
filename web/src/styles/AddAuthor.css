@@ -1,0 +1,134 @@
+/* Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    padding: 24px;
+  }
+  
+  /* Modal Container */
+  .modal-container {
+    background-color: rgb(146, 166, 207);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    animation: scaleIn 0.3s ease;
+  }
+  
+  /* Close Button */
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: #3d4b69;
+    cursor: pointer;
+    line-height: 1;
+  }
+  
+  /* Title & Description */
+  .modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .modal-description {
+    color: #2458a0;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  
+  /* Error Message */
+  .error-message {
+    color: #ef4444;
+    margin-bottom: 8px;
+  }
+  
+  /* Form & Input Fields */
+  .modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .modal-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  
+  .modal-input {
+    border: 1px solid #283547;
+    border-radius: 4px;
+    width: 100%;
+    padding: 8px;
+    outline: none;
+  }
+  
+  /* Action Buttons */
+  .modal-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+  }
+  
+  .modal-cancel-button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid #44556d;
+    background-color: rgb(72, 201, 55);
+    color: #4b5563;
+    cursor: pointer;
+  }
+  
+  .modal-submit-button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: #3b82f6;
+    color: rgb(247, 235, 235);
+    border: none;
+    cursor: pointer;
+  }
+
+  .preview-container {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  
+  .preview-image {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: cover; /* Ensures the image is cropped nicely if needed */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  
+  /* Optional: Scale In Animation */
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  

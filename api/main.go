@@ -92,7 +92,7 @@ func (app *App) setupRouter() *mux.Router {
 	r.HandleFunc("/subscribers/new", app.AddSubscriber).Methods("POST")
 	r.HandleFunc("/book/borrow", app.BorrowBook).Methods("POST")
 	r.HandleFunc("/book/return", app.ReturnBorrowedBook).Methods("POST")
-	r.HandleFunc("/author/photo/{id}", app.AddAuthorPhoto).Methods("POST")
+	// r.HandleFunc("/author/photo/{id}", app.AddAuthorPhoto).Methods("POST")
 	r.HandleFunc("/books/photo/{id}", app.AddBookPhoto).Methods("POST")
 
 	// Routes for updating resources
@@ -677,106 +677,95 @@ var mkdirAll = os.MkdirAll
 var osCreate = os.Create
 var ioCopy = io.Copy
 
-// AddAuthorPhoto handles the upload of an author's photo and updates the database
-func (app *App) AddAuthorPhoto(w http.ResponseWriter, r *http.Request) {
-	app.Logger.Println("AddAuthorPhoto handler called")
-
-	if r.Method != http.MethodPost {
-		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-		return
-	}
-
-	authorID, err := GetIDFromRequest(r, "id")
-	if err != nil {
-		HandleError(w, app.Logger, "Invalid author ID", err, http.StatusBadRequest)
-		return
-	}
-
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		HandleError(w, app.Logger, "Error getting file from request", err, http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-
-	filename := "fullsize.jpg"
-	ext := filepath.Ext(filename)
-
-	photoDir := "./upload/" + strconv.Itoa(authorID)
-	photoPath := photoDir + "/fullsize" + ext
-
-	if err := mkdirAll(photoDir, 0777); err != nil {
-		HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
-		return
-	}
-
-	out, err := osCreate(photoPath)
-	if err != nil {
-		HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
-		return
-	}
-	defer out.Close()
-
-	if _, err := ioCopy(out, file); err != nil {
-		HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
-		return
-	}
-
-	query := `UPDATE authors SET photo = ? WHERE id = ?`
-	if _, err := app.DB.Exec(query, photoPath, authorID); err != nil {
-		HandleError(w, app.Logger, "Failed to update author photo", err, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "File uploaded successfully: %s\n", photoPath)
-}
-
-var jsonEncoder = json.NewEncoder
-
-// AddAuthor adds a new author to the database
 func (app *App) AddAuthor(w http.ResponseWriter, r *http.Request) {
-	app.Logger.Println("AddAuthor handler called")
+    app.Logger.Println("AddAuthor handler called")
+    
+    if r.Method != http.MethodPost {
+        HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
+        return
+    }
+    
+    if err := r.ParseMultipartForm(10 << 20); err != nil {
+        HandleError(w, app.Logger, "Error parsing multipart form", err, http.StatusBadRequest)
+        return
+    }
+    
+    firstname := r.FormValue("firstname")
+    lastname := r.FormValue("lastname")
+    
+    // Validate author data here as needed
+    author := Author{
+        Firstname: firstname,
+        Lastname:  lastname,
+        Photo:     "", // Photo will be updated if a file is provided
+    }
+    
+    if err := ValidateAuthorData(author); err != nil {
+        HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
+        return
+    }
+    
+    // Insert the author record
+    query := `INSERT INTO authors (lastname, firstname, photo) VALUES (?, ?, ?)`
+    result, err := app.DB.Exec(query, author.Lastname, author.Firstname, "")
+    if err != nil {
+        HandleError(w, app.Logger, "Failed to insert author", err, http.StatusInternalServerError)
+        return
+    }
+    
+    id, err := result.LastInsertId()
+    if err != nil || id == 0 {
+        HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
+        return
+    }
+    
+    // If a photo file is provided, handle the upload
+    file, _, err := r.FormFile("photo")
+    if err == nil {
+        defer file.Close()
+        filename := "fullsize.jpg"
+        ext := filepath.Ext(filename)
+        photoDir := "./upload/" + strconv.Itoa(int(id))
+        photoPath := photoDir + "/fullsize" + ext
+    
+        if err := mkdirAll(photoDir, 0777); err != nil {
+            HandleError(w, app.Logger, "Error creating directories", err, http.StatusInternalServerError)
+            return
+        }
+    
+        out, err := osCreate(photoPath)
+        if err != nil {
+            HandleError(w, app.Logger, "Error creating file on disk", err, http.StatusInternalServerError)
+            return
+        }
+        defer out.Close()
+    
+        if _, err := ioCopy(out, file); err != nil {
+            HandleError(w, app.Logger, "Error saving file", err, http.StatusInternalServerError)
+            return
+        }
+    
+        // Update the author record with the photo path
+        query := `UPDATE authors SET photo = ? WHERE id = ?`
+        if _, err := app.DB.Exec(query, photoPath, id); err != nil {
+            HandleError(w, app.Logger, "Failed to update author photo", err, http.StatusInternalServerError)
+            return
+        }
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
 
-	if r.Method != http.MethodPost {
-		HandleError(w, app.Logger, "Only POST method is supported", nil, http.StatusMethodNotAllowed)
-		return
+    response := map[string]interface{}{
+        "id":        int(id),
+        "firstname": firstname,
+        "lastname":  lastname,
 	}
 
-	var author Author
-	if err := json.NewDecoder(r.Body).Decode(&author); err != nil {
-		HandleError(w, app.Logger, "Invalid JSON data", err, http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	if err := ValidateAuthorData(author); err != nil {
-		HandleError(w, app.Logger, err.Error(), nil, http.StatusBadRequest)
-		return
-	}
-
-	query := `INSERT INTO authors (lastname, firstname, photo) VALUES (?, ?, ?)`
-	result, err := app.DB.Exec(query, author.Lastname, author.Firstname, "")
-	if err != nil {
-		HandleError(w, app.Logger, "Failed to insert author", err, http.StatusInternalServerError)
-		return
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil || id == 0 {
-		HandleError(w, app.Logger, "Failed to get last insert ID", err, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	response := map[string]int{"id": int(id)}
-	if err := jsonEncoder(w).Encode(response); err != nil {
-		app.Logger.Printf("JSON encoding error: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-	}
+    if err := json.NewEncoder(w).Encode(response); err != nil {
+        app.Logger.Printf("JSON encoding error: %v", err)
+        http.Error(w, "Error encoding response", http.StatusInternalServerError)
+    }
 }
 
 // Define a global variable for os.MkdirAll to allow overriding in tests
