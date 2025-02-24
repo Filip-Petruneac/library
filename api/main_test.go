@@ -17,6 +17,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // createTestApp creates a test instance of the application with mocked dependencies.
@@ -1327,20 +1328,44 @@ func TestGetAllSubscribers_NoSubscribers(t *testing.T) {
 	assert.Len(t, actual, 0)
 }
 
-// TestAddAuthor tests the AddAuthor handler
+// createMultipartRequest builds a multipart form request with given text fields and an optional file.
+func createMultipartRequest(t *testing.T, fields map[string]string, fileFieldName, fileName string, fileContent []byte) *http.Request {
+	var b bytes.Buffer
+	writer := multipart.NewWriter(&b)
+	// Add text fields.
+	for key, val := range fields {
+		err := writer.WriteField(key, val)
+		require.NoError(t, err)
+	}
+	// Add file field if provided.
+	if fileFieldName != "" && fileContent != nil {
+		part, err := writer.CreateFormFile(fileFieldName, fileName)
+		require.NoError(t, err)
+		_, err = part.Write(fileContent)
+		require.NoError(t, err)
+	}
+	// Finalize multipart.
+	err := writer.Close()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("POST", "/authors/new", &b)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req
+}
+
+// TestAddAuthor_Success tests adding an author without a photo.
 func TestAddAuthor_Success(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	author := Author{Firstname: "John", Lastname: "Doe"}
-	body, err := json.Marshal(author)
-	assert.NoError(t, err)
-
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
+	fields := map[string]string{
+		"firstname": "John",
+		"lastname":  "Doe",
+	}
+	req := createMultipartRequest(t, fields, "", "", nil)
 	rr := httptest.NewRecorder()
 
+	// Expect insert using the query with columns: lastname, firstname, photo.
 	mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
 		WithArgs("Doe", "John", "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1350,40 +1375,76 @@ func TestAddAuthor_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
-	var response map[string]int
-	err = json.NewDecoder(rr.Body).Decode(&response)
+	var response map[string]interface{}
+	err := json.NewDecoder(rr.Body).Decode(&response)
 	assert.NoError(t, err)
-
-	assert.Equal(t, 1, response["id"], "Expected inserted author ID to be 1")
+	assert.Equal(t, float64(1), response["id"])
+	assert.Equal(t, "John", response["firstname"])
+	assert.Equal(t, "Doe", response["lastname"])
 }
 
-func TestAddAuthor_InvalidJSON(t *testing.T) {
+// TestAddAuthor_Success_WithPhoto tests adding an author with a photo upload.
+func TestAddAuthor_Success_WithPhoto(t *testing.T) {
+	app, mock := createTestApp(t)
+	defer app.DB.Close()
+
+	fields := map[string]string{
+		"firstname": "Jane",
+		"lastname":  "Smith",
+	}
+	photoContent := []byte("fake image data")
+	req := createMultipartRequest(t, fields, "photo", "photo.jpg", photoContent)
+	rr := httptest.NewRecorder()
+
+	// First, the insert.
+	mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
+		WithArgs("Smith", "Jane", "").
+		WillReturnResult(sqlmock.NewResult(2, 1))
+	// Then, since a file is provided, an update to set the photo.
+	// We use AnyArg() for the photo path, since the actual path is constructed dynamically.
+	mock.ExpectExec(`UPDATE authors SET photo = \? WHERE id = \?`).
+		WithArgs(sqlmock.AnyArg(), 2).
+		WillReturnResult(sqlmock.NewResult(2, 1))
+
+	handler := http.HandlerFunc(app.AddAuthor)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	var response map[string]interface{}
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(2), response["id"])
+	assert.Equal(t, "Jane", response["firstname"])
+	assert.Equal(t, "Smith", response["lastname"])
+}
+
+// TestAddAuthor_InvalidMultipart tests when the request is not a valid multipart form.
+func TestAddAuthor_InvalidMultipart(t *testing.T) {
 	app, _ := createTestApp(t)
 	defer app.DB.Close()
 
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer([]byte("invalid json")))
-	req.Header.Set("Content-Type", "application/json")
-
+	// Create an invalid multipart body.
+	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer([]byte("invalid multipart data")))
+	req.Header.Set("Content-Type", "multipart/form-data") // Missing boundary.
 	rr := httptest.NewRecorder()
 
 	handler := http.HandlerFunc(app.AddAuthor)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Invalid JSON data")
+	assert.Contains(t, rr.Body.String(), "Error parsing multipart form")
 }
 
+// TestAddAuthor_FailedToInsert simulates a DB error during the INSERT.
 func TestAddAuthor_FailedToInsert(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	author := Author{Firstname: "John", Lastname: "Doe"}
-	body, err := json.Marshal(author)
-	assert.NoError(t, err)
-
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
+	fields := map[string]string{
+		"firstname": "John",
+		"lastname":  "Doe",
+	}
+	req := createMultipartRequest(t, fields, "", "", nil)
 	rr := httptest.NewRecorder()
 
 	mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
@@ -1396,30 +1457,31 @@ func TestAddAuthor_FailedToInsert(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Failed to insert author")
 }
 
+// TestAddAuthor_FailedToGetLastInsertID simulates a failure in obtaining the inserted ID.
 func TestAddAuthor_FailedToGetLastInsertID(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	author := Author{Firstname: "John", Lastname: "Doe"}
-	body, err := json.Marshal(author)
-	assert.NoError(t, err)
-
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
+	fields := map[string]string{
+		"firstname": "John",
+		"lastname":  "Doe",
+	}
+	req := createMultipartRequest(t, fields, "", "", nil)
 	rr := httptest.NewRecorder()
 
 	mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
 		WithArgs("Doe", "John", "").
-		WillReturnResult(sqlmock.NewResult(0, 1))
+		WillReturnResult(sqlmock.NewResult(0, 1)) // Simulate failure to return valid ID.
 
 	handler := http.HandlerFunc(app.AddAuthor)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	// Adjust assertion if your error message changed.
 	assert.Contains(t, rr.Body.String(), "Failed to get last insert ID")
 }
 
+// TestAddAuthor_MethodNotAllowed tests non-POST requests.
 func TestAddAuthor_MethodNotAllowed(t *testing.T) {
 	app, _ := createTestApp(t)
 	defer app.DB.Close()
@@ -1434,57 +1496,56 @@ func TestAddAuthor_MethodNotAllowed(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Only POST method is supported")
 }
 
+// errorWriter simulates a write error during JSON encoding.
 type errorWriter struct{}
 
 func (e *errorWriter) Header() http.Header {
 	return http.Header{}
 }
-
 func (e *errorWriter) Write([]byte) (int, error) {
-	return 0, fmt.Errorf("error encoding json")
+	return 0, fmt.Errorf("simulated write error")
 }
-
 func (e *errorWriter) WriteHeader(statusCode int) {}
 
+// TestAddAuthor_FailedToEncodeJSON simulates an error during JSON encoding.
 func TestAddAuthor_FailedToEncodeJSON(t *testing.T) {
 	app, mock := createTestApp(t)
 	defer app.DB.Close()
 
-	author := Author{Firstname: "John", Lastname: "Doe"}
-	body, err := json.Marshal(author)
-	assert.NoError(t, err)
-
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	rr := &errorWriter{}
+	fields := map[string]string{
+		"firstname": "John",
+		"lastname":  "Doe",
+	}
+	req := createMultipartRequest(t, fields, "", "", nil)
+	ew := &errorWriter{}
 
 	mock.ExpectExec(`INSERT INTO authors \(lastname, firstname, photo\) VALUES \(\?, \?, \?\)`).
 		WithArgs("Doe", "John", "").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	handler := http.HandlerFunc(app.AddAuthor)
-	handler.ServeHTTP(rr, req)
-
+	handler.ServeHTTP(ew, req)
+	// The test will fail if the JSON encoding error does not occur.
 }
 
+// TestAddAuthor_InvalidAuthorData tests missing required fields.
 func TestAddAuthor_InvalidAuthorData(t *testing.T) {
 	app, _ := createTestApp(t)
 	defer app.DB.Close()
 
-	author := Author{Firstname: "", Lastname: ""}
-	body, err := json.Marshal(author)
-	assert.NoError(t, err)
-
-	req := httptest.NewRequest("POST", "/authors/new", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
+	// Empty firstname and lastname.
+	fields := map[string]string{
+		"firstname": "",
+		"lastname":  "",
+	}
+	req := createMultipartRequest(t, fields, "", "", nil)
 	rr := httptest.NewRecorder()
 
 	handler := http.HandlerFunc(app.AddAuthor)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	// Adjust the expected error message if necessary.
 	assert.Contains(t, rr.Body.String(), "firstname and lastname are required fields")
 }
 
